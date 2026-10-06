@@ -25,9 +25,10 @@ jobs:
 
       - run: flutter analyze
 
-      # DIAGNOSIS 2: nonaktifkan Impeller (pakai Skia) — menguji teori
-      # crash renderer di GPU Mali HP Tecno.
-      - run: flutter build apk --debug --no-enable-impeller
+      # DIAGNOSIS 2: Impeller dimatikan via AndroidManifest
+      # (meta-data EnableImpeller=false) — menguji teori crash
+      # renderer di GPU Mali HP Tecno.
+      - run: flutter build apk --debug
 
       - uses: actions/upload-artifact@v4
         with:
