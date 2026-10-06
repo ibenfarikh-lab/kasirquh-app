@@ -47,6 +47,7 @@ class Strings {
   static const kodePesanan = 'Kode pesanan';
   static const lihatPesanan = 'Lihat Pesanan';
   static const butuhInternet = 'Butuh koneksi internet untuk checkout.';
+  static const butuhInternetUmum = 'Butuh koneksi internet.';
   static const stokTidakCukup = 'Stok tidak cukup untuk:';
   static const checkoutGagal = 'Pesanan gagal dibuat. Coba lagi ya...';
 
@@ -54,7 +55,7 @@ class Strings {
   static const promoSpesial = 'Promo Spesial';
   static const infoToko = 'Info Toko';
   static const bukaSekarang = 'Buka sekarang';
-  static const tutupSekarang = 'Tutup';
+  static const tutupSekarang = 'Tutup sekarang';
   static const belanjaSekarang = 'Belanja Sekarang';
 
   // Chat
@@ -86,6 +87,8 @@ class Strings {
   static const pinTidakSama = 'PIN tidak sama. Coba lagi.';
   static const masukkanPin = 'Masukkan PIN Admin';
   static const pinSalah = 'PIN salah.';
+  static const pinTerkunci =
+      'Terlalu banyak salah. Tunggu 60 detik lalu coba lagi.';
   static const lupaPin = 'Lupa PIN?';
   static const aturUlangPin = 'PIN berhasil dibuat.';
 
@@ -96,6 +99,23 @@ class Strings {
   static const belumAdaPendaftar = 'Belum ada pendaftar';
   static const belumAdaTransaksi = 'Belum ada transaksi';
   static const belumAdaProduk = 'Belum ada produk';
+
+  // State galat (beda dari kosong — jangan klaim "belum ada" saat gagal muat)
+  static const gagalMuatProduk = 'Gagal memuat produk';
+  static const gagalMuatPesanan = 'Gagal memuat pesanan';
+  static const periksaKoneksi = 'Periksa koneksi internet, lalu coba lagi.';
+  static const sukaGagal = 'Gagal memberi suka. Coba lagi nanti.';
+  static const hargaJualNol = 'Harga jual harus lebih dari Rp0 untuk';
+  static const galat = 'Galat';
+  static const menyimpan = 'Menyimpan...';
+  static const belumDiatur = 'Belum diatur';
+  static const emailTerdaftar = 'Email ini sudah terdaftar. Masuk saja ya...';
+  static const emailTidakValid = 'Format email tidak valid.';
+  static const sandiTerlaluLemah = 'Kata sandi minimal 6 karakter.';
+  static const daftarGagal = 'Pendaftaran gagal. Coba lagi nanti.';
+  static const jenisDiskon = 'Jenis diskon';
+  static const nilaiPersen = 'Nilai (mis. 10 untuk 10%)';
+  static const nilaiNominal = 'Nilai (Rp)';
 
   // Tab pelanggan
   static const tabBeranda = 'Beranda';
@@ -216,7 +236,7 @@ class Strings {
   static const semuaStatus = 'Semua status';
   static const ubahStatus = 'Ubah status';
   static const pelanggan = 'Pelanggan';
-  static const pesananKosong = 'Belum ada pesanan';
+  static const pesananKosong = belumAdaPesanan; // alias
   static const pesananKosongHint =
       'Pesanan dari aplikasi pelanggan muncul di sini.';
   static const statusMenunggu = 'Menunggu';
@@ -237,7 +257,7 @@ class Strings {
   static const pemasukan = 'Pemasukan';
   static const pengeluaran = 'Pengeluaran';
   static const saldo = 'Saldo';
-  static const tambahCatatanKeuangan = 'Tambah catatan';
+  static const tambahCatatanKeuangan = tambahCatatan; // alias
   static const jenisTransaksi = 'Jenis';
   static const penjualan = 'Penjualan';
   static const kulakan = 'Kulakan';
@@ -253,12 +273,11 @@ class Strings {
   // Admin — Laporan
   static const tujuhHariTerakhir = '7 hari terakhir';
   static const omzet = 'Omzet';
-  static const labaKotor = 'Laba kotor';
   static const laba = 'Laba';
   static const grafikOmzet = 'Omzet 7 hari';
   static const laporanKosong = 'Belum ada transaksi pada periode ini';
   static const salinCsv = 'Salin CSV';
-  static const csvDisalin = 'CSV disalin ke clipboard.';
+  static const csvDisalin = 'CSV disalin.';
   static const transaksi = 'Transaksi';
 
   // Admin — Belanja Stok
@@ -285,7 +304,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.3.0+8';
+  static const versiApp = 'KasirQuh v3.4.0+9';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';

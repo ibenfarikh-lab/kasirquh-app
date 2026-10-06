@@ -361,7 +361,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
         ),
         const SizedBox(height: 16),
         AppButton(
-          label: _saving ? 'Menyimpan...' : Strings.simpan,
+          label: _saving ? Strings.menyimpan : Strings.simpan,
           fullWidth: true,
           onPressed: _saving ? null : _save,
         ),

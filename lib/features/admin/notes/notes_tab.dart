@@ -650,18 +650,17 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
         source: isEdit ? widget.existing!.source : 'manual',
         createdAt: isEdit ? widget.existing!.createdAt : now,
       );
-      await repo.saveStockNote(note);
+      final noteId = await repo.saveStockNote(note);
       if (!isEdit) {
         // Catatan baru: jurnal kulakan + kurangi modal.
+        // Modal sebagai delta antrean: tidak dilewati diam-diam saat offline.
         await repo.addJournal(
           kind: 'kulakan',
           label: 'Kulakan · ${note.supplier}',
           amount: -note.total,
+          refId: noteId,
         );
-        final modal = await repo.getModal();
-        if (modal != null) {
-          await repo.setModal(modal - note.total);
-        }
+        await repo.adjustModal(-note.total);
       }
       if (mounted) {
         Navigator.of(context).pop();

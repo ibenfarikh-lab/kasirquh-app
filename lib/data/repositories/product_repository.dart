@@ -14,11 +14,10 @@ const kProductCategories = [
   'Rumah Tangga',
 ];
 
-/// Batas default "stok menipis" (selaras store_settings.lowStockDefault).
-const kLowStockDefault = 5;
-
 /// Repository katalog: baca Firestore (publik, server menang untuk stok)
 /// dengan fallback SQLite saat offline/mode lokal.
+/// Catatan: ambang "stok menipis" kini per produk (Product.lowStockAt,
+/// selaras skema), bukan konstanta global lagi.
 class ProductRepository {
   final FirebaseFirestore? _db;
 
@@ -52,6 +51,7 @@ class ProductRepository {
         price: (m['price'] as num?)?.toInt() ?? 0,
         cost: (m['costPrice'] as num?)?.toInt() ?? 0,
         stock: (m['stock'] as num?)?.toInt() ?? 0,
+        lowStockAt: (m['lowStockAt'] as num?)?.toInt() ?? 5,
         barcode: m['barcode'] as String?,
         photoPath: m['photoUrl'] as String?,
         active: true,

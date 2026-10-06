@@ -226,6 +226,10 @@ class _ApprovalTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
+      // Deep link: tap tile → Data Pelanggan (kelola persetujuan di sana).
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const CustomersPage()),
+      ),
       title: Text(customer.name,
           style: const TextStyle(
               color: AppColors.warmText, fontWeight: FontWeight.w700)),

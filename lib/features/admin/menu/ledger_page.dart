@@ -71,7 +71,24 @@ class _SummaryCard extends ConsumerWidget {
     return FutureBuilder<JournalSummary>(
       future: repo.journalSummary(),
       builder: (context, snap) {
-        final s = snap.data ?? const JournalSummary();
+        if (!snap.hasData) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        final s = snap.data!;
+        // Prinsip: mending "belum ada transaksi" daripada Rp0/Rp0/Rp0
+        // dari ketiadaan data.
+        if (s.transaksi == 0) {
+          return const EmptyState(
+            icon: Icons.book_outlined,
+            title: Strings.belumAdaTransaksi,
+            hint: Strings.jurnalKosongHint,
+          );
+        }
         return AppCard(
           child: Column(
             children: [
@@ -303,7 +320,7 @@ class _JournalFormSheetState extends ConsumerState<_JournalFormSheet> {
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
           SwitchListTile(
-            title: const Text('Pengeluaran'),
+            title: const Text(Strings.pengeluaran),
             value: _isKeluar,
             activeThumbColor: AppColors.orange,
             contentPadding: EdgeInsets.zero,

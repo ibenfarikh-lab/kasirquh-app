@@ -170,7 +170,7 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                         style: TextStyle(color: Colors.white38, fontSize: 11),
                       ),
                       Text(
-                        'v3.3.0+8',
+                        Strings.versiApp,
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.white24, fontSize: 10),
                       ),
@@ -188,7 +188,7 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                     onTap: () => showDialog(
                       context: context,
                       builder: (_) => AlertDialog(
-                        title: const Text('Info startup'),
+                        title: const Text('Info aplikasi'),
                         content: SingleChildScrollView(
                           child: Text(
                             StartupReport.errors.join('\n\n'),

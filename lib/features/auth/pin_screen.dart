@@ -21,6 +21,12 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   bool _isNew = false;
   bool _checking = true;
   String? _error;
+  // Anti brute-force: 5x salah → kunci 60 detik.
+  int _salah = 0;
+  DateTime? _kunciSampai;
+
+  bool get _terkunci =>
+      _kunciSampai != null && DateTime.now().isBefore(_kunciSampai!);
 
   @override
   void initState() {
@@ -37,7 +43,7 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   }
 
   Future<void> _onDigit(String d) async {
-    if (_pin.length >= 6) return;
+    if (_pin.length >= 6 || _terkunci) return;
     setState(() {
       _pin += d;
       _error = null;
@@ -68,12 +74,28 @@ class _PinScreenState extends ConsumerState<PinScreen> {
       }
     } else {
       if (await service.verify(_pin)) {
+        _salah = 0;
         if (mounted) _granted();
       } else {
-        setState(() {
-          _error = Strings.pinSalah;
-          _pin = '';
-        });
+        _salah++;
+        if (_salah >= 5) {
+          // Kunci 60 detik; hitungan di-reset agar tak menumpuk.
+          _kunciSampai = DateTime.now().add(const Duration(seconds: 60));
+          _salah = 0;
+          setState(() {
+            _error = Strings.pinTerkunci;
+            _pin = '';
+          });
+          // Buka kunci otomatis setelah 60 detik.
+          Future.delayed(const Duration(seconds: 61), () {
+            if (mounted) setState(() {});
+          });
+        } else {
+          setState(() {
+            _error = '${Strings.pinSalah} ($_salah/5)';
+            _pin = '';
+          });
+        }
       }
     }
   }

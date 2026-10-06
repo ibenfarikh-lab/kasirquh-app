@@ -5,6 +5,7 @@ class JournalEntry {
   final String kind;
   final String label;
   final int amount; // positif = masuk, negatif = keluar (Rp integer)
+  final String? refId; // rujukan: id pesanan / nota / dokumen terkait
   final DateTime createdAt;
 
   const JournalEntry({
@@ -12,6 +13,7 @@ class JournalEntry {
     required this.kind,
     required this.label,
     required this.amount,
+    this.refId,
     required this.createdAt,
   });
 
@@ -20,6 +22,7 @@ class JournalEntry {
         'kind': kind,
         'label': label,
         'amount': amount,
+        'refId': refId,
         'createdAt': createdAt.millisecondsSinceEpoch,
       };
 

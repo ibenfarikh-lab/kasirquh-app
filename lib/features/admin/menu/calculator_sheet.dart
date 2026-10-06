@@ -19,7 +19,7 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
 
   void _input(String d) {
     setState(() {
-      if (_current == 'Error') {
+      if (_current == Strings.galat) {
         _current = d == '.' ? '0.' : d;
         return;
       }
@@ -53,7 +53,7 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
 
   /// Hilangkan .0: bulat tampil sebagai int.
   String _format(double v) {
-    if (v.isInfinite || v.isNaN) return 'Error';
+    if (v.isInfinite || v.isNaN) return Strings.galat;
     if (v == v.truncateToDouble()) return v.toInt().toString();
     var s = v.toStringAsFixed(10);
     s = s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
@@ -75,7 +75,7 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
       if (_op != null && _prev != null) {
         final r = _compute(_prev!, _op!, cur);
         if (r == null) {
-          _current = 'Error';
+          _current = Strings.galat;
           _prev = null;
           _op = null;
           return;
@@ -95,7 +95,7 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
     setState(() {
       final cur = double.tryParse(_current) ?? 0;
       final r = _compute(_prev!, _op!, cur);
-      _current = r == null ? 'Error' : _format(r);
+      _current = r == null ? Strings.galat : _format(r);
       _prev = null;
       _op = null;
     });
@@ -112,7 +112,7 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
 
   void _backspace() {
     setState(() {
-      if (_current == 'Error' || _current.length <= 1) {
+      if (_current == Strings.galat || _current.length <= 1) {
         _current = '0';
       } else {
         _current = _current.substring(0, _current.length - 1);

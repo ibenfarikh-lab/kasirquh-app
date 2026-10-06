@@ -40,7 +40,7 @@ class _GroupChatPageState extends ConsumerState<GroupChatPage> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(Strings.butuhInternet)),
+          const SnackBar(content: Text(Strings.butuhInternetUmum)),
         );
       }
     }
@@ -77,7 +77,7 @@ class _GroupChatPageState extends ConsumerState<GroupChatPage> {
             error: (_, __) => const EmptyState(
               icon: Icons.groups_outlined,
               title: Strings.grupKosong,
-              hint: Strings.butuhInternet,
+              hint: Strings.butuhInternetUmum,
             ),
             data: (msgs) {
               if (msgs.isEmpty) {

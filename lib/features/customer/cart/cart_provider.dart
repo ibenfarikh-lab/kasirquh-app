@@ -6,13 +6,19 @@ import '../../../data/models/product.dart';
 class CartLine {
   final Product product;
   final int qty;
+  final int? hargaSatuan; // override harga (mis. harga promo saat ditambah)
 
-  const CartLine({required this.product, required this.qty});
+  const CartLine({required this.product, required this.qty, this.hargaSatuan});
 
-  int get subtotal => product.price * qty;
+  int get harga => hargaSatuan ?? product.price;
 
-  CartLine copyWith({Product? product, int? qty}) =>
-      CartLine(product: product ?? this.product, qty: qty ?? this.qty);
+  int get subtotal => harga * qty;
+
+  CartLine copyWith({Product? product, int? qty, int? hargaSatuan}) =>
+      CartLine(
+          product: product ?? this.product,
+          qty: qty ?? this.qty,
+          hargaSatuan: hargaSatuan ?? this.hargaSatuan);
 }
 
 /// Keranjang belanja — draf lokal per perangkat (tidak disinkronkan).
@@ -21,11 +27,15 @@ class CartNotifier extends StateNotifier<List<CartLine>> {
   CartNotifier() : super(const []);
 
   /// Tambah 1 pcs. Mengembalikan false bila stok habis/tercapai.
-  bool add(Product product) {
+  /// [harga]: harga satuan override (mis. harga promo); disimpan di baris.
+  bool add(Product product, {int? harga}) {
     if (product.stock <= 0) return false;
     final i = state.indexWhere((e) => e.product.id == product.id);
     if (i < 0) {
-      state = [...state, CartLine(product: product, qty: 1)];
+      state = [
+        ...state,
+        CartLine(product: product, qty: 1, hargaSatuan: harga)
+      ];
       return true;
     }
     final line = state[i];

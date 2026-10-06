@@ -18,7 +18,7 @@ class Notify {
       );
       const channel = AndroidNotificationChannel(
         'kasirquh',
-        'KasirQuh',
+        'Warunge Mimi',
         description: 'Kabar pesanan & chat Warunge Mimi',
         importance: Importance.high,
       );
@@ -45,7 +45,7 @@ class Notify {
         const NotificationDetails(
           android: AndroidNotificationDetails(
             'kasirquh',
-            'KasirQuh',
+            'Warunge Mimi',
             importance: Importance.high,
             priority: Priority.high,
           ),

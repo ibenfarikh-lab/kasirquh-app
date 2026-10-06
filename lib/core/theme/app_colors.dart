@@ -25,8 +25,9 @@ class AppColors {
   static const orangeDeep = Color(0xFFA95F12);
   static const ctaGradient = LinearGradient(
     colors: [Color(0xFFFF8D25), Color(0xFFFFC267)],
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
+    // 100deg ala spek: dominan kiri→kanan, sedikit menurun.
+    begin: Alignment(-0.98, -0.17),
+    end: Alignment(0.98, 0.17),
   );
 
   // Semantik

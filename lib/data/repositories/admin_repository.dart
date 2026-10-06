@@ -32,7 +32,9 @@ Object? _queueSafe(Object? v) {
     };
   }
   if (v is List) return v.map(_queueSafe).toList();
-  if (v is DateTime) return v.millisecondsSinceEpoch;
+  // DateTime dipertahankan sebagai Timestamp Firestore (bukan integer),
+  // agar field tanggal tetap bertipe timestamp sesuai skema.
+  if (v is DateTime) return {'__ts': 'ts', 'ms': v.millisecondsSinceEpoch};
   return v;
 }
 
@@ -141,6 +143,7 @@ class AdminRepository {
             price: (m['price'] as num?)?.toInt() ?? 0,
             cost: (m['costPrice'] as num?)?.toInt() ?? 0,
             stock: (m['stock'] as num?)?.toInt() ?? 0,
+            lowStockAt: (m['lowStockAt'] as num?)?.toInt() ?? 5,
             barcode: m['barcode'] as String?,
             photoPath: m['photoUrl'] as String?,
             active: m['isActive'] != false,
@@ -190,6 +193,7 @@ class AdminRepository {
             price: (m['price'] as num?)?.toInt() ?? 0,
             cost: (m['costPrice'] as num?)?.toInt() ?? 0,
             stock: (m['stock'] as num?)?.toInt() ?? 0,
+            lowStockAt: (m['lowStockAt'] as num?)?.toInt() ?? 5,
             barcode: m['barcode'] as String?,
             active: true,
           );
@@ -213,6 +217,7 @@ class AdminRepository {
     required int price,
     required int cost,
     required int stock,
+    int lowStockAt = 5,
     String? barcode,
     bool active = true,
   }) async {
@@ -225,6 +230,7 @@ class AdminRepository {
       price: price,
       cost: cost,
       stock: stock,
+      lowStockAt: lowStockAt,
       barcode: (barcode ?? '').trim().isEmpty ? null : barcode!.trim(),
       active: active,
     );
@@ -240,6 +246,7 @@ class AdminRepository {
         'price': product.price,
         'costPrice': product.cost,
         'stock': product.stock,
+        'lowStockAt': product.lowStockAt,
         'barcode': product.barcode,
         'isActive': product.active,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -279,6 +286,10 @@ class AdminRepository {
       );
 
   /// Sesuaikan stok (mis. belanja stok / koreksi). [costPrice] opsional.
+  ///
+  /// Stok dikirim sebagai DELTA atomik (FieldValue.increment) — bukan nilai
+  /// absolut dari DB lokal — agar dua perangkat yang mengubah bersamaan
+  /// tidak saling menimpa (lost-update). Cermin lokal di-update optimistis.
   Future<void> adjustStock(String productId, int delta,
       {int? costPrice}) async {
     final sq = await AppDatabase.db;
@@ -294,19 +305,23 @@ class AdminRepository {
       where: 'id = ?',
       whereArgs: [productId],
     );
+    // Delta untuk 'stock' (atomik di server), nilai absolut untuk
+    // 'costPrice' (niat admin eksplisit) + updatedAt.
     final payload = {
-      'stock': newStock,
-      'costPrice': newCost,
-      'updatedAt': FieldValue.serverTimestamp(),
+      'deltas': {'stock': delta},
+      'sets': {
+        'costPrice': newCost,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
     };
     final safe = _queueSafe(payload) as Map<String, dynamic>;
     if (_sync != null) {
-      await _sync.enqueue('products', productId, 'update', safe);
+      await _sync.enqueue('products', productId, 'increment', safe);
     } else {
       await sq.insert('sync_queue', {
         'collection': 'products',
         'docId': productId,
-        'op': 'update',
+        'op': 'increment',
         'payload': jsonEncode(safe),
         'createdAt': DateTime.now().millisecondsSinceEpoch,
       });
@@ -426,6 +441,7 @@ class AdminRepository {
       uid: uid,
       name: (m['name'] as String?) ?? '',
       email: (m['email'] as String?) ?? '',
+      wa: m['wa'] as String?,
       approvalStatus: (m['approvalStatus'] as String?) ?? 'pending',
       coins: (m['coins'] as num?)?.toInt() ?? 0,
       createdAt: ts is Timestamp
@@ -481,6 +497,11 @@ class AdminRepository {
   }
 
   /// Sesuaikan koin pelanggan + catat di coin_ledger (append-only).
+  ///
+  /// Bila [delta] negatif (= koin ditukar/dipakai pelanggan), penukaran
+  /// dicatat sebagai BEBAN PROMOSI di jurnal (wajib skema), memakai
+  /// coinRate dari store_settings (default Rp1/koin). Satu batch atomik:
+  /// ledger + saldo koin + jurnal beban.
   Future<void> adjustCoins(String uid, int delta, String reason) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk ubah koin.');
@@ -495,6 +516,23 @@ class AdminRepository {
     batch.update(db.collection('customers').doc(uid), {
       'coins': FieldValue.increment(delta),
     });
+    if (delta < 0) {
+      int coinRate = 1;
+      try {
+        final s = await db.collection('store_settings').doc('main').get();
+        coinRate = (s.data()?['coinRate'] as num?)?.toInt() ?? 1;
+      } catch (_) {}
+      final beban = (-delta) * coinRate;
+      final journalRef = db.collection('journal').doc();
+      batch.set(journalRef, {
+        'type': 'pengeluaran',
+        'category': 'beban_promosi',
+        'amount': beban,
+        'note': 'Penukaran koin · $reason',
+        'refId': ledgerRef.id,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
     await batch.commit();
   }
 
@@ -514,6 +552,7 @@ class AdminRepository {
       'category': category,
       'amount': e.amount.abs(),
       'note': e.label,
+      'refId': e.refId,
       'createdAt': FieldValue.serverTimestamp(),
     };
   }
@@ -570,6 +609,7 @@ class AdminRepository {
                 kind: r['kind'] as String,
                 label: r['label'] as String,
                 amount: (r['amount'] as num).toInt(),
+                refId: r['refId'] as String?,
                 createdAt: DateTime.fromMillisecondsSinceEpoch(
                     (r['createdAt'] as num).toInt()),
               ))
@@ -624,6 +664,7 @@ class AdminRepository {
     required String kind, // penjualan | kulakan | beban | modal
     required String label,
     required int amount, // positif = masuk, negatif = keluar
+    String? refId, // rujukan: id pesanan / nota / dokumen terkait
   }) async {
     final id = _newId('journal');
     final now = DateTime.now();
@@ -632,6 +673,7 @@ class AdminRepository {
       kind: kind,
       label: label,
       amount: amount,
+      refId: refId,
       createdAt: now,
     );
     await _writeLocalThenQueue(
@@ -879,6 +921,29 @@ class AdminRepository {
   Future<void> setModal(int value) =>
       saveStoreSettings({'modal': value});
 
+  /// Kurangi/tambah modal belanja sebagai DELTA atomik (FieldValue.increment)
+  /// via antrean — tidak pernah dilewati diam-diam saat offline; diterapkan
+  /// saat online kembali. Untuk pengurangan modal oleh belanja/catatan.
+  Future<void> adjustModal(int delta) async {
+    final sq = await AppDatabase.db;
+    final payload = {
+      'deltas': {'modal': delta},
+      'sets': {'updatedAt': FieldValue.serverTimestamp()},
+    };
+    final safe = _queueSafe(payload) as Map<String, dynamic>;
+    if (_sync != null) {
+      await _sync.enqueue('store_settings', 'main', 'increment', safe);
+    } else {
+      await sq.insert('sync_queue', {
+        'collection': 'store_settings',
+        'docId': 'main',
+        'op': 'increment',
+        'payload': jsonEncode(safe),
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      });
+    }
+  }
+
   Stream<List<Map<String, dynamic>>> watchAllPromos() async* {
     final db = _db;
     if (db == null) {
@@ -927,6 +992,7 @@ class AdminRepository {
       kind: 'penjualan',
       label: 'Penjualan Tunai · Kasir ($code)',
       amount: total,
+      refId: code,
     );
     for (final item in items) {
       await adjustStock(item.productId, -item.qty);

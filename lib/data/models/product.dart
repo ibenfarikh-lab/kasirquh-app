@@ -6,6 +6,7 @@ class Product {
   final int price; // harga jual (Rp, integer)
   final int cost; // modal/pcs (Rp, integer)
   final int stock;
+  final int lowStockAt; // batas menipis per produk (default 5)
   final String? barcode;
   final String? photoPath;
   final bool active;
@@ -17,6 +18,7 @@ class Product {
     required this.price,
     required this.cost,
     required this.stock,
+    this.lowStockAt = 5,
     this.barcode,
     this.photoPath,
     this.active = true,
@@ -29,6 +31,7 @@ class Product {
         'price': price,
         'cost': cost,
         'stock': stock,
+        'lowStockAt': lowStockAt,
         'barcode': barcode,
         'photoPath': photoPath,
         'active': active ? 1 : 0,
@@ -41,14 +44,23 @@ class Product {
         price: (m['price'] as num).toInt(),
         cost: (m['cost'] as num?)?.toInt() ?? 0,
         stock: (m['stock'] as num).toInt(),
+        lowStockAt: (m['lowStockAt'] as num?)?.toInt() ?? 5,
         barcode: m['barcode'] as String?,
         photoPath: m['photoPath'] as String?,
         active: (m['active'] == 1 || m['active'] == true),
       );
 
-  Map<String, dynamic> toFirestore() {
-    final m = toMap();
-    m['active'] = active;
-    return m;
-  }
+  /// Payload Firestore — NAMA FIELD SELARAS SKEMA
+  /// (costPrice / photoUrl / isActive / lowStockAt; tanpa 'id').
+  Map<String, dynamic> toFirestore() => {
+        'name': name,
+        'category': category,
+        'price': price,
+        'costPrice': cost,
+        'stock': stock,
+        'lowStockAt': lowStockAt,
+        'barcode': barcode,
+        'photoUrl': photoPath,
+        'isActive': active,
+      };
 }

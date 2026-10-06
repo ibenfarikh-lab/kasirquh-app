@@ -99,10 +99,25 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
         Navigator.of(context).pop(false);
       }
     } catch (e) {
-      setState(() => _error = 'Pendaftaran gagal: $e');
+      // Jangan tampilkan exception mentah (bisa Inggris + detail teknis).
+      setState(() => _error = _pesanDaftar(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Petakan galat pendaftaran ke Bahasa Indonesia yang ramah.
+  String _pesanDaftar(Object e) {
+    final msg = e.toString();
+    if (msg.contains('email-already-in-use')) {
+      return Strings.emailTerdaftar;
+    }
+    if (msg.contains('invalid-email')) return Strings.emailTidakValid;
+    if (msg.contains('weak-password')) return Strings.sandiTerlaluLemah;
+    if (msg.contains('network-request-failed')) {
+      return Strings.butuhInternetUmum;
+    }
+    return Strings.daftarGagal;
   }
 
   @override

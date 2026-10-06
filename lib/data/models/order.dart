@@ -14,7 +14,7 @@ class Order {
   final List<OrderItem> items;
   final int total;
   final OrderStatus status;
-  final String payment; // tunai / transfer / cod
+  final String payment; // cod | transfer — selaras skema (tunai hanya di kasir admin, tanpa dokumen order)
   final DateTime createdAt;
 
   const Order({
@@ -42,14 +42,23 @@ class Order {
       };
 
   Map<String, dynamic> toFirestore() => {
+        'code': code,
         'customerId': customerId,
         'customerName': customerName,
-        'code': code,
-        'items': items.map((e) => e.toMap()).toList(),
+        'items': items
+            .map((e) => {
+                  'productId': e.productId,
+                  'name': e.name,
+                  'price': e.price,
+                  'qty': e.qty,
+                  'subtotal': e.price * e.qty,
+                })
+            .toList(),
         'total': total,
         'status': status.name,
-        'payment': payment,
+        'paymentMethod': payment,
         'createdAt': createdAt,
+        'updatedAt': createdAt,
       };
 }
 

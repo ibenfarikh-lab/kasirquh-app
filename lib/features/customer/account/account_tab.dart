@@ -120,9 +120,12 @@ class AccountTab extends ConsumerWidget {
         ordersAsync.when(
           loading: () =>
               const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const EmptyState(
-            icon: Icons.receipt_long_outlined,
-            title: Strings.belumAdaPesanan,
+          error: (_, __) => EmptyState(
+            icon: Icons.cloud_off_outlined,
+            title: Strings.gagalMuatPesanan,
+            hint: Strings.periksaKoneksi,
+            actionLabel: Strings.cobaLagi,
+            onAction: () => ref.invalidate(_myOrdersProvider(uid)),
           ),
           data: (orders) {
             if (orders.isEmpty) {

@@ -54,7 +54,7 @@ class CartTab extends ConsumerWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              formatRp(line.product.price),
+                              formatRp(line.harga),
                               style: const TextStyle(
                                   color: AppColors.orange,
                                   fontWeight: FontWeight.w700),
@@ -258,7 +258,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                 productId: e.product.id,
                 name: e.product.name,
                 qty: e.qty,
-                price: e.product.price,
+                price: e.harga,
               ))
           .toList();
       final code =

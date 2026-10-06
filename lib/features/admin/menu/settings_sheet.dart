@@ -157,7 +157,14 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                     style: TextStyle(color: AppColors.warmText),
                   ),
                   subtitle: Text(
-                    '${formatRp(ref.watch(storeInfoProvider).valueOrNull?.coinRate ?? 0)} per koin',
+                    () {
+                      final rate =
+                          ref.watch(storeInfoProvider).valueOrNull?.coinRate ??
+                              0;
+                      // Jujur: belum diatur (0) ≠ Rp0 per koin.
+                      if (rate <= 0) return Strings.belumDiatur;
+                      return '${formatRp(rate)} per koin';
+                    }(),
                     style: const TextStyle(color: AppColors.warmMuted),
                   ),
                   trailing: const Icon(

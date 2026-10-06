@@ -104,47 +104,79 @@ class CustomerHomeSheet extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     final judul = TextEditingController();
     final subjudul = TextEditingController();
+    final nilai = TextEditingController();
+    String jenis = 'none'; // none | percent | amount
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.panel2,
-        title: Text(
-          Strings.tambahPromo,
-          style: const TextStyle(color: AppColors.warmText),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: judul,
-              autofocus: true,
-              style: const TextStyle(color: AppColors.warmText),
-              decoration: _dekorasi(Strings.judulPromo),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          backgroundColor: AppColors.panel2,
+          title: Text(
+            Strings.tambahPromo,
+            style: const TextStyle(color: AppColors.warmText),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: judul,
+                autofocus: true,
+                style: const TextStyle(color: AppColors.warmText),
+                decoration: _dekorasi(Strings.judulPromo),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: subjudul,
+                style: const TextStyle(color: AppColors.warmText),
+                decoration: _dekorasi(Strings.subjudulPromo),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: jenis,
+                dropdownColor: AppColors.panel2,
+                style: const TextStyle(color: AppColors.warmText),
+                decoration: _dekorasi(Strings.jenisDiskon),
+                items: const [
+                  DropdownMenuItem(
+                      value: 'none', child: Text('Tanpa diskon')),
+                  DropdownMenuItem(
+                      value: 'percent', child: Text('Diskon persen (%)')),
+                  DropdownMenuItem(
+                      value: 'amount',
+                      child: Text('Potongan nominal (Rp)')),
+                ],
+                onChanged: (v) => setState(() => jenis = v ?? 'none'),
+              ),
+              if (jenis != 'none') ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: nilai,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: AppColors.warmText),
+                  decoration: _dekorasi(jenis == 'percent'
+                      ? Strings.nilaiPersen
+                      : Strings.nilaiNominal),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(
+                Strings.batal,
+                style: const TextStyle(color: AppColors.warmMuted),
+              ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: subjudul,
-              style: const TextStyle(color: AppColors.warmText),
-              decoration: _dekorasi(Strings.subjudulPromo),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text(
+                Strings.simpan,
+                style: TextStyle(color: AppColors.orange),
+              ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(
-              Strings.batal,
-              style: const TextStyle(color: AppColors.warmMuted),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text(
-              Strings.simpan,
-              style: TextStyle(color: AppColors.orange),
-            ),
-          ),
-        ],
       ),
     );
     if (ok != true) return;
@@ -154,6 +186,8 @@ class CustomerHomeSheet extends ConsumerWidget {
       await ref.read(adminRepositoryProvider).savePromo({
         'title': t,
         'subtitle': subjudul.text.trim(),
+        'discountType': jenis == 'none' ? null : jenis,
+        'discountValue': int.tryParse(nilai.text.trim()) ?? 0,
         'isActive': true,
       });
       messenger.showSnackBar(

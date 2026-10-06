@@ -55,13 +55,19 @@ class SyncEngine {
   }
 
   /// Kirim semua antrean tertunda (hanya saat online).
+  /// Item yang gagal dikirim dilewati di sisa putaran ini (tetap di DB,
+  /// dicoba lagi saat ada perubahan koneksi / aplikasi dibuka berikutnya)
+  /// agar satu item bermasalah tidak memacetkan seluruh antrean
+  /// (head-of-line blocking).
   Future<void> drainQueue() async {
     final conn = await Connectivity().checkConnectivity();
     if (conn.contains(ConnectivityResult.none)) return;
     final db = await AppDatabase.db;
     final rows = await db.query('sync_queue', orderBy: 'id ASC');
+    final gagal = <int>{};
     for (final row in rows) {
       final id = row['id'] as int;
+      if (gagal.contains(id)) continue;
       final collection = row['collection'] as String;
       final docId = row['docId'] as String;
       final op = row['op'] as String;
@@ -76,22 +82,45 @@ class SyncEngine {
             await ref.update(payload);
           case 'delete':
             await ref.delete();
+          case 'increment':
+            // Delta atomik: {'deltas': {field: n}, 'sets': {field: v}}.
+            // FieldValue.increment tidak bisa di-JSON-kan, jadi payload
+            // antrean memakai struktur ini lalu dibangkitkan di sini.
+            final sets =
+                Map<String, dynamic>.from(payload['sets'] as Map? ?? {});
+            final deltas =
+                Map<String, dynamic>.from(payload['deltas'] as Map? ?? {});
+            await ref.set(
+              {
+                ...sets,
+                for (final e in deltas.entries)
+                  e.key: FieldValue.increment((e.value as num).toInt()),
+              },
+              SetOptions(merge: true),
+            );
         }
         await db.delete('sync_queue', where: 'id = ?', whereArgs: [id]);
       } catch (_) {
-        // Gagal → tetap di antrean, coba lagi saat online berikutnya.
-        break;
+        // Gagal → catat, lewati item ini di putaran ini, lanjut ke
+        // item berikutnya. Item tetap di antrean untuk dicoba lagi nanti.
+        gagal.add(id);
       }
     }
   }
 
-  /// Kembalikan sentinel `__sv_timestamp` menjadi
-  /// FieldValue.serverTimestamp() (kebalikan dari _queueSafe di repository).
+  /// Kembalikan sentinel menjadi nilai Firestore:
+  /// - `{'__sv': '__sv_timestamp'}` → FieldValue.serverTimestamp()
+  /// - `{'__ts': ms}` → Timestamp.fromMillisecondsSinceEpoch(ms)
+  ///   (kebalikan dari _queueSafe di repository).
   Map<String, dynamic> _reviveTimestamps(Map<String, dynamic> m) {
     Object? revive(Object? v) {
       if (v is Map) {
         if (v['__sv'] == '__sv_timestamp' && v.length == 1) {
           return FieldValue.serverTimestamp();
+        }
+        if (v['__ts'] != null && v.length == 2 && v['ms'] is num) {
+          return Timestamp.fromMillisecondsSinceEpoch(
+              (v['ms'] as num).toInt());
         }
         return {
           for (final e in v.entries) e.key.toString(): revive(e.value)
@@ -132,11 +161,29 @@ class SyncEngine {
             'name': data['name'] ?? '',
             'category': data['category'] ?? '',
             'price': (data['price'] as num?)?.toInt() ?? 0,
-            'cost': (data['cost'] as num?)?.toInt() ?? 0,
+            'cost': (data['costPrice'] as num?)?.toInt() ?? 0,
             'stock': (data['stock'] as num?)?.toInt() ?? 0,
+            'lowStockAt': (data['lowStockAt'] as num?)?.toInt() ?? 5,
             'barcode': data['barcode'],
-            'photoPath': data['photoPath'],
-            'active': (data['active'] == false) ? 0 : 1,
+            'photoPath': data['photoUrl'],
+            'active': (data['isActive'] == false) ? 0 : 1,
+            'updatedAt': DateTime.now().millisecondsSinceEpoch,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      } else if (table == 'promos') {
+        await db.insert(
+          'promos',
+          {
+            'id': doc.doc.id,
+            'title': data['title'] ?? '',
+            'subtitle': data['subtitle'],
+            'productId': data['productId'],
+            'discountType': data['discountType'],
+            'discountValue': (data['discountValue'] as num?)?.toInt() ?? 0,
+            'isActive': (data['isActive'] == false) ? 0 : 1,
+            'startsAt': _tsMillis(data['startsAt']),
+            'endsAt': _tsMillis(data['endsAt']),
             'updatedAt': DateTime.now().millisecondsSinceEpoch,
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -145,9 +192,14 @@ class SyncEngine {
     }
   }
 
-  Future<void> _pullSettings(
-      QuerySnapshot<Map<String, dynamic>> snap) async {
-    final db = await AppDatabase.db;
+  /// Ambil millis dari Timestamp/num untuk kolom lokal (null bila tak ada).
+  int? _tsMillis(Object? v) {
+    if (v is Timestamp) return v.millisecondsSinceEpoch;
+    if (v is num) return v.toInt();
+    return null;
+  }
+
+  Future<void> _pullSettings(QuerySnapshot<Map<String, dynamic>> snap) async {    final db = await AppDatabase.db;
     for (final doc in snap.docChanges) {
       final data = doc.doc.data();
       if (data == null) continue;

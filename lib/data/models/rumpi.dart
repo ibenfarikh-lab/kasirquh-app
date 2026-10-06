@@ -58,14 +58,18 @@ class RumpiPost {
 /// Entri riwayat koin — mirror koleksi Firestore `coin_ledger` (baca saja).
 class CoinEntry {
   final String id;
+  final String customerId;
   final int amount;
   final String reason;
+  final String? orderId;
   final DateTime createdAt;
 
   const CoinEntry({
     required this.id,
+    this.customerId = '',
     required this.amount,
     required this.reason,
+    this.orderId,
     required this.createdAt,
   });
 
@@ -73,8 +77,10 @@ class CoinEntry {
     final ts = m['createdAt'];
     return CoinEntry(
       id: id,
+      customerId: (m['customerId'] as String?) ?? '',
       amount: (m['amount'] as num?)?.toInt() ?? 0,
       reason: (m['reason'] as String?) ?? '',
+      orderId: m['orderId'] as String?,
       createdAt: ts is Timestamp
           ? ts.toDate()
           : DateTime.fromMillisecondsSinceEpoch(

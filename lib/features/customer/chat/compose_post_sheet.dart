@@ -92,7 +92,7 @@ class _ComposePostSheetState extends ConsumerState<ComposePostSheet> {
     } catch (_) {
       setState(() {
         _mengirim = false;
-        _error = Strings.butuhInternet;
+        _error = Strings.butuhInternetUmum;
       });
     }
   }

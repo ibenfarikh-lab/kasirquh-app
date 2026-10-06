@@ -4,6 +4,7 @@ class Customer {
   final String uid;
   final String name;
   final String email;
+  final String? wa; // nomor WA opsional (skema)
   final String approvalStatus;
   final int coins;
   final DateTime createdAt;
@@ -12,6 +13,7 @@ class Customer {
     required this.uid,
     required this.name,
     required this.email,
+    this.wa,
     required this.approvalStatus,
     this.coins = 0,
     required this.createdAt,
@@ -23,6 +25,7 @@ class Customer {
         'uid': uid,
         'name': name,
         'email': email,
+        'wa': wa,
         'approvalStatus': approvalStatus,
         'coins': coins,
         'createdAt': createdAt.millisecondsSinceEpoch,
@@ -32,6 +35,7 @@ class Customer {
         uid: m['uid'] as String,
         name: m['name'] as String? ?? '',
         email: m['email'] as String? ?? '',
+        wa: m['wa'] as String?,
         approvalStatus: m['approvalStatus'] as String? ?? 'pending',
         coins: (m['coins'] as num?)?.toInt() ?? 0,
         createdAt: DateTime.fromMillisecondsSinceEpoch(

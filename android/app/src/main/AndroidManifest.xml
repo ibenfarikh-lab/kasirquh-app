@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Kamera: scanner barcode (mobile_scanner) & foto produk/Rumpi (image_picker). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Notifikasi heads-up (flutter_local_notifications) di Android 13+. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
-        android:label="kasirquh_app"
+        android:label="Warunge Mimi"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

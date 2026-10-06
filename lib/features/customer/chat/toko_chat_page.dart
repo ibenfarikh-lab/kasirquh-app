@@ -27,7 +27,7 @@ class _TokoChatPageState extends ConsumerState<TokoChatPage> {
       error: (_, __) => const EmptyState(
         icon: Icons.storefront_outlined,
         title: Strings.chatTokoKosong,
-        hint: Strings.butuhInternet,
+        hint: Strings.butuhInternetUmum,
       ),
       data: (thread) {
         if (thread == null) {
@@ -38,8 +38,8 @@ class _TokoChatPageState extends ConsumerState<TokoChatPage> {
             hint: Strings.chatTokoKosongHint,
           );
         }
-        // Tandai dibaca saat thread terbuka.
-        ref.read(socialRepositoryProvider).markTokoRead(thread.id);
+        // Tandai dibaca ditangani _IsiThread (initState + pesan baru),
+        // bukan di build() — tulis Firestore di build() memicu loop.
         return _IsiThread(thread: thread, uid: widget.uid);
       },
     );
@@ -57,6 +57,17 @@ class _IsiThread extends ConsumerStatefulWidget {
 
 class _IsiThreadState extends ConsumerState<_IsiThread> {
   final _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Tandai dibaca sekali saat thread dibuka (di luar build agar tak loop).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tandaiDibaca());
+  }
+
+  void _tandaiDibaca() {
+    ref.read(socialRepositoryProvider).markTokoRead(widget.thread.id);
+  }
 
   @override
   void dispose() {
@@ -77,7 +88,7 @@ class _IsiThreadState extends ConsumerState<_IsiThread> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(Strings.butuhInternet)),
+          const SnackBar(content: Text(Strings.butuhInternetUmum)),
         );
       }
     }
@@ -87,6 +98,12 @@ class _IsiThreadState extends ConsumerState<_IsiThread> {
   Widget build(BuildContext context) {
     final msgsAsync =
         ref.watch(tokoMessagesProvider(widget.thread.id));
+    // Pesan baru masuk saat halaman terbuka → tandai dibaca.
+    ref.listen(tokoMessagesProvider(widget.thread.id), (prev, next) {
+      final sblm = prev?.valueOrNull?.length ?? 0;
+      final skrg = next.valueOrNull?.length ?? 0;
+      if (skrg > sblm) _tandaiDibaca();
+    });
     return Column(
       children: [
         Container(
@@ -111,7 +128,7 @@ class _IsiThreadState extends ConsumerState<_IsiThread> {
             loading: () =>
                 const Center(child: CircularProgressIndicator()),
             error: (_, __) => const Center(
-                child: Text(Strings.butuhInternet,
+                child: Text(Strings.butuhInternetUmum,
                     style: TextStyle(color: AppColors.muted))),
             data: (msgs) {
               if (msgs.isEmpty) {

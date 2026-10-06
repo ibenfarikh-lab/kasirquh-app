@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 /// sinkron ke Firestore via [SyncEngine] saat online.
 class AppDatabase {
   static const _name = 'kasirquh.db';
-  static const _version = 3;
+  static const _version = 4;
   static Database? _db;
 
   static Future<Database> get db async {
@@ -24,7 +24,8 @@ class AppDatabase {
           CREATE TABLE products(
             id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL,
             price INTEGER NOT NULL, cost INTEGER NOT NULL DEFAULT 0,
-            stock INTEGER NOT NULL DEFAULT 0, barcode TEXT,
+            stock INTEGER NOT NULL DEFAULT 0, lowStockAt INTEGER NOT NULL DEFAULT 5,
+            barcode TEXT,
             photoPath TEXT, active INTEGER NOT NULL DEFAULT 1,
             updatedAt INTEGER NOT NULL DEFAULT 0)''');
         await db.execute('''
@@ -43,7 +44,8 @@ class AppDatabase {
         await db.execute('''
           CREATE TABLE journal(
             id TEXT PRIMARY KEY, kind TEXT NOT NULL, label TEXT NOT NULL,
-            amount INTEGER NOT NULL, createdAt INTEGER NOT NULL,
+            amount INTEGER NOT NULL, refId TEXT,
+            createdAt INTEGER NOT NULL,
             synced INTEGER NOT NULL DEFAULT 0)''');
         await db.execute('''
           CREATE TABLE coin_ledger(
@@ -58,7 +60,8 @@ class AppDatabase {
         await db.execute('''
           CREATE TABLE messages(
             id TEXT PRIMARY KEY, threadId TEXT NOT NULL,
-            senderId TEXT NOT NULL, text TEXT NOT NULL,
+            senderId TEXT NOT NULL, senderRole TEXT NOT NULL DEFAULT 'customer',
+            text TEXT NOT NULL,
             createdAt INTEGER NOT NULL, synced INTEGER NOT NULL DEFAULT 0)''');
         await db.execute('''
           CREATE TABLE rumpi_posts(
@@ -79,6 +82,7 @@ class AppDatabase {
             createdAt INTEGER NOT NULL)''');
         await _createStockNotes(db);
         await _createStoreNotes(db);
+        await _createPromos(db);
       },
       onUpgrade: (db, oldVersion, _) async {
         if (oldVersion < 2) {
@@ -87,8 +91,33 @@ class AppDatabase {
         if (oldVersion < 3) {
           await _createStoreNotes(db);
         }
+        if (oldVersion < 4) {
+          await _createPromos(db);
+          // Kolom baru v4: batas menipis per produk + peran pengirim pesan.
+          try {
+            await db.execute(
+                'ALTER TABLE products ADD COLUMN lowStockAt INTEGER NOT NULL DEFAULT 5');
+          } catch (_) {}
+          try {
+            await db.execute(
+                "ALTER TABLE messages ADD COLUMN senderRole TEXT NOT NULL DEFAULT 'customer'");
+          } catch (_) {}
+          try {
+            await db.execute('ALTER TABLE journal ADD COLUMN refId TEXT');
+          } catch (_) {}
+        }
       },
     );
+  }
+
+  static Future<void> _createPromos(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS promos(
+        id TEXT PRIMARY KEY, title TEXT NOT NULL, subtitle TEXT,
+        productId TEXT, discountType TEXT, discountValue INTEGER NOT NULL DEFAULT 0,
+        isActive INTEGER NOT NULL DEFAULT 1,
+        startsAt INTEGER, endsAt INTEGER,
+        updatedAt INTEGER NOT NULL DEFAULT 0)''');
   }
 
   static Future<void> _createStockNotes(Database db) async {

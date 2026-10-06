@@ -18,8 +18,8 @@ class KasirQuhApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.customerTheme(),
       darkTheme: AppTheme.adminTheme(),
-      // Sementara: selalu terang (Mode Pelanggan). Mode Admin memakai
-      // adminTheme() saat navigator admin aktif (Fase 3).
+      // Tema terang = Mode Pelanggan (default). Mode Admin membungkus
+      // AdminShell dengan adminTheme() secara eksplisit (gelap warm).
       themeMode: ThemeMode.light,
       home: const GatewayScreen(),
     );

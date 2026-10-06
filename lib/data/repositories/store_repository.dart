@@ -63,11 +63,14 @@ class StoreInfo {
 }
 
 /// Promo — mirror koleksi `promos`.
+/// discountType: 'percent' | 'amount' | 'flash' (skema).
 class Promo {
   final String id;
   final String title;
   final String? subtitle;
   final String? productId;
+  final String? discountType;
+  final int discountValue;
   final bool isActive;
 
   const Promo({
@@ -75,6 +78,8 @@ class Promo {
     required this.title,
     this.subtitle,
     this.productId,
+    this.discountType,
+    this.discountValue = 0,
     this.isActive = true,
   });
 
@@ -90,8 +95,26 @@ class Promo {
       title: (m['title'] as String?) ?? '',
       subtitle: m['subtitle'] as String?,
       productId: m['productId'] as String?,
+      discountType: m['discountType'] as String?,
+      discountValue: (m['discountValue'] as num?)?.toInt() ?? 0,
       isActive: active,
     );
+  }
+
+  /// Harga setelah promo untuk [hargaNormal] (integer Rp).
+  /// 'percent' → potongan %; 'amount'/'flash' → potongan nominal.
+  int hargaPromo(int hargaNormal) {
+    switch (discountType) {
+      case 'percent':
+        if (discountValue <= 0) return hargaNormal;
+        return (hargaNormal * (100 - discountValue.clamp(0, 100)) / 100)
+            .round();
+      case 'amount':
+      case 'flash':
+        return (hargaNormal - discountValue).clamp(0, hargaNormal);
+      default:
+        return hargaNormal;
+    }
   }
 }
 

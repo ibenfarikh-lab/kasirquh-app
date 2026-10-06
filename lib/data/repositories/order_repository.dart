@@ -16,14 +16,15 @@ class OfflineCheckout implements Exception {
 }
 
 /// Repository pesanan pelanggan.
-/// Checkout: validasi stok dari server → buat dokumen `orders`.
+/// Checkout: transaksi atomik — nomor urut via counters/orders,
+/// validasi + pengurangan stok server, lalu buat dokumen `orders`.
 /// Aturan: hanya member approved (dijamin rules Firestore juga).
 class OrderRepository {
   final FirebaseFirestore? _db;
 
   OrderRepository(this._db);
 
-  /// Buat pesanan. Mengembalikan kode pesanan.
+  /// Buat pesanan. Mengembalikan kode pesanan (WM-000123…).
   /// Melempar [OfflineCheckout] bila offline, [StockShortage] bila stok kurang.
   Future<String> checkout({
     required String customerId,
@@ -34,57 +35,77 @@ class OrderRepository {
   }) async {
     final db = _db;
     if (db == null) throw const OfflineCheckout();
-
-    // Validasi stok dari server (wajib — tolak bila melebihi).
-    final lacking = <String>[];
-    for (final item in items) {
-      final doc = await db.collection('products').doc(item.productId).get();
-      final stock = (doc.data()?['stock'] as num?)?.toInt();
-      if (stock == null || stock < item.qty) {
-        lacking.add(item.name);
-      }
-    }
-    if (lacking.isNotEmpty) throw StockShortage(lacking);
-
-    final ref = db.collection('orders').doc();
-    final code =
-        'WM-${ref.id.substring(0, 6).toUpperCase()}';
     final total = items.fold<int>(0, (s, e) => s + e.price * e.qty);
-    await ref.set({
-      'code': code,
-      'customerId': customerId,
-      'customerName': customerName,
-      'items': items
-          .map((e) => {
-                'productId': e.productId,
-                'name': e.name,
-                'price': e.price,
-                'qty': e.qty,
-                'subtotal': e.price * e.qty,
-              })
-          .toList(),
-      'total': total,
-      'paymentMethod': paymentMethod,
-      'status': 'menunggu',
-      'note': note,
-      'createdAt': FieldValue.serverTimestamp(),
+
+    return db.runTransaction((tx) async {
+      // 1. Nomor urut pesanan dari counters/orders (atomik).
+      final counterRef = db.collection('counters').doc('orders');
+      final counterSnap = await tx.get(counterRef);
+      final seq =
+          ((counterSnap.data()?['seq'] as num?)?.toInt() ?? 0) + 1;
+      tx.set(counterRef, {'seq': seq}, SetOptions(merge: true));
+      final code = 'WM-${seq.toString().padLeft(6, '0')}';
+
+      // 2. Validasi stok dari server + kurangi dalam transaksi yang sama.
+      //    Gagal validasi → transaksi batal total, tidak ada stok berkurang
+      //    dan tidak ada pesanan dibuat (anti oversell).
+      final lacking = <String>[];
+      for (final item in items) {
+        final pRef = db.collection('products').doc(item.productId);
+        final pSnap = await tx.get(pRef);
+        final stock = (pSnap.data()?['stock'] as num?)?.toInt();
+        if (stock == null || stock < item.qty) {
+          lacking.add(item.name);
+        } else {
+          tx.update(pRef, {
+            'stock': stock - item.qty,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+      if (lacking.isNotEmpty) throw StockShortage(lacking);
+
+      // 3. Buat dokumen pesanan.
+      final ref = db.collection('orders').doc();
+      tx.set(ref, {
+        'code': code,
+        'customerId': customerId,
+        'customerName': customerName,
+        'items': items
+            .map((e) => {
+                  'productId': e.productId,
+                  'name': e.name,
+                  'price': e.price,
+                  'qty': e.qty,
+                  'subtotal': e.price * e.qty,
+                })
+            .toList(),
+        'total': total,
+        'paymentMethod': paymentMethod,
+        'status': 'menunggu',
+        'note': note,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return code;
     });
-    return code;
   }
 
   /// Riwayat pesanan milik pelanggan (terbaru dulu).
+  ///
+  /// Error (offline/rules) DITERUSKAN ke UI — jangan ditelan jadi daftar
+  /// kosong, agar user tidak disesatkan "belum ada pesanan" padahal
+  /// pesanan mungkin ada tapi gagal dimuat.
   Stream<List<Order>> watchMyOrders(String customerId) async* {
     final db = _db;
     if (db == null) {
-      yield const [];
-      return;
+      throw const OfflineCheckout();
     }
-    try {
-      yield* db
-          .collection('orders')
-          .where('customerId', isEqualTo: customerId)
-          .snapshots()
-          .map((snap) {
+    yield* db
+        .collection('orders')
+        .where('customerId', isEqualTo: customerId)
+        .snapshots()
+        .map((snap) {
         final list = snap.docs.map((d) {
           final m = d.data();
           final items = (m['items'] as List? ?? [])
@@ -113,9 +134,6 @@ class OrderRepository {
         list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         return list;
       });
-    } catch (_) {
-      yield const [];
-    }
   }
 }
 

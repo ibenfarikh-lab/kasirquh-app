@@ -103,6 +103,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
     setState(() => _saving = true);
     try {
       final items = <StockNoteItem>[];
+      var tunai = 0; // UANG NYATA yang dibayar = Σ(qty kemasan × harga kemasan).
       for (final e in dipilih.entries) {
         final p = e.key;
         final row = e.value;
@@ -110,6 +111,16 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
         final isi = _parseAngka(row.isi);
         final hargaKemasan = _parseAngka(row.hargaKemasan);
         final hargaJual = _parseAngka(row.hargaJual);
+        // Harga jual wajib > 0: produk Rp0 = dijual gratis di kasir.
+        if (hargaJual <= 0) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('${Strings.hargaJualNol}: ${p.name}')),
+          );
+          setState(() => _saving = false);
+          return;
+        }
         final modalPcsBaru = (hargaKemasan / isi).round();
         final qtyTotal = qty * isi;
         final costAkhir = row.pakaiBaru
@@ -128,10 +139,13 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
           barcode: p.barcode,
           active: p.active,
         );
-        items.add(StockNoteItem(name: p.name, qty: qtyTotal, price: modalPcsBaru));
+        // Arsip nota = struk nyata: jumlah kemasan × harga kemasan.
+        // (modal/pcs adalah ekonomi satuan, tersimpan di produk.)
+        items.add(StockNoteItem(
+            name: p.name, qty: qty, price: hargaKemasan));
+        tunai += qty * hargaKemasan;
       }
 
-      final total = items.fold<int>(0, (t, i) => t + i.price * i.qty);
       final supplier =
           _supplier.text.trim().isEmpty ? 'Supplier' : _supplier.text.trim();
       final now = DateTime.now();
@@ -141,20 +155,19 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
             '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
         supplier: supplier,
         items: items,
-        total: total,
+        total: tunai,
         source: 'belanja_stok',
         createdAt: now,
       );
-      await repo.saveStockNote(note);
+      final noteId = await repo.saveStockNote(note);
       await repo.addJournal(
         kind: 'kulakan',
         label: 'Kulakan · $supplier',
-        amount: -total,
+        amount: -tunai,
+        refId: noteId,
       );
-      final modal = await repo.getModal();
-      if (modal != null) {
-        await repo.setModal(modal - total);
-      }
+      // Modal sebagai delta antrean: tidak dilewati diam-diam saat offline.
+      await repo.adjustModal(-tunai);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(Strings.belanjaTersimpan)),

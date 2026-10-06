@@ -8,6 +8,7 @@ import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/product.dart';
 import '../../../data/repositories/product_repository.dart';
+import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../cart/cart_provider.dart';
 import '../home/home_tab.dart';
@@ -80,9 +81,12 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
           child: asyncProducts.when(
             loading: () =>
                 const Center(child: CircularProgressIndicator()),
-            error: (_, __) => const EmptyState(
+            error: (_, __) => EmptyState(
               icon: Icons.cloud_off_outlined,
-              title: Strings.belumAdaProduk,
+              title: Strings.gagalMuatProduk,
+              hint: Strings.periksaKoneksi,
+              actionLabel: Strings.cobaLagi,
+              onAction: () => ref.invalidate(productsProvider),
             ),
             data: (products) {
               final filtered = filterProducts(
@@ -130,6 +134,18 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
   }
 }
 
+/// Harga jual aktif produk: harga promo bila ada promo produk yang aktif,
+/// selain itu harga normal. Skema: "harga tampilan = harga keranjang".
+int hargaJualAktif(Product p, List<Promo> promos) {
+  for (final pr in promos) {
+    if (pr.isActive && pr.productId == p.id && pr.discountType != null) {
+      final h = pr.hargaPromo(p.price);
+      if (h < p.price) return h;
+    }
+  }
+  return p.price;
+}
+
 class _ProductCard extends ConsumerWidget {
   final Product product;
 
@@ -138,6 +154,10 @@ class _ProductCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final out = product.stock <= 0;
+    // Promo produk: harga coret + harga promo (skema: discountType/Value).
+    final promos = ref.watch(promosProvider).valueOrNull ?? const <Promo>[];
+    final hargaAkhir = hargaJualAktif(product, promos);
+    final adaDiskon = hargaAkhir < product.price;
     return AppCard(
       onTap: () => _showDetail(context, ref),
       padding: const EdgeInsets.all(12),
@@ -167,8 +187,17 @@ class _ProductCard extends ConsumerWidget {
             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           ),
           const SizedBox(height: 2),
+          if (adaDiskon)
+            Text(
+              formatRp(product.price),
+              style: const TextStyle(
+                color: AppColors.muted,
+                fontSize: 12,
+                decoration: TextDecoration.lineThrough,
+              ),
+            ),
           Text(
-            formatRp(product.price),
+            formatRp(hargaAkhir),
             style: const TextStyle(
               color: AppColors.orange,
               fontWeight: FontWeight.w800,
@@ -179,7 +208,7 @@ class _ProductCard extends ConsumerWidget {
           Text(
             out
                 ? Strings.habis
-                : product.stock <= kLowStockDefault
+                : product.stock <= product.lowStockAt
                     ? '${Strings.stokMenipis} (${product.stock})'
                     : 'Stok ${product.stock}',
             style: TextStyle(
@@ -247,6 +276,9 @@ class _ProductDetailSheetState
   Widget build(BuildContext context) {
     final p = widget.product;
     final out = p.stock <= 0;
+    final promos = ref.watch(promosProvider).valueOrNull ?? const <Promo>[];
+    final harga = hargaJualAktif(p, promos);
+    final adaDiskon = harga < p.price;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -263,8 +295,17 @@ class _ProductDetailSheetState
             const SizedBox(height: 12),
             Row(
               children: [
+                if (adaDiskon)
+                  Text(
+                    formatRp(p.price),
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                if (adaDiskon) const SizedBox(width: 8),
                 Text(
-                  formatRp(p.price),
+                  formatRp(harga),
                   style: const TextStyle(
                     color: AppColors.orange,
                     fontWeight: FontWeight.w800,
@@ -315,13 +356,13 @@ class _ProductDetailSheetState
             const SizedBox(height: 8),
             AppButton(
               label:
-                  '${Strings.tambahKeranjang} • ${formatRp(p.price * _qty)}',
+                  '${Strings.tambahKeranjang} • ${formatRp(harga * _qty)}',
               onPressed: out
                   ? null
                   : () {
                       final cart = ref.read(cartProvider.notifier);
                       for (var i = 0; i < _qty; i++) {
-                        if (!cart.add(p)) break;
+                        if (!cart.add(p, harga: harga)) break;
                       }
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Satu thread per pelanggan (type 'toko'); tidak bocor antar-thread.
 class ChatThread {
   final String id;
+  final String type; // 'toko' | 'group' (komunitas) | 'direct'
   final String customerId;
   final String customerName;
   final String? lastMessage;
@@ -13,6 +14,7 @@ class ChatThread {
 
   const ChatThread({
     required this.id,
+    this.type = 'toko',
     required this.customerId,
     required this.customerName,
     this.lastMessage,
@@ -25,6 +27,7 @@ class ChatThread {
     final ts = m['updatedAt'];
     return ChatThread(
       id: id,
+      type: (m['type'] as String?) ?? 'toko',
       customerId: (m['customerId'] as String?) ?? '',
       customerName: (m['customerName'] as String?) ?? '',
       lastMessage: m['lastMessage'] as String?,

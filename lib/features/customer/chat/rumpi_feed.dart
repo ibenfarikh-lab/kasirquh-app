@@ -38,7 +38,7 @@ class RumpiFeed extends ConsumerWidget {
         error: (_, __) => const EmptyState(
           icon: Icons.forum_outlined,
           title: Strings.rumpiKosong,
-          hint: Strings.butuhInternet,
+          hint: Strings.butuhInternetUmum,
         ),
         data: (posts) {
           if (posts.isEmpty) {
@@ -59,7 +59,7 @@ class RumpiFeed extends ConsumerWidget {
                 return _PostCard(
                   post: p,
                   disukai: disukai.contains(p.id),
-                  onLike: () => _like(ref, p.id),
+                  onLike: () => _like(context, ref, p.id),
                 );
               },
             ),
@@ -80,14 +80,20 @@ class RumpiFeed extends ConsumerWidget {
     );
   }
 
-  Future<void> _like(WidgetRef ref, String postId) async {
+  Future<void> _like(
+      BuildContext context, WidgetRef ref, String postId) async {
     try {
       await ref
           .read(socialRepositoryProvider)
           .toggleLike(postId: postId, uid: uid);
     } catch (_) {
-      // Gagal (mis. rules belum dipublish) → abaikan diam-diam;
-      // hitungan like dihitung ulang dari server saat refresh.
+      // Gagal (mis. rules belum dipublish / offline) → beri tahu user,
+      // jangan diam-diam: like tidak tercatat.
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.sukaGagal)),
+        );
+      }
     }
   }
 }

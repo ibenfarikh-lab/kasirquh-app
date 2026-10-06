@@ -23,7 +23,7 @@ class CoinHistoryPage extends ConsumerWidget {
         error: (_, __) => const EmptyState(
           icon: Icons.monetization_on_outlined,
           title: Strings.koinKosong,
-          hint: Strings.butuhInternet,
+          hint: Strings.butuhInternetUmum,
         ),
         data: (entries) {
           if (entries.isEmpty) {
