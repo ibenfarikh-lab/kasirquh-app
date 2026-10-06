@@ -101,9 +101,6 @@ class Strings {
       'Terlalu banyak salah. Tunggu 60 detik lalu coba lagi.';
   static const lupaPin = 'Lupa PIN?';
   static const aturUlangPin = 'PIN berhasil dibuat.';
-  static const pakaiSidikJari = 'Pakai sidik jari';
-  static const sidikJariGagal =
-      'Sidik jari tidak cocok. Pakai PIN ya.';
 
   // Empty state (jujur — tanpa angka/data contoh)
   static const belumAdaPesanan = 'Belum ada pesanan';
@@ -325,7 +322,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.0+14';
+  static const versiApp = 'KasirQuh v3.6.1+15';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';
