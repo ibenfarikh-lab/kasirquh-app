@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -12,6 +13,7 @@ import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../../admin/admin_session.dart';
+import '../../auth/biometric_messages.dart';
 
 /// Pengaturan — 5 grup global (Tampilan, Notifikasi, Developer, Tentang, Akun).
 class SettingsSheet extends ConsumerStatefulWidget {
@@ -25,11 +27,62 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
   bool _notifPesanan = true;
   bool _notifChat = true;
   bool _notifStok = true;
+  bool _sidikJariAktif = true;
+  bool _sidikJariDidukung = false;
 
   @override
   void initState() {
     super.initState();
     _muatNotifikasi();
+    _muatSidikJari();
+  }
+
+  /// Muat saklar sidik jari + kemampuan perangkat.
+  Future<void> _muatSidikJari() async {
+    final prefs = await SharedPreferences.getInstance();
+    final didukung = await sidikJariTersedia();
+    if (!mounted) return;
+    setState(() {
+      _sidikJariAktif = prefs.getBool(kunciSidikJariAktif) ?? true;
+      _sidikJariDidukung = didukung;
+    });
+  }
+
+  /// Saklar sidik jari: menyalakan = "daftar" (buktikan sidik jari
+  /// terdaftar & berfungsi); mematikan = langsung mati.
+  Future<void> _toggleSidikJari(bool v) async {
+    if (v) {
+      try {
+        final ok = await LocalAuthentication().authenticate(
+          localizedReason: Strings.alasanAktifkanSidikJari,
+          options: const AuthenticationOptions(
+            stickyAuth: true,
+            biometricOnly: true,
+          ),
+        );
+        if (!mounted) return;
+        if (ok) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool(kunciSidikJariAktif, true);
+          setState(() => _sidikJariAktif = true);
+        }
+        // Dibatalkan → biarkan mati, tanpa pesan seram.
+      } on PlatformException catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(pesanGalatSidikJari(e.code))),
+        );
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.sidikJariTidakTersedia)),
+        );
+      }
+      return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(kunciSidikJariAktif, false);
+    if (mounted) setState(() => _sidikJariAktif = false);
   }
 
   Future<void> _muatNotifikasi() async {
@@ -242,6 +295,26 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
               ]),
               _judulGrup(Strings.grupAkun),
               _kartu([
+                SwitchListTile(
+                  value: _sidikJariAktif && _sidikJariDidukung,
+                  activeThumbColor: AppColors.orange,
+                  secondary: const Icon(
+                    Icons.fingerprint,
+                    color: AppColors.orange,
+                  ),
+                  title: const Text(
+                    Strings.bukaDenganSidikJari,
+                    style: TextStyle(color: AppColors.warmText),
+                  ),
+                  subtitle: Text(
+                    _sidikJariDidukung
+                        ? Strings.bukaDenganSidikJariHint
+                        : Strings.sidikJariTakDidukung,
+                    style: const TextStyle(color: AppColors.warmMuted),
+                  ),
+                  onChanged:
+                      _sidikJariDidukung ? _toggleSidikJari : null,
+                ),
                 ListTile(
                   leading: const Icon(Icons.logout, color: AppColors.danger),
                   title: Text(

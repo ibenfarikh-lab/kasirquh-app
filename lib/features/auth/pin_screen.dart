@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../l10n/strings_id.dart';
 import 'admin_login_screen.dart';
+import 'biometric_messages.dart';
 import 'pin_service.dart';
 
 /// PIN Admin 6 digit: buat + konfirmasi (pertama kali), verifikasi,
@@ -42,13 +45,11 @@ class _PinScreenState extends ConsumerState<PinScreen> {
     final has = await ref.read(pinServiceProvider).hasPin;
     var bisa = false;
     if (has) {
-      try {
-        final bio = LocalAuthentication();
-        bisa = await bio.canCheckBiometrics &&
-            await bio.isDeviceSupported();
-      } catch (_) {
-        bisa = false;
-      }
+      // Saklar di Pengaturan menentukan boleh tidaknya; sisanya dicek
+      // ke perangkat (terdaftar & didukung).
+      final prefs = await SharedPreferences.getInstance();
+      final diaktifkan = prefs.getBool(kunciSidikJariAktif) ?? true;
+      bisa = diaktifkan && await sidikJariTersedia();
     }
     if (mounted) {
       setState(() {
@@ -77,10 +78,16 @@ class _PinScreenState extends ConsumerState<PinScreen> {
         _salah = 0;
         _granted();
       } else {
-        setState(() => _error = Strings.sidikJariGagal);
+        // Dialog ditutup tanpa hasil (umumnya dibatalkan) — bukan
+        // berarti sidik jarinya tidak cocok.
+        setState(() => _error = Strings.sidikJariDibatalkan);
       }
+    } on PlatformException catch (e) {
+      // JANGAN samarkan semua jadi "tidak cocok": sampaikan sebab aslinya.
+      if (!mounted) return;
+      setState(() => _error = pesanGalatSidikJari(e.code));
     } catch (_) {
-      if (mounted) setState(() => _error = Strings.sidikJariGagal);
+      if (mounted) setState(() => _error = Strings.sidikJariTidakTersedia);
     }
   }
 

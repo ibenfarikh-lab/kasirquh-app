@@ -104,6 +104,25 @@ class Strings {
   static const pakaiSidikJari = 'Pakai sidik jari';
   static const sidikJariGagal =
       'Sidik jari tidak cocok. Coba lagi atau pakai PIN.';
+  // Pesan jujur per sebab — jangan samarkan semua jadi "tidak cocok".
+  static const sidikJariBelumTerdaftar =
+      'Belum ada sidik jari terdaftar di HP ini. Daftarkan dulu di Pengaturan HP, lalu coba lagi.';
+  static const sidikJariTerkunciSementara =
+      'Sensor sidik jari terkunci sementara. Tunggu sebentar lalu coba lagi.';
+  static const sidikJariTerkunci =
+      'Sensor sidik jari terkunci. Buka kunci HP pakai PIN/pola sekali, lalu coba lagi.';
+  static const sidikJariButuhKunciLayar =
+      'Pasang kunci layar (PIN/pola/sandi HP) dulu, lalu coba lagi.';
+  static const sidikJariTidakTersedia =
+      'Sidik jari tidak bisa dipakai di HP ini saat ini. Pakai PIN saja.';
+  static const sidikJariDibatalkan = 'Dibatalkan.';
+  // Saklar sidik jari di Pengaturan (Akun).
+  static const bukaDenganSidikJari = 'Buka dengan sidik jari';
+  static const bukaDenganSidikJariHint = 'Masuk Mode Admin tanpa ketik PIN';
+  static const sidikJariTakDidukung =
+      'Sidik jari tidak tersedia di HP ini';
+  static const alasanAktifkanSidikJari =
+      'Aktifkan buka sidik jari untuk Mode Admin';
 
   // Empty state (jujur — tanpa angka/data contoh)
   static const belumAdaPesanan = 'Belum ada pesanan';
