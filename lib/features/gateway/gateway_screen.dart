@@ -164,7 +164,7 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                       style: TextStyle(color: Colors.white38, fontSize: 11),
                     ),
                     Text(
-                      'v3.0.3+4',
+                      'v3.0.4+5',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white24, fontSize: 10),
                     ),
