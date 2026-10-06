@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/startup_report.dart';
 import '../../data/remote/auth_service.dart';
 import '../../l10n/strings_id.dart';
 import '../auth/pin_screen.dart';
@@ -156,6 +157,45 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                   style: TextStyle(color: Colors.white38, fontSize: 11),
                 ),
               ),
+              // Peringatan bila ada init yang gagal (diagnosis, bukan error user).
+              if (StartupReport.hasErrors)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  left: 16,
+                  right: 88, // hindari hotspot kanan atas
+                  child: GestureDetector(
+                    onTap: () => showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Info startup'),
+                        content: SingleChildScrollView(
+                          child: Text(
+                            StartupReport.errors.join('\n\n'),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Tutup'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade800,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Mode lokal: sebagian layanan gagal dimuat. Ketuk untuk detail.',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
