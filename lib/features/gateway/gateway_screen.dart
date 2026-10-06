@@ -200,7 +200,7 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                 ),
               ),
               // Powered by KasirQuh (brand developer — bukan header)
-              // + stempel versi build. Tap 5x → pintu admin (LogoTapGate).
+              // + stempel versi build. Tap logo 1x → pintu admin (LogoTapGate).
               Positioned(
                 left: 0,
                 right: 0,

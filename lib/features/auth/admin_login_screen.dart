@@ -149,7 +149,8 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
               const SizedBox(height: 16),
               AppButton(
                 label: Strings.masuk,
-                onPressed: _busy ? null : _signIn,
+                isLoading: _busy,
+                onPressed: _signIn,
               ),
             ],
           ),

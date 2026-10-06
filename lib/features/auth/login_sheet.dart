@@ -224,7 +224,8 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
           const SizedBox(height: 16),
           AppButton(
             label: isLogin ? Strings.masuk : Strings.daftar,
-            onPressed: _busy ? null : onSubmit,
+            isLoading: _busy,
+            onPressed: onSubmit,
           ),
         ],
       ),

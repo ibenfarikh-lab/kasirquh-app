@@ -9,16 +9,23 @@ class AppButton extends StatelessWidget {
   final AppButtonKind kind;
   final bool fullWidth;
 
+  /// Saat true: tombol nonaktif + tampil spinner.
+  /// (Temuan uji HP 2026-10-06: tanpa indikator loading, user mengira
+  /// tap-nya tidak masuk lalu men-tap berkali-kali.)
+  final bool isLoading;
+
   const AppButton({
     super.key,
     required this.label,
     this.onPressed,
     this.kind = AppButtonKind.primary,
     this.fullWidth = true,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveOnPressed = isLoading ? null : onPressed;
     final style = ElevatedButton.styleFrom(
       minimumSize: const Size(44, 48),
       shape: RoundedRectangleBorder(
@@ -29,39 +36,54 @@ class AppButton extends StatelessWidget {
     final button = switch (kind) {
       AppButtonKind.primary => _GradientButton(
           label: label,
-          onPressed: onPressed,
+          onPressed: effectiveOnPressed,
           style: style,
+          isLoading: isLoading,
         ),
       AppButtonKind.approve => ElevatedButton(
-          onPressed: onPressed,
+          onPressed: effectiveOnPressed,
           style: style.copyWith(
             backgroundColor: const WidgetStatePropertyAll(AppColors.ok),
             foregroundColor: const WidgetStatePropertyAll(Colors.white),
           ),
-          child: Text(label),
+          child: _labelChild(),
         ),
       AppButtonKind.danger => ElevatedButton(
-          onPressed: onPressed,
+          onPressed: effectiveOnPressed,
           style: style.copyWith(
             backgroundColor:
                 const WidgetStatePropertyAll(AppColors.danger),
             foregroundColor: const WidgetStatePropertyAll(Colors.white),
           ),
-          child: Text(label),
+          child: _labelChild(),
         ),
       AppButtonKind.secondary => OutlinedButton(
-          onPressed: onPressed,
+          onPressed: effectiveOnPressed,
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(44, 48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
           ),
-          child: Text(label),
+          child: _labelChild(),
         ),
     };
     if (!fullWidth) return button;
     return SizedBox(width: double.infinity, child: button);
+  }
+
+  /// Label tombol — jadi spinner saat loading agar user tahu
+  /// tap-nya sudah masuk dan aplikasi sedang bekerja.
+  Widget _labelChild() {
+    if (!isLoading) return Text(label);
+    return const SizedBox(
+      width: 22,
+      height: 22,
+      child: CircularProgressIndicator(
+        strokeWidth: 2.5,
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+      ),
+    );
   }
 }
 
@@ -71,11 +93,13 @@ class _GradientButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final ButtonStyle style;
+  final bool isLoading;
 
   const _GradientButton({
     required this.label,
     this.onPressed,
     required this.style,
+    this.isLoading = false,
   });
 
   @override
@@ -95,7 +119,17 @@ class _GradientButton extends StatelessWidget {
           foregroundColor:
               const WidgetStatePropertyAll(Colors.white),
         ),
-        child: Text(label),
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(label),
       ),
     );
   }

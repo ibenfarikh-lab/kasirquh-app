@@ -46,6 +46,13 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
+      // Label/hint field teks: JANGAN andalkan default framework —
+      // diuji di HP: default-nya terlalu redup. Eksplisit per mode.
+      inputDecorationTheme: const InputDecorationTheme(
+        labelStyle: TextStyle(color: AppColors.muted),
+        hintStyle: TextStyle(color: AppColors.muted),
+        floatingLabelStyle: TextStyle(color: AppColors.orange),
+      ),
     );
   }
 
@@ -88,6 +95,13 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
+      ),
+      // Label/hint field teks: eksplisit — warmMuted terbukti kebaca
+      // di atas panel gelap (temuan uji HP: default framework terlalu redup).
+      inputDecorationTheme: const InputDecorationTheme(
+        labelStyle: TextStyle(color: AppColors.warmMuted),
+        hintStyle: TextStyle(color: AppColors.warmMuted),
+        floatingLabelStyle: TextStyle(color: AppColors.orange),
       ),
     );
   }
@@ -134,6 +148,11 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
+      inputDecorationTheme: const InputDecorationTheme(
+        labelStyle: TextStyle(color: AppColors.warmMuted),
+        hintStyle: TextStyle(color: AppColors.warmMuted),
+        floatingLabelStyle: TextStyle(color: AppColors.orange),
+      ),
     );
   }
 
@@ -177,6 +196,11 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        labelStyle: TextStyle(color: AppColors.muted),
+        hintStyle: TextStyle(color: AppColors.muted),
+        floatingLabelStyle: TextStyle(color: AppColors.orange),
       ),
     );
   }
