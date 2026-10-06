@@ -25,11 +25,11 @@ jobs:
 
       - run: flutter analyze
 
-      # DIAGNOSIS: build release (AOT, tanpa JIT) — menguji teori
-      # bahwa HiOS memblokir JIT sehingga isolate debug tak pernah start.
-      - run: flutter build apk --release
+      # DIAGNOSIS 2: nonaktifkan Impeller (pakai Skia) — menguji teori
+      # crash renderer di GPU Mali HP Tecno.
+      - run: flutter build apk --debug --no-enable-impeller
 
       - uses: actions/upload-artifact@v4
         with:
-          name: kasirquh-app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: kasirquh-app-noimpeller
+          path: build/app/outputs/flutter-apk/app-debug.apk
