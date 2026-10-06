@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency.dart';
@@ -13,6 +16,22 @@ import 'pos_tab.dart';
 
 /// Kembalian = diterima - total. Negatif = uang kurang.
 int kembalian(int diterima, int total) => diterima - total;
+
+/// Kunci struk terakhir di SharedPreferences.
+const kLastReceiptKey = 'strukTerakhir';
+
+/// Simpan teks struk terakhir agar bisa dibuka ulang dari modul Struk.
+/// Fungsi terpisah agar bisa di-test/di-mock.
+Future<void> simpanStrukTerakhir(String teks) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(kLastReceiptKey, teks);
+}
+
+/// Baca struk terakhir; null bila belum pernah ada.
+Future<String?> bacaStrukTerakhir() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString(kLastReceiptKey);
+}
 
 /// Bangun teks struk 58mm (32 kolom, teks rata).
 /// Tanpa istilah siluman — hanya data transaksi nyata.
@@ -233,6 +252,16 @@ class _PaySheetState extends ConsumerState<PaySheet> {
       _lastLines = lines;
       _lastTotal = total;
       _lastReceived = received;
+      // Simpan struk terakhir — bisa dibuka ulang dari modul Struk.
+      final struk = buildReceipt(
+        storeName: Strings.appName,
+        code: code,
+        date: DateTime.now(),
+        lines: lines,
+        total: total,
+        received: received,
+      );
+      unawaited(simpanStrukTerakhir(struk));
       ref.read(posCartProvider.notifier).clear();
       if (mounted) setState(() => _doneCode = code);
     } catch (e) {

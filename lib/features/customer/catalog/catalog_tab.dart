@@ -6,6 +6,7 @@ import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/product.dart';
 import '../../../data/repositories/product_repository.dart';
 import '../../../data/repositories/store_repository.dart';
@@ -166,18 +167,40 @@ class _ProductCard extends ConsumerWidget {
         children: [
           // Foto (bila ada) — tanpa foto: blok kategori.
           Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppColors.orange.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.shopping_basket_outlined,
-                size: 40,
-                color: AppColors.orange,
-              ),
-            ),
+            child: product.photoPath == null
+                ? Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.orange.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.shopping_basket_outlined,
+                      size: 40,
+                      color: AppColors.orange,
+                    ),
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image(
+                      image: photoImageProvider(product.photoPath)!,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color:
+                              AppColors.orange.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.shopping_basket_outlined,
+                          size: 40,
+                          color: AppColors.orange,
+                        ),
+                      ),
+                    ),
+                  ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -253,23 +276,23 @@ class _ProductCard extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (_) => _ProductDetailSheet(product: product),
+      builder: (_) => ProductDetailSheet(product: product),
     );
   }
 }
 
-class _ProductDetailSheet extends ConsumerStatefulWidget {
+class ProductDetailSheet extends ConsumerStatefulWidget {
   final Product product;
 
-  const _ProductDetailSheet({required this.product});
+  const ProductDetailSheet({super.key, required this.product});
 
   @override
-  ConsumerState<_ProductDetailSheet> createState() =>
-      _ProductDetailSheetState();
+  ConsumerState<ProductDetailSheet> createState() =>
+      ProductDetailSheetState();
 }
 
-class _ProductDetailSheetState
-    extends ConsumerState<_ProductDetailSheet> {
+class ProductDetailSheetState
+    extends ConsumerState<ProductDetailSheet> {
   int _qty = 1;
 
   @override
@@ -286,6 +309,17 @@ class _ProductDetailSheetState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Foto produk (bila ada).
+            if (p.photoPath != null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: ProductPhoto(
+                    photoPath: p.photoPath,
+                    size: 160,
+                  ),
+                ),
+              ),
             Text(p.name,
                 style: const TextStyle(
                     fontSize: 20, fontWeight: FontWeight.w800)),

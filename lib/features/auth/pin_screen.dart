@@ -148,7 +148,14 @@ class _PinScreenState extends ConsumerState<PinScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: AppColors.warmText,
-        title: const Text(Strings.appName),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.storefront, color: AppColors.orange),
+            SizedBox(width: 8),
+            Text(Strings.appName),
+          ],
+        ),
       ),
       body: _checking
           ? const Center(child: CircularProgressIndicator())

@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import '../../data/local/app_database.dart';
 import '../../data/models/chat.dart';
 import '../../data/models/customer.dart';
+import '../../data/models/customer_note.dart';
 import '../../data/models/journal_entry.dart';
 import '../../data/models/order.dart';
 import '../../data/models/product.dart';
@@ -220,6 +221,7 @@ class AdminRepository {
     int lowStockAt = 5,
     String? barcode,
     bool active = true,
+    String? photoPath,
   }) async {
     final docId = id ?? _newId('products');
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -233,6 +235,7 @@ class AdminRepository {
       lowStockAt: lowStockAt,
       barcode: (barcode ?? '').trim().isEmpty ? null : barcode!.trim(),
       active: active,
+      photoPath: (photoPath ?? '').trim().isEmpty ? null : photoPath!.trim(),
     );
     await _writeLocalThenQueue(
       table: 'products',
@@ -249,6 +252,7 @@ class AdminRepository {
         'lowStockAt': product.lowStockAt,
         'barcode': product.barcode,
         'isActive': product.active,
+        'photoUrl': product.photoPath,
         'updatedAt': FieldValue.serverTimestamp(),
       },
     );
@@ -536,6 +540,39 @@ class AdminRepository {
     await batch.commit();
   }
 
+  /// Bonus koin untuk SEMUA pelanggan yang disetujui (event).
+  /// Dipakai "Event bonus" di Koin Warga. Satu batch per pelanggan
+  /// (ledger + saldo); tanpa jurnal karena bukan penukaran.
+  Future<int> grantBonusToAll({
+    required int amount,
+    required String reason,
+  }) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet untuk bagi bonus.');
+    if (amount <= 0) throw ArgumentError('Bonus harus lebih dari 0.');
+    final snap = await db
+        .collection('customers')
+        .where('approvalStatus', isEqualTo: 'approved')
+        .get();
+    var count = 0;
+    for (final doc in snap.docs) {
+      final batch = db.batch();
+      final ledgerRef = db.collection('coin_ledger').doc();
+      batch.set(ledgerRef, {
+        'customerId': doc.id,
+        'amount': amount,
+        'reason': reason,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      batch.update(db.collection('customers').doc(doc.id), {
+        'coins': FieldValue.increment(amount),
+      });
+      await batch.commit();
+      count++;
+    }
+    return count;
+  }
+
   // ============ JURNAL / PEMBUKUAN ============
 
   /// kind lokal: penjualan | kulakan | beban | modal
@@ -580,11 +617,60 @@ class AdminRepository {
     );
   }
 
+  // ============ CATATAN TOKO (kasbon digital) ============
+
+  /// Catatan toko milik satu pelanggan (admin: semua, dipakai di Data).
+  Stream<List<CustomerNote>> watchCustomerNotes(String uid) async* {
+    final db = _db;
+    if (db == null) {
+      yield const [];
+      return;
+    }
+    try {
+      yield* db
+          .collection('customer_notes')
+          .where('customerId', isEqualTo: uid)
+          .snapshots()
+          .map((snap) {
+        final list = snap.docs
+            .map((d) => CustomerNote.fromDoc(d.id, d.data()))
+            .toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
+    } catch (_) {
+      yield const [];
+    }
+  }
+
+  /// Tambah catatan toko untuk pelanggan (admin saja — rules).
+  Future<void> saveCustomerNote({
+    required String customerId,
+    required String type, // tagihan | pembayaran | catatan
+    required int amount,
+    required String note,
+  }) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet untuk menyimpan.');
+    await db.collection('customer_notes').add({
+      'customerId': customerId,
+      'type': type,
+      'amount': amount,
+      'note': note.trim(),
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> deleteCustomerNote(String id) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet untuk menghapus.');
+    await db.collection('customer_notes').doc(id).delete();
+  }
+
   Stream<List<JournalEntry>> watchJournal({int limit = 300}) async* {
     final db = _db;
     if (db == null) {
-      yield await _journalFromSqlite();
-      return;
+      yield await _journalFromSqlite();      return;
     }
     try {
       yield* db
@@ -920,6 +1006,21 @@ class AdminRepository {
 
   Future<void> setModal(int value) =>
       saveStoreSettings({'modal': value});
+
+  /// Hitung ulang agregat "Sedang laris" dari pesanan (Firestore, admin
+  /// bisa baca semua), simpan 8 teratas ke store_settings.topProductIds.
+  /// Pelanggan hanya membaca hasilnya (tak bisa baca semua orders).
+  /// Tanpa pesanan → daftar kosong (section disembunyikan, bukan angka 0).
+  /// Offline → lewati diam-diam (agregat lama tetap dipakai).
+  Future<void> refreshTopProducts() async {
+    try {
+      final orders = await watchAllOrders().first;
+      final top = topProductsByQty(orders);
+      await saveStoreSettings({'topProductIds': top});
+    } catch (_) {
+      // Offline / gagal → agregat lama tetap dipakai.
+    }
+  }
 
   /// Kurangi/tambah modal belanja sebagai DELTA atomik (FieldValue.increment)
   /// via antrean — tidak pernah dilewati diam-diam saat offline; diterapkan

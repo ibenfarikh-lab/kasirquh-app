@@ -52,6 +52,8 @@ class CustomerHomeSheet extends ConsumerWidget {
               const SizedBox(height: 20),
               const _RunningTextSection(),
               const SizedBox(height: 20),
+              const _PaketSection(),
+              const SizedBox(height: 20),
               Text(
                 Strings.promo,
                 style: const TextStyle(
@@ -272,6 +274,114 @@ class _RunningTextSectionState extends ConsumerState<_RunningTextSection> {
                       );
                     } finally {
                       if (mounted) setState(() => _menyimpan = false);
+                    }
+                  },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Paket Tanggal Muda — section Beranda pelanggan yang diatur warung.
+/// Mati = section disembunyikan (bukan contoh).
+class _PaketSection extends ConsumerStatefulWidget {
+  const _PaketSection();
+
+  @override
+  ConsumerState<_PaketSection> createState() => _PaketSectionState();
+}
+
+class _PaketSectionState extends ConsumerState<_PaketSection> {
+  final _judul = TextEditingController();
+  final _subjudul = TextEditingController();
+  bool _terisi = false;
+  bool _aktif = false;
+  bool _menyimpan = false;
+
+  @override
+  void dispose() {
+    _judul.dispose();
+    _subjudul.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final info = ref.watch(storeInfoProvider).valueOrNull;
+    if (!_terisi && info != null) {
+      _judul.text = info.paketTitle ?? '';
+      _subjudul.text = info.paketSubtitle ?? '';
+      _aktif = info.paketEnabled;
+      _terisi = true;
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Paket Tanggal Muda',
+          style: TextStyle(
+            color: AppColors.warmMuted,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          title: const Text(
+            'Tampilkan di Beranda pelanggan',
+            style: TextStyle(color: AppColors.warmText),
+          ),
+          value: _aktif,
+          activeThumbColor: AppColors.orange,
+          contentPadding: EdgeInsets.zero,
+          onChanged: (v) => setState(() => _aktif = v),
+        ),
+        TextField(
+          controller: _judul,
+          style: const TextStyle(color: AppColors.warmText),
+          decoration: _dekorasi('Judul paket'),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _subjudul,
+          maxLines: 2,
+          style: const TextStyle(color: AppColors.warmText),
+          decoration: _dekorasi('Subjudul paket (opsional)'),
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: AppButton(
+            label: Strings.simpan,
+            fullWidth: false,
+            onPressed: _menyimpan
+                ? null
+                : () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    setState(() => _menyimpan = true);
+                    try {
+                      await ref
+                          .read(adminRepositoryProvider)
+                          .saveStoreSettings({
+                        'paketEnabled': _aktif,
+                        'paketTitle': _judul.text.trim(),
+                        'paketSubtitle': _subjudul.text.trim(),
+                      });
+                      messenger.showSnackBar(
+                        const SnackBar(
+                            content: Text(Strings.berhasilDisimpan)),
+                      );
+                    } catch (_) {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                            content:
+                                Text(Strings.butuhInternetAdmin)),
+                      );
+                    } finally {
+                      if (mounted) {
+                        setState(() => _menyimpan = false);
+                      }
                     }
                   },
           ),

@@ -12,13 +12,21 @@ class Strings {
   static const tutup = 'Tutup';
   static const cari = 'Cari';
 
-  // Gateway
-  static const slide1Title = 'Promo Spesial Hari Ini';
-  static const slide1Sub = 'Sembako & kebutuhan harian dengan harga bersahabat.';
-  static const slide2Title = 'Sembako Lengkap';
-  static const slide2Sub = 'Beras, gula, minyak, telur — semua ada di sini.';
-  static const slide3Title = 'Jajan & Minuman';
-  static const slide3Sub = 'Snack dan minuman dingin pelepas dahaga.';
+  // Gateway — copy selaras prototipe v3.
+  static const slide1Kicker = 'PROMO UTAMA';
+  static const slide1Title = 'Hemat belanja, senang di rumah';
+  static const slide1Sub =
+      'Promo pilihan Warunge Mimi untuk kebutuhan harian keluarga.';
+  static const slide2Kicker = 'SEMBAKO';
+  static const slide2Title = 'Sembako lengkap, tinggal pilih';
+  static const slide2Sub =
+      'Minyak, gula, mi, dan kebutuhan dapur siap untuk stok rumah.';
+  static const slide3Kicker = 'JAJAN & MINUMAN';
+  static const slide3Title = 'Jajan dan minuman favoritmu';
+  static const slide3Sub =
+      'Camilan renyah dan minuman segar untuk teman santai kapan saja.';
+  static const gatewayHint = 'Ketuk atau geser untuk lanjut';
+  static const taglineToko = 'Belanja dekat, terasa hangat';
 
   // Tamu
   static const guestLockTitle = 'Mau lanjut?';
@@ -74,6 +82,8 @@ class Strings {
   static const email = 'Email';
   static const kataSandi = 'Kata sandi';
   static const nama = 'Nama';
+  static const fiturKhususPelanggan = 'Fitur khusus pelanggan';
+  static const akunWarungJudul = 'Masuk / Daftar Akun Warung';
   static const menungguPersetujuan =
       'Pendaftaran diterima. Menunggu persetujuan admin ya...';
   static const belumDisetujui =
@@ -212,6 +222,9 @@ class Strings {
   static const modulBelanjaStok = 'Belanja Stok';
   static const modulCatatanToko = 'Catatan Toko';
   static const modulKoin = 'Koin Warga';
+  static const modulAiAdmin = 'AI Admin';
+  static const modulBuktiTransfer = 'Bukti Transfer';
+  static const modulStruk = 'Struk 58mm';
   static const modulScanner = 'Scanner';
   static const modulProfilToko = 'Profil Toko';
   static const modulBerandaPelanggan = 'Beranda Pelanggan';
@@ -225,6 +238,11 @@ class Strings {
   static const hargaModal = 'Harga modal/pcs (Rp)';
   static const stok = 'Stok (pcs)';
   static const barcodeOpsional = 'Barcode (opsional)';
+  static const fotoProduk = 'Foto produk';
+  static const pilihDariHp = 'Pilih dari HP';
+  static const hapusFoto = 'Hapus foto';
+  static const fotoUrlLabel = 'Foto dari internet (URL)';
+  static const fotoUrlHint = 'Tempel alamat gambar, mis. https://...';
   static const kategori = 'Kategori';
   static const tampilkanDiKatalog = 'Tampilkan di katalog';
   static const arsipkan = 'Arsipkan';
@@ -304,7 +322,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.4.2+11';
+  static const versiApp = 'KasirQuh v3.5.0+12';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';

@@ -112,6 +112,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ---- Catatan toko (kasbon digital): tulis=admin, baca=pemilik+admin.
+    match /customer_notes/{id} {
+      allow read: if request.auth != null
+        && (isAdmin() || request.auth.uid == resource.data.customerId);
+      allow write: if isAdmin();
+    }
+
     // ---- Chat: pemilik thread + admin; thread komunitas 'rumpi'
     // terbuka untuk member login (baca + kirim pesan).
     match /chat_threads/{id} {

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/strings_id.dart';
 import '../pos/scanner_sheet.dart';
+import 'ai_admin_sheet.dart';
 import 'calculator_sheet.dart';
 import 'chat_page.dart';
 import 'coins_sheet.dart';
@@ -11,14 +12,16 @@ import 'customers_page.dart';
 import 'ledger_page.dart';
 import 'online_orders_page.dart';
 import 'products_page.dart';
-import 'report_page.dart';
+import 'receipt_page.dart';
 import 'settings_sheet.dart';
 import 'stock_shopping_sheet.dart';
 import 'store_notes_sheet.dart';
 import 'store_profile_sheet.dart';
+import 'transfer_orders_page.dart';
 
-/// Tab Menu: laci alat 14 modul admin.
+/// Tab Menu: laci alat 16 modul admin.
 /// Halaman penuh = ruang kerja; bottom sheet = panel tugas cepat.
+/// Laporan tidak lagi modul sendiri — ada di dalam Data.
 class MenuTab extends StatelessWidget {
   const MenuTab({super.key});
 
@@ -54,8 +57,6 @@ class MenuTab extends StatelessWidget {
             () => _openPage(context, const ProductsPage())),
         _Module(Strings.modulKasirOnline, Icons.shopping_bag_outlined,
             () => _openPage(context, const OnlineOrdersPage())),
-        _Module(Strings.modulLaporan, Icons.bar_chart_outlined,
-            () => _openPage(context, const ReportPage())),
         _Module(Strings.modulData, Icons.people_outline,
             () => _openPage(context, const CustomersPage())),
         _Module(Strings.modulChat, Icons.chat_bubble_outline,
@@ -70,6 +71,13 @@ class MenuTab extends StatelessWidget {
             () => _openSheet(context, const StoreNotesSheet())),
         _Module(Strings.modulKoin, Icons.toll_outlined,
             () => _openSheet(context, const CoinsSheet())),
+        _Module(Strings.modulAiAdmin, Icons.psychology_outlined,
+            () => _openSheet(context, const AiAdminSheet())),
+        _Module(Strings.modulBuktiTransfer,
+            Icons.receipt_long_outlined,
+            () => _openPage(context, const TransferOrdersPage())),
+        _Module(Strings.modulStruk, Icons.print_outlined,
+            () => _openPage(context, const ReceiptPage())),
         _Module(Strings.modulScanner, Icons.qr_code_scanner,
             () => _openSheet(context, const ScannerSheet())),
         _Module(Strings.modulProfilToko, Icons.store_outlined,

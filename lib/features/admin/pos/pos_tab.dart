@@ -6,6 +6,7 @@ import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/product.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/product_repository.dart';
@@ -220,6 +221,12 @@ class _ProductRow extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
+            ProductPhoto(
+              photoPath: product.photoPath,
+              size: 44,
+              borderRadius: 10,
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -6,6 +6,8 @@ import '../../../core/widgets/app_button.dart';
 import '../../../data/models/customer.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
+import 'customer_notes_sheet.dart';
+import 'report_page.dart';
 
 /// Query pencarian pelanggan — StateProvider agar [CustomersPage] tetap
 /// ConsumerWidget tanpa state lokal.
@@ -17,7 +19,7 @@ void _snack(BuildContext context, String message) {
 }
 
 /// Tab Mode Admin > Modul Data: persetujuan pendaftar + daftar pelanggan +
-/// penyesuaian koin.
+/// penyesuaian koin + Laporan (pindah ke dalam Data, selaras prototipe).
 class CustomersPage extends ConsumerWidget {
   const CustomersPage({super.key});
 
@@ -31,7 +33,37 @@ class CustomersPage extends ConsumerWidget {
           _ApprovalCard(ref: ref),
           const SizedBox(height: 16),
           _CustomerListCard(ref: ref),
+          const SizedBox(height: 16),
+          _LaporanCard(),
         ],
+      ),
+    );
+  }
+}
+
+/// Seksi Laporan — di dalam Data (bukan modul sendiri).
+class _LaporanCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.panel,
+      child: ListTile(
+        leading: const Icon(Icons.bar_chart_outlined,
+            color: AppColors.orange),
+        title: const Text(
+          Strings.modulLaporan,
+          style:
+              TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        subtitle: const Text(
+          'Omzet 7 hari, grafik, dan salin CSV.',
+          style: TextStyle(color: AppColors.warmMuted),
+        ),
+        trailing: const Icon(Icons.chevron_right,
+            color: AppColors.warmMuted),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ReportPage()),
+        ),
       ),
     );
   }
@@ -204,11 +236,24 @@ class _CustomerListCard extends ConsumerWidget {
                         title: Text(c.name),
                         subtitle:
                             Text('${c.email} · ${c.coins} ${Strings.koin}'),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.toll_outlined),
-                          color: AppColors.orange,
-                          tooltip: Strings.sesuaikanKoin,
-                          onPressed: () => _openCoinSheet(context, c),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.note_outlined),
+                              color: AppColors.orange,
+                              tooltip: Strings.modulCatatanToko,
+                              onPressed: () =>
+                                  _openNotesSheet(context, c),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.toll_outlined),
+                              color: AppColors.orange,
+                              tooltip: Strings.sesuaikanKoin,
+                              onPressed: () =>
+                                  _openCoinSheet(context, c),
+                            ),
+                          ],
                         ),
                       ),
                   ],
@@ -231,6 +276,15 @@ class _CustomerListCard extends ConsumerWidget {
             bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
         child: _CoinSheet(customer: customer),
       ),
+    );
+  }
+
+  void _openNotesSheet(BuildContext context, Customer customer) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CustomerNotesSheet(customer: customer),
     );
   }
 }

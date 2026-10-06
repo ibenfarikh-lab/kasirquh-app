@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency.dart';
@@ -15,11 +16,40 @@ import '../menu/products_page.dart';
 
 /// Tab Beranda admin: metrik harian + deep link.
 /// Jujur: belum ada data → "Belum ada data", bukan angka 0.
-class DashboardTab extends ConsumerWidget {
+class DashboardTab extends ConsumerStatefulWidget {
   const DashboardTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardTab> createState() => _DashboardTabState();
+}
+
+class _DashboardTabState extends ConsumerState<DashboardTab> {
+  /// Agregat "Sedang laris" dihitung ulang maks. 1x sehari saat Beranda
+  /// dibuka — pelanggan hanya membaca hasilnya dari store_settings.
+  @override
+  void initState() {
+    super.initState();
+    _maybeRefreshTopProducts();
+  }
+
+  Future<void> _maybeRefreshTopProducts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final last = prefs.getInt('topProductsRefreshedAt') ?? 0;
+      final sehari = DateTime.now()
+          .subtract(const Duration(hours: 24))
+          .millisecondsSinceEpoch;
+      if (last > sehari) return;
+      await ref.read(adminRepositoryProvider).refreshTopProducts();
+      await prefs.setInt('topProductsRefreshedAt',
+          DateTime.now().millisecondsSinceEpoch);
+    } catch (_) {
+      // Gagal (offline) → agregat lama tetap dipakai, coba lagi besok.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final summaryAsync = ref.watch(_todaySummaryProvider);
     final orders = ref.watch(adminOrdersProvider).valueOrNull ?? const [];
     final waiting =

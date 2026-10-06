@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/theme_settings.dart';
 import '../../data/repositories/admin_repository.dart';
 import '../../l10n/strings_id.dart';
 import 'admin_push_bootstrap.dart';
@@ -17,7 +17,7 @@ final adminTabProvider = StateProvider<int>((ref) => 0);
 
 /// Mode Admin: 5 Tab (Beranda · Kasir · Inbox · Catatan · Menu).
 /// Header hanya logo + nama warung (tanpa ikon menu/pengaturan).
-/// Seluruh Mode Admin memakai tema dark warm.
+/// Tema mengikuti pilihan di Pengaturan (default: Gelap).
 class AdminShell extends ConsumerWidget {
   const AdminShell({super.key});
 
@@ -25,9 +25,12 @@ class AdminShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final index = ref.watch(adminTabProvider);
     final inboxBadge = ref.watch(inboxBadgeProvider);
+    final tema = ref.watch(temaAdminProvider);
+    final sistem =
+        MediaQuery.platformBrightnessOf(context);
 
     return Theme(
-      data: AppTheme.adminTheme(),
+      data: temaAdminAktif(tema, sistem),
       child: Scaffold(
         appBar: AppBar(
           title: const Row(

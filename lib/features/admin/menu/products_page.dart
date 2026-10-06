@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/product.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
@@ -140,6 +141,10 @@ class _ProductsBodyState extends ConsumerState<_ProductsBody> {
                     child: ListTile(
                       onTap: () =>
                           ProductsPage._openForm(context, p),
+                      leading: ProductPhoto(
+                        photoPath: p.photoPath,
+                        size: 48,
+                      ),
                       title: Text(
                         p.name,
                         style: const TextStyle(
@@ -197,8 +202,12 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
   late final TextEditingController _costCtrl;
   late final TextEditingController _stockCtrl;
   late final TextEditingController _barcodeCtrl;
+  late final TextEditingController _photoUrlCtrl;
   late bool _active;
   bool _saving = false;
+  // Foto lokal per-perangkat (data URI) — dipilih dari HP, resize ≤300px.
+  String? _localPhoto;
+  bool _pickingPhoto = false;
 
   @override
   void initState() {
@@ -213,6 +222,11 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
     _stockCtrl =
         TextEditingController(text: p == null ? '' : p.stock.toString());
     _barcodeCtrl = TextEditingController(text: p?.barcode ?? '');
+    // URL online vs data URI dipisah: URL bisa diedit, data URI tidak.
+    final existing = p?.photoPath ?? '';
+    _photoUrlCtrl = TextEditingController(
+        text: existing.startsWith('http') ? existing : '');
+    if (existing.startsWith('data:image')) _localPhoto = existing;
     _active = p?.active ?? true;
   }
 
@@ -224,6 +238,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
     _costCtrl.dispose();
     _stockCtrl.dispose();
     _barcodeCtrl.dispose();
+    _photoUrlCtrl.dispose();
     super.dispose();
   }
 
@@ -233,6 +248,25 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
   void _snack(String message) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// Foto efektif: lokal (dari HP) menang atas URL online.
+  String? get _photoPath {
+    if (_localPhoto != null) return _localPhoto;
+    final url = _photoUrlCtrl.text.trim();
+    return url.isEmpty ? null : url;
+  }
+
+  Future<void> _pilihFotoDariHp() async {
+    setState(() => _pickingPhoto = true);
+    final uri = await pickProductPhoto();
+    if (!mounted) return;
+    setState(() => _pickingPhoto = false);
+    if (uri == null) {
+      _snack(Strings.fotoTidakTerbaca);
+      return;
+    }
+    setState(() => _localPhoto = uri);
   }
 
   Future<void> _save() async {
@@ -251,6 +285,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
             stock: _parseDigits(_stockCtrl.text),
             barcode: barcode.isEmpty ? null : barcode,
             active: _active,
+            photoPath: _photoPath,
           );
       if (!mounted) return;
       _snack(Strings.berhasilDisimpan);
@@ -351,6 +386,62 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           decoration: const InputDecoration(
               labelText: Strings.barcodeOpsional),
+        ),
+        const SizedBox(height: 16),
+        // Foto produk: pilih dari HP (lokal) atau tempel URL online.
+        const Text(
+          Strings.fotoProduk,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: AppColors.warmText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ProductPhoto(photoPath: _photoPath, size: 84),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  OutlinedButton.icon(
+                    icon: _pickingPhoto
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.photo_library_outlined, size: 18),
+                    label: Text(_pickingPhoto
+                        ? Strings.mengirim
+                        : Strings.pilihDariHp),
+                    onPressed: _pickingPhoto ? null : _pilihFotoDariHp,
+                  ),
+                  if (_photoPath != null)
+                    TextButton.icon(
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text(Strings.hapusFoto),
+                      onPressed: () => setState(() {
+                        _localPhoto = null;
+                        _photoUrlCtrl.clear();
+                      }),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _photoUrlCtrl,
+          keyboardType: TextInputType.url,
+          decoration: const InputDecoration(
+            labelText: Strings.fotoUrlLabel,
+            hintText: Strings.fotoUrlHint,
+          ),
+          onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 8),
         SwitchListTile(

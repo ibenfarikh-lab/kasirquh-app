@@ -3,18 +3,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_settings.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/guest_lock_sheet.dart';
+import '../../../core/widgets/theme_picker.dart';
 import '../../../data/models/order.dart';
+import '../../../data/models/customer_note.dart';
 import '../../../data/remote/auth_service.dart';
+import '../../../data/repositories/customer_note_repository.dart';
 import '../../../data/repositories/order_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../../gateway/gateway_screen.dart';
 import '../session.dart';
 import 'coin_history_page.dart';
+import 'misi_koin_page.dart';
 
 /// Tab Akun — bergembok untuk tamu.
 /// Member: data akun + koin + riwayat pesanan + Keluar.
@@ -111,6 +116,62 @@ class AccountTab extends ConsumerWidget {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        // Tampilan: pemilih tema (Terang / Gelap / Ikuti HP).
+        AppCard(
+          onTap: () =>
+              showThemePicker(context, temaPelangganProvider),
+          child: Row(
+            children: [
+              const Icon(Icons.palette_outlined,
+                  color: AppColors.orange),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Tampilan',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              Text(
+                ref.watch(temaPelangganProvider).label,
+                style: const TextStyle(
+                    color: AppColors.muted, fontSize: 13),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right,
+                  color: AppColors.muted, size: 20),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Catatan toko (kasbon digital): tagihan/catatan dari toko.
+        _catatanTokoSection(context, ref, uid),
+        const SizedBox(height: 12),
+        // Misi koin: tantangan sederhana berhadiah koin.
+        AppCard(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const MisiKoinPage(),
+              ),
+            );
+          },
+          child: const Row(
+            children: [
+              Icon(Icons.emoji_events_outlined,
+                  color: AppColors.orange),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Misi koin',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              Icon(Icons.chevron_right,
+                  color: AppColors.muted, size: 20),
+            ],
+          ),
+        ),
         const SizedBox(height: 20),
         const Text(
           Strings.pesananSaya,
@@ -158,6 +219,119 @@ class AccountTab extends ConsumerWidget {
     );
   }
 
+  /// Section Catatan toko: daftar tagihan/catatan dari toko + sisa tagihan.
+  /// Tanpa catatan → empty state jujur.
+  Widget _catatanTokoSection(
+      BuildContext context, WidgetRef ref, String uid) {
+    final notesAsync = ref.watch(myCustomerNotesProvider(uid));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Catatan toko',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        notesAsync.when(
+          loading: () => const Center(
+              child: Padding(
+            padding: EdgeInsets.all(16),
+            child: CircularProgressIndicator(),
+          )),
+          error: (_, __) => const EmptyState(
+            icon: Icons.note_outlined,
+            title: 'Gagal memuat catatan toko',
+            hint: Strings.periksaKoneksi,
+          ),
+          data: (notes) {
+            if (notes.isEmpty) {
+              return const EmptyState(
+                icon: Icons.note_outlined,
+                title: 'Belum ada catatan toko',
+                hint:
+                    'Tagihan atau catatan dari toko muncul di sini.',
+              );
+            }
+            final tagihan = totalTagihan(notes);
+            return Column(
+              children: [
+                AppCard(
+                  child: Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Sisa tagihan',
+                        style:
+                            TextStyle(color: AppColors.muted),
+                      ),
+                      Text(
+                        formatRp(tagihan),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                          color: tagihan > 0
+                              ? AppColors.danger
+                              : AppColors.ok,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                for (final n in notes)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: AppCard(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  n.note.isEmpty
+                                      ? customerNoteTypeLabel(n.type)
+                                      : n.note,
+                                  style: const TextStyle(
+                                      fontWeight:
+                                          FontWeight.w600),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  customerNoteTypeLabel(n.type),
+                                  style: const TextStyle(
+                                      color: AppColors.muted,
+                                      fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (n.amount > 0)
+                            Text(
+                              formatRp(n.amount),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: n.type == 'tagihan'
+                                    ? AppColors.danger
+                                    : AppColors.ok,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _orderCard(BuildContext context, Order order) {
     final date = DateFormat('d MMM yyyy, HH:mm', 'id_ID')
         .format(order.createdAt);
@@ -192,8 +366,7 @@ class AccountTab extends ConsumerWidget {
     );
   }
 
-  Widget _statusChip(OrderStatus s) {
-    final color = switch (s) {
+  Widget _statusChip(OrderStatus s) {    final color = switch (s) {
       OrderStatus.menunggu => AppColors.orange,
       OrderStatus.dikemas || OrderStatus.dikirim => AppColors.orange,
       OrderStatus.selesai => AppColors.ok,

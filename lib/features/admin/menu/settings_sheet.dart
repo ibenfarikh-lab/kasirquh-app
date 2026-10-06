@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_settings.dart';
 import '../../../core/utils/currency.dart';
+import '../../../core/widgets/theme_picker.dart';
 import '../../../data/remote/auth_service.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/store_repository.dart';
@@ -75,15 +77,22 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
               const SizedBox(height: 20),
               _judulGrup(Strings.grupTampilan),
               _kartu([
-                const ListTile(
-                  title: Text(
+                ListTile(
+                  title: const Text(
                     'Tema',
                     style: TextStyle(color: AppColors.warmText),
                   ),
                   subtitle: Text(
-                    'Gelap hangat (bawaan)',
-                    style: TextStyle(color: AppColors.warmMuted),
+                    ref.watch(temaAdminProvider).label,
+                    style:
+                        const TextStyle(color: AppColors.warmMuted),
                   ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.warmMuted,
+                  ),
+                  onTap: () =>
+                      showThemePicker(context, temaAdminProvider),
                 ),
               ]),
               _judulGrup(Strings.grupNotifikasi),
@@ -183,14 +192,28 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
               _judulGrup(Strings.grupTentang),
               _kartu([
                 ListTile(
-                  title: Text(
-                    Strings.versiApp,
-                    style: const TextStyle(color: AppColors.warmText),
+                  leading: Image.asset(
+                    'assets/brand/kasirquh-logo.png',
+                    width: 40,
+                    height: 40,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.storefront,
+                      size: 40,
+                      color: AppColors.orange,
+                    ),
+                  ),
+                  title: const Text(
+                    'KasirQuh',
+                    style: TextStyle(
+                      color: AppColors.warmText,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   subtitle: const Text(
-                    'Warunge Mimi · Powered by KasirQuh',
+                    '${Strings.versiApp}\nWarunge Mimi · Powered by KasirQuh',
                     style: TextStyle(color: AppColors.warmMuted),
                   ),
+                  isThreeLine: true,
                 ),
                 ListTile(
                   title: const Text(

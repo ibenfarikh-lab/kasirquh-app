@@ -16,6 +16,14 @@ class StoreInfo {
   final int? modal; // sisa modal belanja (null = belum diisi)
   final int lowStockDefault;
   final int coinRate;
+  // Batas penukaran koin: persen maks. dari total belanja (0 = belum diatur).
+  final int coinRedeemLimit;
+  // Paket Tanggal Muda (section Beranda, diatur warung).
+  final bool paketEnabled;
+  final String? paketTitle;
+  final String? paketSubtitle;
+  // Agregat produk laris (dihitung admin dari pesanan, bukan data siluman).
+  final List<String> topProductIds;
 
   const StoreInfo({
     this.storeName = 'Warunge Mimi',
@@ -28,6 +36,11 @@ class StoreInfo {
     this.modal,
     this.lowStockDefault = 5,
     this.coinRate = 1,
+    this.coinRedeemLimit = 0,
+    this.paketEnabled = false,
+    this.paketTitle,
+    this.paketSubtitle,
+    this.topProductIds = const [],
   });
 
   /// Buka/tutup berdasar jam — hanya bila format jam valid.
@@ -59,6 +72,15 @@ class StoreInfo {
         modal: (m['modal'] as num?)?.toInt(),
         lowStockDefault: (m['lowStockDefault'] as num?)?.toInt() ?? 5,
         coinRate: (m['coinRate'] as num?)?.toInt() ?? 1,
+        coinRedeemLimit:
+            (m['coinRedeemLimit'] as num?)?.toInt() ?? 0,
+        paketEnabled: m['paketEnabled'] == true,
+        paketTitle: m['paketTitle'] as String?,
+        paketSubtitle: m['paketSubtitle'] as String?,
+        topProductIds: (m['topProductIds'] as List?)
+                ?.whereType<String>()
+                .toList() ??
+            const [],
       );
 }
 

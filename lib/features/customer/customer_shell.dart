@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_settings.dart';
 import '../../core/widgets/guest_lock_sheet.dart';
 import '../../data/repositories/social_repository.dart';
 import '../../l10n/strings_id.dart';
@@ -37,13 +38,25 @@ class CustomerShell extends ConsumerWidget {
         ? 0
         : ref.watch(myTokoThreadProvider(uid)).valueOrNull?.unreadCustomer ??
             0;
+    final tema = ref.watch(temaPelangganProvider);
+    final sistem =
+        MediaQuery.platformBrightnessOf(context);
 
-    return Scaffold(
-      appBar: AppBar(
+    return Theme(
+      data: temaPelangganAktif(tema, sistem),
+      child: Scaffold(
+        appBar: AppBar(
         title: LogoTapGate(
-          child: const Text(
-            Strings.appName,
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.storefront, color: AppColors.orange),
+              SizedBox(width: 8),
+              Text(
+                Strings.appName,
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+              ),
+            ],
           ),
         ),
         centerTitle: false,
@@ -121,6 +134,7 @@ class CustomerShell extends ConsumerWidget {
             label: Strings.tabAkun,
           ),
         ],
+      ),
       ),
     );
   }

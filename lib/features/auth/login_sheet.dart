@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/app_button.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/remote/auth_service.dart';
 import '../../l10n/strings_id.dart';
 
@@ -133,6 +134,27 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Identitas: kicker + judul (prototipe: chip + judul modal).
+            const Text(
+              Strings.fiturKhususPelanggan,
+              style: TextStyle(
+                color: AppColors.orange,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              Strings.akunWarungJudul,
+              style: TextStyle(
+                color: AppColors.warmText,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
             TabBar(
               controller: _tab,
               labelColor: Theme.of(context).colorScheme.primary,

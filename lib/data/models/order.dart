@@ -82,3 +82,21 @@ class OrderItem {
         'price': price,
       };
 }
+
+/// Agregat produk laris: jumlah qty per productId dari semua pesanan
+/// (batal tidak dihitung), urut terbanyak → [limit] teratas.
+/// Fungsi pure — bisa di-unit-test tanpa Flutter.
+/// Dipakai section "Sedang laris" (Beranda pelanggan) via topProductIds
+/// yang dihitung admin dan disimpan di store_settings.
+List<String> topProductsByQty(List<Order> orders, {int limit = 8}) {
+  final qtyById = <String, int>{};
+  for (final o in orders) {
+    if (o.status == OrderStatus.dibatalkan) continue;
+    for (final item in o.items) {
+      qtyById[item.productId] = (qtyById[item.productId] ?? 0) + item.qty;
+    }
+  }
+  final sorted = qtyById.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  return sorted.take(limit).map((e) => e.key).toList();
+}

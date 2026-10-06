@@ -32,16 +32,19 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
   static const _slides = [
     _Slide(
       image: 'assets/images/gateway/slide1.webp',
+      kicker: Strings.slide1Kicker,
       title: Strings.slide1Title,
       subtitle: Strings.slide1Sub,
     ),
     _Slide(
       image: 'assets/images/gateway/slide2.webp',
+      kicker: Strings.slide2Kicker,
       title: Strings.slide2Title,
       subtitle: Strings.slide2Sub,
     ),
     _Slide(
       image: 'assets/images/gateway/slide3.webp',
+      kicker: Strings.slide3Kicker,
       title: Strings.slide3Title,
       subtitle: Strings.slide3Sub,
     ),
@@ -109,26 +112,43 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                 onPageChanged: (i) => setState(() => _index = i),
                 itemBuilder: (context, i) => _SlideView(slide: _slides[i]),
               ),
-              // Header: logo toko + nama warung (kiri atas, ala prototipe).
-              // Hotspot admin tetap di kanan atas — tidak diganggu.
+              // Header: logo toko + nama warung + tagline (kiri atas,
+              // ala prototipe). Hotspot admin tetap di kanan atas.
               Positioned(
                 top: MediaQuery.of(context).padding.top + 12,
                 left: 20,
-                child: const Row(
+                child: const Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.storefront,
-                      color: AppColors.orange,
-                      size: 30,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.storefront,
+                          color: AppColors.orange,
+                          size: 30,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Warunge Mimi',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(width: 10),
-                    Text(
-                      'Warunge Mimi',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w700,
+                    SizedBox(height: 2),
+                    Padding(
+                      padding: EdgeInsets.only(left: 40),
+                      child: Text(
+                        Strings.taglineToko,
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
@@ -265,10 +285,14 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
 
 class _Slide {
   final String image;
+  final String kicker;
   final String title;
   final String subtitle;
   const _Slide(
-      {required this.image, required this.title, required this.subtitle});
+      {required this.image,
+      required this.kicker,
+      required this.title,
+      required this.subtitle});
 }
 
 class _SlideView extends StatelessWidget {
@@ -297,6 +321,31 @@ class _SlideView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Kicker ala prototipe: aksen + garis.
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 24,
+                    height: 2,
+                    decoration: BoxDecoration(
+                      color: AppColors.orange,
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    slide.kicker,
+                    style: const TextStyle(
+                      color: Color(0xFFFFC078),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               Text(
                 slide.title,
                 style: const TextStyle(
@@ -312,6 +361,22 @@ class _SlideView extends StatelessWidget {
                   color: Colors.white70,
                   fontSize: 15,
                 ),
+              ),
+              const SizedBox(height: 12),
+              const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.shopping_bag_outlined,
+                    color: Colors.white54,
+                    size: 16,
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    Strings.gatewayHint,
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                ],
               ),
             ],
           ),

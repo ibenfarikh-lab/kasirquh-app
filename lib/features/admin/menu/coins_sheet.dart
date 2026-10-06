@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/models/customer.dart';
 import '../../../data/repositories/admin_repository.dart';
+import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 
 /// Sheet Koin Warga: panel cepat ubah saldo koin pelanggan (butuh internet).
@@ -83,6 +86,251 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
         ),
       );
 
+  /// Nilai koin + batas penukaran + event bonus — selaras prototipe.
+  Widget _pengaturanKoin() {
+    final info = ref.watch(storeInfoProvider).valueOrNull;
+    final rate = info?.coinRate ?? 0;
+    final batas = info?.coinRedeemLimit ?? 0;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.panel2,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: const Text(
+              'Nilai koin',
+              style: TextStyle(color: AppColors.warmText),
+            ),
+            subtitle: Text(
+              rate <= 0
+                  ? Strings.belumDiatur
+                  : '${formatRp(rate)} per koin',
+              style: const TextStyle(color: AppColors.warmMuted),
+            ),
+            trailing: const Icon(Icons.chevron_right,
+                color: AppColors.warmMuted),
+            onTap: () => _ubahAngka(
+              judul: 'Nilai koin (Rp)',
+              awal: rate,
+              kunci: 'coinRate',
+            ),
+          ),
+          const Divider(height: 1, color: AppColors.adminLine),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: const Text(
+              'Batas penukaran',
+              style: TextStyle(color: AppColors.warmText),
+            ),
+            subtitle: Text(
+              batas <= 0
+                  ? Strings.belumDiatur
+                  : 'Maks. $batas% dari total belanja',
+              style: const TextStyle(color: AppColors.warmMuted),
+            ),
+            trailing: const Icon(Icons.chevron_right,
+                color: AppColors.warmMuted),
+            onTap: () => _ubahAngka(
+              judul: 'Batas penukaran (%)',
+              awal: batas,
+              kunci: 'coinRedeemLimit',
+            ),
+          ),
+          const Divider(height: 1, color: AppColors.adminLine),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: const Text(
+              'Event bonus',
+              style: TextStyle(color: AppColors.warmText),
+            ),
+            subtitle: const Text(
+              'Bagi koin ke semua pelanggan sekaligus.',
+              style: TextStyle(color: AppColors.warmMuted),
+            ),
+            trailing: const Icon(Icons.celebration_outlined,
+                color: AppColors.orange),
+            onTap: _eventBonusDialog,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _ubahAngka({
+    required String judul,
+    required int awal,
+    required String kunci,
+  }) async {
+    final ctrl = TextEditingController(text: awal > 0 ? '$awal' : '');
+    var busy = false;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          backgroundColor: AppColors.panel2,
+          title: Text(judul,
+              style:
+                  const TextStyle(color: AppColors.warmText)),
+          content: TextField(
+            controller: ctrl,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly
+            ],
+            style:
+                const TextStyle(color: AppColors.warmText),
+            decoration: const InputDecoration(
+              labelText: 'Nilai',
+              labelStyle:
+                  TextStyle(color: AppColors.warmMuted),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text(Strings.batal),
+            ),
+            TextButton(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      setState(() => busy = true);
+                      try {
+                        final nilai = int.tryParse(
+                                ctrl.text.trim()) ??
+                            0;
+                        await ref
+                            .read(adminRepositoryProvider)
+                            .saveStoreSettings({kunci: nilai});
+                        if (ctx.mounted) {
+                          Navigator.of(ctx).pop();
+                        }
+                        _snack(Strings.berhasilDisimpan);
+                      } catch (_) {
+                        _snack(Strings.butuhInternetAdmin);
+                        if (ctx.mounted) {
+                          setState(() => busy = false);
+                        }
+                      }
+                    },
+              child: const Text(Strings.simpan),
+            ),
+          ],
+        ),
+      ),
+    );
+    ctrl.dispose();
+  }
+
+  Future<void> _eventBonusDialog() async {
+    final jumlahCtrl = TextEditingController();
+    final alasanCtrl = TextEditingController();
+    var busy = false;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          backgroundColor: AppColors.panel2,
+          title: const Text('Event bonus koin',
+              style:
+                  TextStyle(color: AppColors.warmText)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Koin dibagikan ke SEMUA pelanggan yang disetujui.',
+                style: TextStyle(
+                    color: AppColors.warmMuted, fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: jumlahCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly
+                ],
+                style: const TextStyle(
+                    color: AppColors.warmText),
+                decoration: const InputDecoration(
+                  labelText: 'Jumlah koin per pelanggan',
+                  labelStyle: TextStyle(
+                      color: AppColors.warmMuted),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: alasanCtrl,
+                style: const TextStyle(
+                    color: AppColors.warmText),
+                decoration: const InputDecoration(
+                  labelText: Strings.alasan,
+                  hintText: 'Mis. "Bonus akhir tahun"',
+                  labelStyle: TextStyle(
+                      color: AppColors.warmMuted),
+                  hintStyle: TextStyle(
+                      color: AppColors.warmMuted),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text(Strings.batal),
+            ),
+            TextButton(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      final jumlah = int.tryParse(
+                              jumlahCtrl.text.trim()) ??
+                          0;
+                      final alasan =
+                          alasanCtrl.text.trim();
+                      if (jumlah <= 0 ||
+                          alasan.isEmpty) {
+                        _snack(
+                            'Isi jumlah dan alasan dulu.');
+                        return;
+                      }
+                      setState(() => busy = true);
+                      try {
+                        final count = await ref
+                            .read(adminRepositoryProvider)
+                            .grantBonusToAll(
+                              amount: jumlah,
+                              reason: alasan,
+                            );
+                        if (ctx.mounted) {
+                          Navigator.of(ctx).pop();
+                        }
+                        _snack(
+                            'Bonus dibagikan ke $count pelanggan.');
+                      } catch (_) {
+                        _snack(
+                            Strings.butuhInternetAdmin);
+                        if (ctx.mounted) {
+                          setState(() => busy = false);
+                        }
+                      }
+                    },
+              child: const Text('Bagikan'),
+            ),
+          ],
+        ),
+      ),
+    );
+    jumlahCtrl.dispose();
+    alasanCtrl.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final customersAsync = ref.watch(adminCustomersProvider);
@@ -137,6 +385,9 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
               Strings.koinWargaHint,
               style: TextStyle(color: AppColors.warmMuted, fontSize: 12),
             ),
+            const SizedBox(height: 16),
+            // Nilai & batas — selaras prototipe (Nilai, event & batas).
+            _pengaturanKoin(),
             const SizedBox(height: 16),
             const Text(
               Strings.pilihPelanggan,

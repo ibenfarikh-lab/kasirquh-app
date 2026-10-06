@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 /// sinkron ke Firestore via [SyncEngine] saat online.
 class AppDatabase {
   static const _name = 'kasirquh.db';
-  static const _version = 4;
+  static const _version = 5;
   static Database? _db;
 
   static Future<Database> get db async {
@@ -83,6 +83,7 @@ class AppDatabase {
         await _createStockNotes(db);
         await _createStoreNotes(db);
         await _createPromos(db);
+        await _createHomeStock(db);
       },
       onUpgrade: (db, oldVersion, _) async {
         if (oldVersion < 2) {
@@ -106,8 +107,21 @@ class AppDatabase {
             await db.execute('ALTER TABLE journal ADD COLUMN refId TEXT');
           } catch (_) {}
         }
+        if (oldVersion < 5) {
+          await _createHomeStock(db);
+        }
       },
     );
+  }
+
+  /// Stok rumah pelanggan (Fase 6): catatan lokal per-perangkat,
+  /// tidak disinkron — "Stok rumah habis?" di Beranda.
+  static Future<void> _createHomeStock(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS home_stock(
+        id TEXT PRIMARY KEY, name TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'habis',
+        createdAt INTEGER NOT NULL DEFAULT 0)''');
   }
 
   static Future<void> _createPromos(Database db) async {
