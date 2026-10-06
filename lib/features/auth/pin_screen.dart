@@ -60,12 +60,17 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   }
 
   /// Verifikasi via sidik jari — sukses = langsung masuk (PIN tetap cadangan).
+  /// Pakai opsi standar (seperti aplikasi lain): sidik jari dulu,
+  /// dialog sistem boleh tawarkan PIN HP sebagai cadangan.
   Future<void> _pakaiSidikJari() async {
     if (_terkunci) return;
     try {
       final ok = await LocalAuthentication().authenticate(
         localizedReason: 'Buka Mode Admin dengan sidik jari',
-        options: const AuthenticationOptions(biometricOnly: true),
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: false,
+        ),
       );
       if (!mounted) return;
       if (ok) {
