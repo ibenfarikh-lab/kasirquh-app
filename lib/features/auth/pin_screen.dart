@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:local_auth/local_auth.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../l10n/strings_id.dart';
@@ -8,7 +9,7 @@ import 'pin_service.dart';
 
 /// PIN Admin 6 digit: buat + konfirmasi (pertama kali), verifikasi,
 /// lupa PIN → reset → buat baru. Hash disimpan di secure storage.
-/// (Keputusan user 2026-10-07: tanpa sidik jari — PIN saja.)
+/// Sidik jari = jalan pintas verifikasi (PIN tetap cadangan).
 class PinScreen extends ConsumerStatefulWidget {
   const PinScreen({super.key});
 
@@ -25,6 +26,8 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   // Anti brute-force: 5x salah → kunci 60 detik.
   int _salah = 0;
   DateTime? _kunciSampai;
+  // Sidik jari tersedia di HP ini (dicek saat init).
+  bool _bisaSidikJari = false;
 
   bool get _terkunci =>
       _kunciSampai != null && DateTime.now().isBefore(_kunciSampai!);
@@ -37,11 +40,42 @@ class _PinScreenState extends ConsumerState<PinScreen> {
 
   Future<void> _init() async {
     final has = await ref.read(pinServiceProvider).hasPin;
+    var bisa = false;
+    if (has) {
+      try {
+        final bio = LocalAuthentication();
+        bisa = await bio.canCheckBiometrics &&
+            await bio.isDeviceSupported();
+      } catch (_) {
+        bisa = false;
+      }
+    }
     if (mounted) {
       setState(() {
         _isNew = !has;
         _checking = false;
+        _bisaSidikJari = bisa;
       });
+    }
+  }
+
+  /// Verifikasi via sidik jari — sukses = langsung masuk (PIN tetap cadangan).
+  Future<void> _pakaiSidikJari() async {
+    if (_terkunci) return;
+    try {
+      final ok = await LocalAuthentication().authenticate(
+        localizedReason: 'Buka Mode Admin dengan sidik jari',
+        options: const AuthenticationOptions(biometricOnly: true),
+      );
+      if (!mounted) return;
+      if (ok) {
+        _salah = 0;
+        _granted();
+      } else {
+        setState(() => _error = Strings.sidikJariGagal);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _error = Strings.sidikJariGagal);
     }
   }
 
@@ -210,7 +244,18 @@ class _PinScreenState extends ConsumerState<PinScreen> {
                   Expanded(child: _PinPad(onDigit: _onDigit, onBack: () {
                     if (_pin.isNotEmpty) setState(() => _pin = _pin.substring(0, _pin.length - 1));
                   })),
-                  if (!_isNew)
+                  if (!_isNew) ...[
+                    if (_bisaSidikJari)
+                      TextButton.icon(
+                        onPressed:
+                            _terkunci ? null : _pakaiSidikJari,
+                        icon: const Icon(Icons.fingerprint,
+                            color: AppColors.orange),
+                        label: const Text(
+                          Strings.pakaiSidikJari,
+                          style: TextStyle(color: AppColors.orange),
+                        ),
+                      ),
                     TextButton(
                       onPressed: _forgot,
                       child: const Text(
@@ -219,6 +264,7 @@ class _PinScreenState extends ConsumerState<PinScreen> {
                             TextStyle(color: AppColors.warmMuted),
                       ),
                     ),
+                  ],
                 ],
               ),
             ),
