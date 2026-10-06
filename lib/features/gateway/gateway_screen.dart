@@ -109,6 +109,31 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                 onPageChanged: (i) => setState(() => _index = i),
                 itemBuilder: (context, i) => _SlideView(slide: _slides[i]),
               ),
+              // Header: logo toko + nama warung (kiri atas, ala prototipe).
+              // Hotspot admin tetap di kanan atas — tidak diganggu.
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 12,
+                left: 20,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.storefront,
+                      color: AppColors.orange,
+                      size: 30,
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'Warunge Mimi',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               // Dots + Lewati
               Positioned(
                 left: 0,
@@ -161,18 +186,31 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                 right: 0,
                 bottom: 12,
                 child: LogoTapGate(
-                  child: const Column(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        Strings.poweredBy,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white38, fontSize: 11),
+                      Image.asset(
+                        'assets/images/kasirquh-logo.png',
+                        width: 22,
+                        height: 22,
                       ),
-                      Text(
-                        Strings.versiApp,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white24, fontSize: 10),
+                      const SizedBox(width: 6),
+                      const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            Strings.poweredBy,
+                            style: TextStyle(
+                                color: Colors.white38, fontSize: 11),
+                          ),
+                          Text(
+                            Strings.versiApp,
+                            style: TextStyle(
+                                color: Colors.white24, fontSize: 10),
+                          ),
+                        ],
                       ),
                     ],
                   ),
