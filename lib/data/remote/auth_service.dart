@@ -65,6 +65,13 @@ class AuthPendingApproval implements Exception {
   const AuthPendingApproval();
 }
 
-final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService(FirebaseAuth.instance, FirebaseFirestore.instance);
+/// Provider auth — NULLABLE: null berarti Firebase tidak tersedia
+/// (mode lokal). Pemanggil wajib menangani null dengan pesan ramah,
+/// bukan meledak dengan [core/no-app].
+final authServiceProvider = Provider<AuthService?>((ref) {
+  try {
+    return AuthService(FirebaseAuth.instance, FirebaseFirestore.instance);
+  } catch (_) {
+    return null; // mode lokal: lanjut tanpa login online
+  }
 });

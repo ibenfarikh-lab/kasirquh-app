@@ -43,8 +43,17 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
       _busy = true;
       _error = null;
     });
+    final auth = ref.read(authServiceProvider);
+    if (auth == null) {
+      // Mode lokal: Firebase tidak tersedia.
+      setState(() {
+        _error = 'Mode lokal: login butuh layanan online. Coba lagi nanti.';
+        _busy = false;
+      });
+      return;
+    }
     try {
-      await ref.read(authServiceProvider).signIn(
+      await auth.signIn(
             email: _email.text.trim(),
             password: _password.text,
           );
@@ -63,8 +72,16 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
       _busy = true;
       _error = null;
     });
+    final auth = ref.read(authServiceProvider);
+    if (auth == null) {
+      setState(() {
+        _error = 'Mode lokal: pendaftaran butuh layanan online. Coba lagi nanti.';
+        _busy = false;
+      });
+      return;
+    }
     try {
-      await ref.read(authServiceProvider).signUp(
+      await auth.signUp(
             name: _name.text.trim(),
             email: _email.text.trim(),
             password: _password.text,

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -84,8 +85,10 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Auth bisa null (mode lokal) → anggap belum login.
+    final auth = ref.read(authServiceProvider);
     return StreamBuilder(
-      stream: ref.read(authServiceProvider).authState(),
+      stream: auth?.authState() ?? Stream<User?>.value(null),
       builder: (context, snap) {
         if (snap.data != null) {
           // Sudah login → skip gateway.
@@ -146,15 +149,26 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                   child: const SizedBox(width: 64, height: 64),
                 ),
               ),
-              // Powered by KasirQuh (brand developer — bukan header).
+              // Powered by KasirQuh (brand developer — bukan header)
+              // + stempel versi build (diagnosis: memastikan APK yang dites).
               const Positioned(
                 left: 0,
                 right: 0,
                 bottom: 12,
-                child: Text(
-                  Strings.poweredBy,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      Strings.poweredBy,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white38, fontSize: 11),
+                    ),
+                    Text(
+                      'v3.0.1+2',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white24, fontSize: 10),
+                    ),
+                  ],
                 ),
               ),
               // Peringatan bila ada init yang gagal (diagnosis, bukan error user).
