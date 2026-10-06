@@ -25,12 +25,9 @@ jobs:
 
       - run: flutter analyze
 
-      # DIAGNOSIS 2: Impeller dimatikan via AndroidManifest
-      # (meta-data EnableImpeller=false) — menguji teori crash
-      # renderer di GPU Mali HP Tecno.
       - run: flutter build apk --debug
 
       - uses: actions/upload-artifact@v4
         with:
-          name: kasirquh-app-noimpeller
+          name: kasirquh-app-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
