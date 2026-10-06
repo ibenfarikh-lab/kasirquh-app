@@ -8,7 +8,10 @@ import '../../l10n/strings_id.dart';
 /// Sheet Login/Daftar: dua panel — Masuk & Daftar (email + kata sandi).
 /// Pendaftar baru → menunggu persetujuan admin.
 class LoginSheet extends ConsumerStatefulWidget {
-  const LoginSheet({super.key});
+  /// Tab awal: 0 = Masuk, 1 = Daftar.
+  final int initialTab;
+
+  const LoginSheet({super.key, this.initialTab = 0});
 
   @override
   ConsumerState<LoginSheet> createState() => _LoginSheetState();
@@ -26,7 +29,10 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 2, vsync: this);
+    _tab = TabController(
+        length: 2,
+        vsync: this,
+        initialIndex: widget.initialTab.clamp(0, 1));
   }
 
   @override

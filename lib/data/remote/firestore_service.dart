@@ -45,3 +45,13 @@ class FirestoreService {
 final firestoreServiceProvider = Provider<FirestoreService>((ref) {
   return FirestoreService(FirebaseFirestore.instance);
 });
+
+/// Firestore yang nullable — null saat mode lokal (Firebase tak ter-init).
+/// Repository Fase 2 memakai ini agar tetap aman offline.
+final firestoreOrNullProvider = Provider<FirebaseFirestore?>((ref) {
+  try {
+    return FirebaseFirestore.instance;
+  } catch (_) {
+    return null;
+  }
+});

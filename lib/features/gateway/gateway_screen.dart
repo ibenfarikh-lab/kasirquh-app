@@ -9,6 +9,7 @@ import '../../core/utils/startup_report.dart';
 import '../../data/remote/auth_service.dart';
 import '../../l10n/strings_id.dart';
 import '../auth/pin_screen.dart';
+import '../customer/customer_shell.dart';
 
 /// Gateway: 3 slide promo full-bleed @4000ms, dots, swipe/tap/Lewati.
 /// Otomatis masuk Mode Pelanggan (tamu) setelah slide ke-3.
@@ -25,6 +26,7 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
   final _page = PageController();
   int _index = 0;
   Timer? _timer;
+  bool _navigated = false;
 
   static const _slides = [
     _Slide(
@@ -63,9 +65,11 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
 
   void _enterAsGuest() {
     _timer?.cancel();
-    // TODO(fase-2): navigasi ke Mode Pelanggan (tamu).
-    // Sementara: tampilkan penanda — diganti router saat fitur pelanggan jadi.
-    debugPrint('Gateway → Mode Pelanggan (tamu)');
+    if (_navigated || !mounted) return;
+    _navigated = true;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const CustomerShell()),
+    );
   }
 
   /// Hotspot admin tersembunyi: area tak terlihat di pojok kanan atas.
@@ -164,7 +168,7 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                       style: TextStyle(color: Colors.white38, fontSize: 11),
                     ),
                     Text(
-                      'v3.0.4+5',
+                      'v3.1.0+6',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white24, fontSize: 10),
                     ),

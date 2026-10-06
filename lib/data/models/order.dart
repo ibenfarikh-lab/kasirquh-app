@@ -1,5 +1,5 @@
-/// Status pesanan — selaras dengan security rules Firestore.
-enum OrderStatus { menunggu, disiapkan, selesai, dibatalkan }
+/// Status pesanan — selaras dengan skema Firestore yang dikunci.
+enum OrderStatus { menunggu, dikemas, dikirim, selesai, dibatalkan }
 
 OrderStatus orderStatusFrom(String s) =>
     OrderStatus.values.firstWhere((e) => e.name == s,

@@ -22,6 +22,50 @@ class Strings {
   // Tamu
   static const guestLockTitle = 'Mau lanjut?';
   static const guestLockBody = 'Login atau daftar dulu ya...';
+  static const guestLockPending =
+      'Akunmu masih menunggu persetujuan admin.';
+
+  // Pencarian & katalog
+  static const cariBarang = 'Cari barang...';
+  static const semua = 'Semua';
+  static const tambahKeranjang = 'Tambah ke Keranjang';
+  static const jumlah = 'Jumlah';
+  static const habis = 'Habis';
+  static const stokMenipis = 'Stok menipis';
+
+  // Keranjang & checkout
+  static const keranjangKosong = 'Keranjang masih kosong';
+  static const keranjangKosongHint = 'Yuk isi dengan barang kebutuhanmu.';
+  static const checkout = 'Checkout';
+  static const buatPesanan = 'Buat Pesanan';
+  static const metodePembayaran = 'Metode pembayaran';
+  static const bayarDiTempat = 'COD — bayar di tempat';
+  static const transferBank = 'Transfer bank';
+  static const catatanOpsional = 'Catatan (opsional)';
+  static const pesananBerhasil = 'Pesanan berhasil dibuat!';
+  static const kodePesanan = 'Kode pesanan';
+  static const lihatPesanan = 'Lihat Pesanan';
+  static const butuhInternet = 'Butuh koneksi internet untuk checkout.';
+  static const stokTidakCukup = 'Stok tidak cukup untuk:';
+  static const checkoutGagal = 'Pesanan gagal dibuat. Coba lagi ya...';
+
+  // Beranda
+  static const promoSpesial = 'Promo Spesial';
+  static const infoToko = 'Info Toko';
+  static const bukaSekarang = 'Buka sekarang';
+  static const tutupSekarang = 'Tutup';
+  static const belanjaSekarang = 'Belanja Sekarang';
+
+  // Chat
+  static const chatSegeraHadir = 'Fitur chat segera hadir';
+  static const chatSegeraHadirHint = 'Nantikan di pembaruan berikutnya ya...';
+
+  // Akun
+  static const pesananSaya = 'Pesanan Saya';
+  static const koinSaya = 'Koin Saya';
+  static const keluar = 'Keluar';
+  static const yakinKeluar = 'Yakin mau keluar dari akun?';
+  static const detailPesanan = 'Detail Pesanan';
 
   // Auth
   static const masuk = 'Masuk';
