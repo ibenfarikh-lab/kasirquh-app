@@ -25,11 +25,11 @@ jobs:
 
       - run: flutter analyze
 
-      # CATATAN: butuh google-services.json asli (dari `flutterfire configure`)
-      # agar build lolos. Simpan sebagai GitHub Secret bila perlu.
-      - run: flutter build apk --debug
+      # DIAGNOSIS: build release (AOT, tanpa JIT) — menguji teori
+      # bahwa HiOS memblokir JIT sehingga isolate debug tak pernah start.
+      - run: flutter build apk --release
 
       - uses: actions/upload-artifact@v4
         with:
-          name: kasirquh-app-debug
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: kasirquh-app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
