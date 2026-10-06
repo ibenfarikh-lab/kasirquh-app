@@ -1,0 +1,140 @@
+rules_version = '2';
+
+// KasirQuh-app — project `kasirquh-app` (region asia-southeast2).
+// Skema: goals/kasirquh-v3-native-build-plan/files/FIRESTORE_SCHEMA.md
+// Cara pakai: Firebase Console → Firestore Database → Rules → tempel → Publish.
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.admin == true;
+    }
+    function isApprovedMember() {
+      return request.auth != null
+        && get(/databases/$(db)/documents/customers/$(request.auth.uid))
+             .data.approvalStatus == 'approved';
+    }
+
+    // ---- Katalog & info publik: baca semua, tulis admin.
+    // Pengecualian: pelanggan boleh MENGURANGI stok hanya di dalam
+    // transaksi checkout (anti oversell): stock tak boleh naik,
+    // field lain dikunci.
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['stock', 'updatedAt'])
+        && request.resource.data.stock <= resource.data.stock
+        && request.resource.data.stock >= 0;
+    }
+    match /promos/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /store_settings/main {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---- Rumpi: baca semua; tulis = member approved / pemilik / admin.
+    // Like: member boleh ubah likeCount tepat ±1 + updatedAt.
+    match /rumpi_posts/{id} {
+      allow read: if true;
+      allow create: if isApprovedMember();
+      allow update, delete: if isAdmin()
+        || (request.auth != null
+            && request.auth.uid == resource.data.authorId);
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['likeCount', 'updatedAt'])
+        && (request.resource.data.likeCount == resource.data.likeCount + 1
+            || request.resource.data.likeCount == resource.data.likeCount - 1);
+      match /likes/{uid} {
+        allow read: if true;
+        allow create: if request.auth != null
+          && request.auth.uid == uid
+          && request.resource.data.uid == uid;
+        allow delete: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // ---- Data pelanggan: milik sendiri (+ admin).
+    // Pendaftar WAJIB approvalStatus=pending saat create (tak bisa
+    // menyetujui diri sendiri).
+    match /customers/{uid} {
+      allow read: if request.auth != null
+        && (request.auth.uid == uid || isAdmin());
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.approvalStatus == 'pending';
+      allow update: if request.auth != null
+        && (request.auth.uid == uid || isAdmin());
+    }
+
+    // ---- Pesanan: buat=member approved, baca=pemilik+admin,
+    // ubah status=admin (pelanggan hanya boleh batalkan saat menunggu).
+    match /orders/{id} {
+      allow create: if isApprovedMember()
+        && request.resource.data.customerId == request.auth.uid;
+      allow read: if request.auth != null
+        && (isAdmin() || request.auth.uid == resource.data.customerId);
+      allow update: if isAdmin()
+        || (request.auth != null
+            && request.auth.uid == resource.data.customerId
+            && request.resource.data.status == 'dibatalkan'
+            && resource.data.status == 'menunggu');
+    }
+
+    // ---- Nomor urut pesanan: siapa pun yang login boleh menaikkan
+    // TEPAT +1 (dipakai transaksi checkout); field lain dikunci.
+    match /counters/{id} {
+      allow read: if isAdmin();
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['seq'])
+        && request.resource.data.seq == 1;
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['seq'])
+        && request.resource.data.seq == resource.data.seq + 1;
+    }
+
+    // ---- Keuangan & operasional: admin saja.
+    match /journal/{id} {
+      allow read, write: if isAdmin();
+    }
+    match /stock_notes/{id} {
+      allow read, write: if isAdmin();
+    }
+    match /coin_ledger/{id} {
+      allow read: if request.auth != null
+        && (isAdmin() || request.auth.uid == resource.data.customerId);
+      allow write: if isAdmin();
+    }
+
+    // ---- Chat: pemilik thread + admin; thread komunitas 'rumpi'
+    // terbuka untuk member login (baca + kirim pesan).
+    match /chat_threads/{id} {
+      allow read, write: if request.auth != null
+        && (isAdmin() || request.auth.uid == resource.data.customerId);
+      match /messages/{mid} {
+        allow read, write: if request.auth != null
+          && (isAdmin()
+              || request.auth.uid
+                 == get(/databases/$(db)/documents/chat_threads/$(id))
+                      .data.customerId);
+      }
+    }
+    match /chat_threads/rumpi {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.data.type == 'group';
+      match /messages/{mid} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+          && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isAdmin();
+      }
+    }
+  }
+}
