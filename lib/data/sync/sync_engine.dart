@@ -65,10 +65,10 @@ class SyncEngine {
       final collection = row['collection'] as String;
       final docId = row['docId'] as String;
       final op = row['op'] as String;
-      final payload =
-          jsonDecode(row['payload'] as String) as Map<String, dynamic>;
       try {
         final ref = _firestore.collection(collection).doc(docId);
+        final payload = _reviveTimestamps(
+            jsonDecode(row['payload'] as String) as Map<String, dynamic>);
         switch (op) {
           case 'set':
             await ref.set(payload, SetOptions(merge: true));
@@ -83,6 +83,25 @@ class SyncEngine {
         break;
       }
     }
+  }
+
+  /// Kembalikan sentinel `__sv_timestamp` menjadi
+  /// FieldValue.serverTimestamp() (kebalikan dari _queueSafe di repository).
+  Map<String, dynamic> _reviveTimestamps(Map<String, dynamic> m) {
+    Object? revive(Object? v) {
+      if (v is Map) {
+        if (v['__sv'] == '__sv_timestamp' && v.length == 1) {
+          return FieldValue.serverTimestamp();
+        }
+        return {
+          for (final e in v.entries) e.key.toString(): revive(e.value)
+        };
+      }
+      if (v is List) return v.map(revive).toList();
+      return v;
+    }
+
+    return Map<String, dynamic>.from(revive(m) as Map);
   }
 
   /// Pull koleksi publik → tulis ke SQLite lokal (server menang).

@@ -10,6 +10,7 @@ class Strings {
   static const lewati = 'Lewati';
   static const kembali = 'Kembali';
   static const tutup = 'Tutup';
+  static const cari = 'Cari';
 
   // Gateway
   static const slide1Title = 'Promo Spesial Hari Ini';
@@ -116,4 +117,213 @@ class Strings {
   static const ditolak = 'DITOLAK';
   static const selesai = 'SELESAI';
   static const dibatalkan = 'DIBATALKAN';
+
+  // Admin — umum
+  static const adminMasuk = 'Masuk sebagai Admin';
+  static const adminMasukHint = 'Khusus pemilik toko. Akun dibuat manual.';
+  static const bukanAdmin = 'Akun ini bukan admin.';
+  static const butuhInternetAdmin = 'Butuh internet untuk tindakan ini.';
+  static const belumAdaData = 'Belum ada data';
+  static const cobaLagi = 'Coba lagi';
+  static const berhasilDisimpan = 'Berhasil disimpan.';
+  static const berhasilDihapus = 'Berhasil dihapus';
+
+  // Admin — Beranda
+  static const omzetHariIni = 'Omzet hari ini';
+  static const transaksiHariIni = 'Transaksi hari ini';
+  static const pesananMenunggu = 'Pesanan menunggu';
+  static const stokMenipisJudul = 'Stok menipis';
+  static const lihatSemua = 'Lihat semua';
+
+  // Admin — Kasir
+  static const kasirKosong = 'Belum ada barang di kasir';
+  static const kasirKosongHint = 'Cari barang atau pindai barcode.';
+  static const cariAtauPindai = 'Cari nama / barcode...';
+  static const pindaiBarcode = 'Pindai Barcode';
+  static const ketikBarcode = 'Ketik barcode manual';
+  static const barcodeTidakDikenal = 'Barcode tidak dikenal.';
+  static const bayar = 'Bayar';
+  static const totalBayar = 'Total bayar';
+  static const uangDiterima = 'Uang diterima';
+  static const kembalian = 'Kembalian';
+  static const uangKurang = 'Uang kurang.';
+  static const strukBelanja = 'Struk Belanja';
+  static const terimaKasih = 'Terima kasih sudah belanja!';
+  static const penjualanTersimpan = 'Penjualan tersimpan.';
+
+  // Admin — Inbox
+  static const inboxKosong = 'Inbox kosong';
+  static const inboxKosongHint = 'Belum ada yang perlu perhatianmu.';
+  static const persetujuanPendaftar = 'Persetujuan pendaftar';
+  static const pesananBaru = 'Pesanan baru';
+  static const chatBelumDibaca = 'Chat belum dibaca';
+  static const setujui = 'Setujui';
+  static const tolak = 'Tolak';
+  static const pendaftarDisetujui = 'Pendaftar disetujui.';
+  static const pendaftarDitolak = 'Pendaftar ditolak.';
+
+  // Admin — Catatan Belanja Harian
+  static const catatanHarian = 'Catatan Belanja Harian';
+  static const modalBelanja = 'Modal belanja';
+  static const isiModal = 'Isi modal';
+  static const nominalModal = 'Nominal modal (Rp)';
+  static const belumAdaModal = 'Belum ada modal';
+  static const belumAdaModalHint =
+      'Isi modal dulu sebelum belanja ke supplier.';
+  static const tambahCatatan = 'Tambah catatan';
+  static const namaSupplier = 'Nama supplier';
+  static const daftarBarang = 'Daftar barang';
+  static const namaBarang = 'Nama barang';
+  static const hargaSatuan = 'Harga satuan (Rp)';
+  static const tambahBaris = 'Tambah baris';
+  static const totalBelanja = 'Total belanja';
+  static const arsipSaja =
+      'Ubah/hapus hanya mengubah arsip — pembukuan & stok tidak dihitung ulang.';
+  static const dariBelanjaStok = 'Dari Belanja Stok';
+  static const manualTeks = 'Manual';
+
+  // Admin — Menu & modul
+  static const modulProduk = 'Data Barang';
+  static const modulKasirOnline = 'Kasir Online';
+  static const modulLaporan = 'Laporan';
+  static const modulData = 'Data';
+  static const modulChat = 'Chat';
+  static const modulPembukuan = 'Pembukuan';
+  static const modulKalkulator = 'Kalkulator';
+  static const modulBelanjaStok = 'Belanja Stok';
+  static const modulCatatanToko = 'Catatan Toko';
+  static const modulKoin = 'Koin Warga';
+  static const modulScanner = 'Scanner';
+  static const modulProfilToko = 'Profil Toko';
+  static const modulBerandaPelanggan = 'Beranda Pelanggan';
+  static const modulPengaturan = 'Pengaturan';
+
+  // Admin — Data Barang
+  static const tambahProduk = 'Tambah produk';
+  static const ubahProduk = 'Ubah produk';
+  static const namaProduk = 'Nama produk';
+  static const hargaJual = 'Harga jual (Rp)';
+  static const hargaModal = 'Harga modal/pcs (Rp)';
+  static const stok = 'Stok (pcs)';
+  static const barcodeOpsional = 'Barcode (opsional)';
+  static const kategori = 'Kategori';
+  static const tampilkanDiKatalog = 'Tampilkan di katalog';
+  static const arsipkan = 'Arsipkan';
+  static const aktifkanLagi = 'Aktifkan lagi';
+  static const hapusProdukTanya = 'Hapus produk ini?';
+  static const produkNonaktif = 'Nonaktif';
+
+  // Admin — Kasir Online & Data
+  static const semuaStatus = 'Semua status';
+  static const ubahStatus = 'Ubah status';
+  static const pelanggan = 'Pelanggan';
+  static const pesananKosong = 'Belum ada pesanan';
+  static const pesananKosongHint =
+      'Pesanan dari aplikasi pelanggan muncul di sini.';
+  static const statusMenunggu = 'Menunggu';
+  static const statusDikemas = 'Dikemas';
+  static const statusDikirim = 'Dikirim';
+  static const statusSelesai = 'Selesai';
+  static const statusDibatalkan = 'Dibatalkan';
+  static const daftarPelanggan = 'Daftar pelanggan';
+  static const koin = 'koin';
+  static const sesuaikanKoin = 'Sesuaikan koin';
+  static const jumlahKoin = 'Jumlah (+/-)';
+  static const alasan = 'Alasan';
+  static const tambahKoin = 'Tambah koin';
+  static const kurangKoin = 'Kurangi koin';
+  static const koinTersimpan = 'Koin tersimpan.';
+
+  // Admin — Pembukuan
+  static const pemasukan = 'Pemasukan';
+  static const pengeluaran = 'Pengeluaran';
+  static const saldo = 'Saldo';
+  static const tambahCatatanKeuangan = 'Tambah catatan';
+  static const jenisTransaksi = 'Jenis';
+  static const penjualan = 'Penjualan';
+  static const kulakan = 'Kulakan';
+  static const beban = 'Beban';
+  static const lainnya = 'Lainnya';
+  static const modal = 'Modal';
+  static const keterangan = 'Keterangan';
+  static const nominal = 'Nominal (Rp)';
+  static const labaBersih = 'Laba bersih';
+  static const jurnalKosongHint =
+      'Jual di Kasir atau catat kulakan di Belanja Stok.';
+
+  // Admin — Laporan
+  static const tujuhHariTerakhir = '7 hari terakhir';
+  static const omzet = 'Omzet';
+  static const labaKotor = 'Laba kotor';
+  static const laba = 'Laba';
+  static const grafikOmzet = 'Omzet 7 hari';
+  static const laporanKosong = 'Belum ada transaksi pada periode ini';
+  static const salinCsv = 'Salin CSV';
+  static const csvDisalin = 'CSV disalin ke clipboard.';
+  static const transaksi = 'Transaksi';
+
+  // Admin — Belanja Stok
+  static const perluDikulak = 'Perlu dikulak';
+  static const saranJumlah = 'Saran';
+  static const isiPerKemasan = 'Isi per kemasan';
+  static const hargaPerKemasan = 'Harga per kemasan (Rp)';
+  static const saranJual = 'Saran jual';
+  static const pakaiModalBaru = 'Pakai modal baru';
+  static const rataRataModal = 'Rata-rata modal';
+  static const ringkasanBelanja = 'Ringkasan belanja';
+  static const simpanBelanja = 'Simpan belanja';
+  static const daftarBelanja = 'Daftar belanja';
+  static const totalKulakan = 'Total kulakan';
+  static const belanjaTersimpan = 'Belanja tersimpan.';
+  static const tanpaSaran = 'Semua stok aman untuk saat ini.';
+  static const hargaJualBaru = 'Harga jual baru (Rp)';
+  static const modalBaru = 'Modal baru/pcs (Rp)';
+  static const produkTerkait = 'Produk terkait';
+
+  // Admin — Koin Warga
+  static const koinWargaHint =
+      'Ubah saldo koin pelanggan. Tercatat di riwayat.';
+  static const pilihPelanggan = 'Pilih pelanggan';
+  static const cariNama = 'Cari nama...';
+  // Sinkron manual dengan version di pubspec.yaml.
+  static const versiApp = 'KasirQuh v3.2.0+7';
+
+  // Admin — Profil Toko
+  static const namaToko = 'Nama toko';
+  static const alamat = 'Alamat';
+  static const telepon = 'Telepon';
+  static const jamBuka = 'Jam buka';
+  static const jamTutup = 'Jam tutup';
+  static const infoTokoLabel = 'Info toko';
+  static const teksBerjalan = 'Teks berjalan';
+
+  // Admin — Beranda Pelanggan
+  static const promo = 'Promo';
+  static const tambahPromo = 'Tambah promo';
+  static const judulPromo = 'Judul promo';
+  static const subjudulPromo = 'Subjudul (opsional)';
+  static const tampilkanPromo = 'Tampilkan';
+  static const promoAktif = 'Aktif';
+
+  // Admin — Pengaturan
+  static const grupTampilan = 'Tampilan';
+  static const grupNotifikasi = 'Notifikasi';
+  static const grupDeveloper = 'Developer';
+  static const grupTentang = 'Tentang';
+  static const grupAkun = 'Akun';
+  static const infoSesi = 'Info sesi';
+  static const keluarAdmin = 'Keluar dari Mode Admin';
+  static const notifPesananBaru = 'Pesanan baru';
+  static const notifChat = 'Chat masuk';
+  static const notifStokMenipis = 'Stok menipis';
+
+  // Admin — Catatan Toko
+  static const tambahCatatanToko = 'Tambah catatan toko';
+  static const isiCatatan = 'Isi catatan';
+  static const belumAdaCatatanToko = 'Belum ada catatan toko';
+
+  // Admin — Chat
+  static const belumAdaPercakapan = 'Belum ada percakapan';
+  static const chatKosongHint = 'Pesan dari pelanggan muncul di sini.';
+  static const ketikPesan = 'Ketik pesan...';
 }

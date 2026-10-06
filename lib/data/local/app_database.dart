@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 /// sinkron ke Firestore via [SyncEngine] saat online.
 class AppDatabase {
   static const _name = 'kasirquh.db';
-  static const _version = 1;
+  static const _version = 3;
   static Database? _db;
 
   static Future<Database> get db async {
@@ -77,13 +77,40 @@ class AppDatabase {
             collection TEXT NOT NULL, docId TEXT NOT NULL,
             op TEXT NOT NULL, payload TEXT NOT NULL,
             createdAt INTEGER NOT NULL)''');
+        await _createStockNotes(db);
+        await _createStoreNotes(db);
+      },
+      onUpgrade: (db, oldVersion, _) async {
+        if (oldVersion < 2) {
+          await _createStockNotes(db);
+        }
+        if (oldVersion < 3) {
+          await _createStoreNotes(db);
+        }
       },
     );
+  }
+
+  static Future<void> _createStockNotes(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS stock_notes(
+        id TEXT PRIMARY KEY, date TEXT NOT NULL, supplier TEXT NOT NULL,
+        items TEXT NOT NULL, total INTEGER NOT NULL,
+        source TEXT NOT NULL DEFAULT 'manual',
+        createdAt INTEGER NOT NULL, synced INTEGER NOT NULL DEFAULT 0)''');
   }
 
   /// Tutup (untuk tes).
   static Future<void> close() async {
     await _db?.close();
     _db = null;
+  }
+
+  /// Catatan Toko — lokal saja (tidak ada koleksi Firestore/rules untuknya).
+  static Future<void> _createStoreNotes(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS store_notes(
+        id TEXT PRIMARY KEY, title TEXT NOT NULL,
+        body TEXT NOT NULL, createdAt INTEGER NOT NULL)''');
   }
 }

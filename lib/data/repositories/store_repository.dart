@@ -13,6 +13,9 @@ class StoreInfo {
   final String? runningText;
   final String openHour;
   final String closeHour;
+  final int? modal; // sisa modal belanja (null = belum diisi)
+  final int lowStockDefault;
+  final int coinRate;
 
   const StoreInfo({
     this.storeName = 'Warunge Mimi',
@@ -22,6 +25,9 @@ class StoreInfo {
     this.runningText,
     this.openHour = '07:00',
     this.closeHour = '21:00',
+    this.modal,
+    this.lowStockDefault = 5,
+    this.coinRate = 1,
   });
 
   /// Buka/tutup berdasar jam — hanya bila format jam valid.
@@ -50,6 +56,9 @@ class StoreInfo {
         runningText: m['runningText'] as String?,
         openHour: (m['openHour'] as String?) ?? '07:00',
         closeHour: (m['closeHour'] as String?) ?? '21:00',
+        modal: (m['modal'] as num?)?.toInt(),
+        lowStockDefault: (m['lowStockDefault'] as num?)?.toInt() ?? 5,
+        coinRate: (m['coinRate'] as num?)?.toInt() ?? 1,
       );
 }
 

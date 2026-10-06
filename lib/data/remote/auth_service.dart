@@ -35,6 +35,7 @@ class AuthService {
   }
 
   /// Masuk → tolak jika approvalStatus != approved.
+  /// Admin (claim admin:true) boleh masuk tanpa dokumen customers.
   Future<void> signIn({
     required String email,
     required String password,
@@ -43,21 +44,56 @@ class AuthService {
       email: email,
       password: password,
     );
+    if (await _hasAdminClaim(cred.user)) return; // admin lolos
     final doc = await _firestore
         .collection('customers')
         .doc(cred.user!.uid)
         .get();
     final status = doc.data()?['approvalStatus'] as String?;
-    if (status != 'approved' && !_isAdminEmail(email)) {
+    if (status != 'approved') {
       await _auth.signOut();
       throw const AuthPendingApproval();
     }
   }
 
-  /// Admin: email+password + custom claim admin:true (dibuat manual).
-  bool _isAdminEmail(String email) => email == 'admin@warung.id';
+  /// Masuk KHUSUS admin: email + kata sandi, lalu wajib claim admin:true.
+  /// Akun admin dibuat manual di Firebase (bukan dari aplikasi).
+  Future<void> signInAdmin({
+    required String email,
+    required String password,
+  }) async {
+    final cred = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    if (!await _hasAdminClaim(cred.user, forceRefresh: true)) {
+      await _auth.signOut();
+      throw const AdminNotAuthorized();
+    }
+  }
+
+  /// Cek custom claim `admin: true` dari ID token.
+  Future<bool> _hasAdminClaim(User? user,
+      {bool forceRefresh = false}) async {
+    if (user == null) return false;
+    try {
+      final token = await user.getIdTokenResult(forceRefresh);
+      return token.claims?['admin'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Apakah pengguna saat ini admin (untuk guard UI).
+  Future<bool> isCurrentUserAdmin() =>
+      _hasAdminClaim(_auth.currentUser);
 
   Future<void> signOut() => _auth.signOut();
+}
+
+/// Dilempar saat login admin tapi akun tidak punya claim admin:true.
+class AdminNotAuthorized implements Exception {
+  const AdminNotAuthorized();
 }
 
 /// Dilempar saat login tapi akun belum disetujui admin.

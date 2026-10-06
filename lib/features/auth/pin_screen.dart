@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../l10n/strings_id.dart';
+import 'admin_login_screen.dart';
 import 'pin_service.dart';
 
 /// PIN Admin 6 digit: buat + konfirmasi (pertama kali), verifikasi,
@@ -78,10 +79,9 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   }
 
   void _granted() {
-    // TODO(fase-2): navigasi ke Mode Admin.
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Mode Admin — segera hadir di Fase 3.')),
+    // PIN benar → lanjut ke login admin (email + kata sandi + claim).
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
     );
   }
 

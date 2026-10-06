@@ -1,0 +1,392 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/currency.dart';
+import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../data/models/product.dart';
+import '../../../data/models/stock_note.dart';
+import '../../../data/repositories/admin_repository.dart';
+import '../../../data/repositories/store_repository.dart';
+import '../../../l10n/strings_id.dart';
+
+/// Saran harga jual: modal +25%, dibulatkan KE ATAS ke kelipatan Rp500.
+/// Contoh: 8000 -> 10000 -> 10000; 8300 -> 10375 -> 10500.
+int saranHargaJual(int modalPcs) {
+  final s = (modalPcs * 1.25).ceil();
+  return ((s + 499) ~/ 500) * 500;
+}
+
+class _BelanjaRow {
+  bool dibeli = false;
+  bool pakaiBaru = true;
+  final TextEditingController qty = TextEditingController();
+  final TextEditingController isi = TextEditingController();
+  final TextEditingController hargaKemasan = TextEditingController();
+  final TextEditingController hargaJual = TextEditingController();
+
+  void dispose() {
+    qty.dispose();
+    isi.dispose();
+    hargaKemasan.dispose();
+    hargaJual.dispose();
+  }
+}
+
+int _parseAngka(TextEditingController c) =>
+    int.tryParse(c.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+
+class StockShoppingSheet extends ConsumerStatefulWidget {
+  const StockShoppingSheet({super.key});
+
+  @override
+  ConsumerState<StockShoppingSheet> createState() => _StockShoppingSheetState();
+}
+
+class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
+  final Map<String, _BelanjaRow> _rows = {};
+  final TextEditingController _supplier = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _supplier.dispose();
+    for (final r in _rows.values) {
+      r.dispose();
+    }
+    super.dispose();
+  }
+
+  /// Sinkronisasi baris dengan daftar produk stok menipis terbaru.
+  void _sinkronRows(List<Product> products, int batas) {
+    final ids = products.map((p) => p.id).toSet();
+    for (final id in _rows.keys.toList()) {
+      if (!ids.contains(id)) {
+        _rows[id]!.dispose();
+        _rows.remove(id);
+      }
+    }
+    for (final p in products) {
+      final row = _rows.putIfAbsent(p.id, () => _BelanjaRow());
+      if (row.qty.text.isEmpty) {
+        final saranQty = ((batas * 2 - p.stock).clamp(1, 1 << 20)).toInt();
+        row.qty.text = saranQty.toString();
+        row.isi.text = '1';
+        row.hargaJual.text =
+            (p.price > 0 ? p.price : saranHargaJual(p.cost)).toString();
+      }
+    }
+  }
+
+  Future<void> _simpan(List<Product> products) async {
+    final repo = ref.read(adminRepositoryProvider);
+    final dipilih = <Product, _BelanjaRow>{};
+    for (final p in products) {
+      final row = _rows[p.id];
+      if (row == null || !row.dibeli) continue;
+      final qty = _parseAngka(row.qty);
+      final isi = _parseAngka(row.isi);
+      final hargaKemasan = _parseAngka(row.hargaKemasan);
+      if (qty <= 0 || isi <= 0 || hargaKemasan <= 0) continue;
+      dipilih[p] = row;
+    }
+    if (dipilih.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(Strings.perluDikulak)),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final items = <StockNoteItem>[];
+      for (final e in dipilih.entries) {
+        final p = e.key;
+        final row = e.value;
+        final qty = _parseAngka(row.qty);
+        final isi = _parseAngka(row.isi);
+        final hargaKemasan = _parseAngka(row.hargaKemasan);
+        final hargaJual = _parseAngka(row.hargaJual);
+        final modalPcsBaru = (hargaKemasan / isi).round();
+        final qtyTotal = qty * isi;
+        final costAkhir = row.pakaiBaru
+            ? modalPcsBaru
+            : ((p.cost * p.stock + modalPcsBaru * qtyTotal) /
+                    (p.stock + qtyTotal))
+                .round();
+        await repo.adjustStock(p.id, qtyTotal, costPrice: costAkhir);
+        await repo.saveProduct(
+          id: p.id,
+          name: p.name,
+          category: p.category,
+          price: hargaJual,
+          cost: costAkhir,
+          stock: p.stock + qtyTotal,
+          barcode: p.barcode,
+          active: p.active,
+        );
+        items.add(StockNoteItem(name: p.name, qty: qtyTotal, price: modalPcsBaru));
+      }
+
+      final total = items.fold<int>(0, (t, i) => t + i.price * i.qty);
+      final supplier =
+          _supplier.text.trim().isEmpty ? 'Supplier' : _supplier.text.trim();
+      final now = DateTime.now();
+      final note = StockNote(
+        id: '',
+        date:
+            '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
+        supplier: supplier,
+        items: items,
+        total: total,
+        source: 'belanja_stok',
+        createdAt: now,
+      );
+      await repo.saveStockNote(note);
+      await repo.addJournal(
+        kind: 'kulakan',
+        label: 'Kulakan · $supplier',
+        amount: -total,
+      );
+      final modal = await repo.getModal();
+      if (modal != null) {
+        await repo.setModal(modal - total);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(Strings.belanjaTersimpan)),
+      );
+      Navigator.of(context).pop();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(Strings.butuhInternetAdmin)),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final products = ref.watch(lowStockProductsProvider);
+    final storeInfo = ref.watch(storeInfoProvider).valueOrNull;
+    final batas = storeInfo?.lowStockDefault ?? 5;
+    _sinkronRows(products, batas);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      expand: false,
+      builder: (context, controller) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppColors.panel,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: ListView(
+            controller: controller,
+            padding: const EdgeInsets.all(24),
+            children: [
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: AppColors.adminLine,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                Strings.modulBelanjaStok,
+                style: const TextStyle(
+                  color: AppColors.warmText,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _supplier,
+                style: const TextStyle(color: AppColors.warmText),
+                decoration: _dekorasi('Supplier'),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                Strings.perluDikulak,
+                style: const TextStyle(
+                  color: AppColors.warmMuted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (products.isEmpty)
+                EmptyState(
+                  icon: Icons.shopping_cart_outlined,
+                  title: Strings.tanpaSaran,
+                )
+              else ...[
+                for (final p in products) _kartuProduk(p),
+                const SizedBox(height: 8),
+                AppButton(
+                  label: Strings.simpanBelanja,
+                  onPressed: _saving ? null : () => _simpan(products),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _kartuProduk(Product p) {
+    final row = _rows[p.id]!;
+    final hargaKemasan = _parseAngka(row.hargaKemasan);
+    final isi = _parseAngka(row.isi);
+    final saranQty = _parseAngka(row.qty);
+    final modalPcs = isi > 0 ? (hargaKemasan / isi).round() : 0;
+
+    return Card(
+      color: AppColors.panel2,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        children: [
+          CheckboxListTile(
+            value: row.dibeli,
+            activeColor: AppColors.orange,
+            checkColor: AppColors.warmText,
+            title: Text(
+              p.name,
+              style: const TextStyle(
+                color: AppColors.warmText,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              'Stok ${p.stock} pcs · ${Strings.saranJumlah}: $saranQty',
+              style: const TextStyle(color: AppColors.warmMuted),
+            ),
+            onChanged: (v) => setState(() => row.dibeli = v ?? false),
+          ),
+          if (row.dibeli)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Divider(color: AppColors.adminLine),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _fieldAngka(
+                          row.qty,
+                          'Jumlah beli',
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _fieldAngka(
+                          row.isi,
+                          Strings.isiPerKemasan,
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _fieldAngka(
+                    row.hargaKemasan,
+                    Strings.hargaPerKemasan,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${Strings.modalBaru}: ${modalPcs > 0 ? formatRp(modalPcs) : '-'}',
+                    style: const TextStyle(color: AppColors.warmMuted),
+                  ),
+                  const SizedBox(height: 12),
+                  _fieldAngka(row.hargaJual, Strings.hargaJualBaru,
+                      onChanged: (_) => setState(() {})),
+                  const SizedBox(height: 4),
+                  RadioGroup<bool>(
+                    groupValue: row.pakaiBaru,
+                    onChanged: (v) =>
+                        setState(() => row.pakaiBaru = v ?? true),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Radio<bool>(value: true),
+                          title: Text(
+                            Strings.pakaiModalBaru,
+                            style: const TextStyle(color: AppColors.warmText),
+                          ),
+                          onTap: () =>
+                              setState(() => row.pakaiBaru = true),
+                        ),
+                        ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Radio<bool>(value: false),
+                          title: Text(
+                            Strings.rataRataModal,
+                            style: const TextStyle(color: AppColors.warmText),
+                          ),
+                          onTap: () =>
+                              setState(() => row.pakaiBaru = false),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fieldAngka(
+    TextEditingController c,
+    String label, {
+    ValueChanged<String>? onChanged,
+  }) {
+    return TextField(
+      controller: c,
+      keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      style: const TextStyle(color: AppColors.warmText),
+      decoration: _dekorasi(label),
+      onChanged: onChanged,
+    );
+  }
+
+  InputDecoration _dekorasi(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: AppColors.warmMuted),
+      filled: true,
+      fillColor: AppColors.panel2,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.adminLine),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.orange),
+      ),
+    );
+  }
+}

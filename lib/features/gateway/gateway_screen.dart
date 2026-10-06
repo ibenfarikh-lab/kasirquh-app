@@ -10,6 +10,7 @@ import '../../data/remote/auth_service.dart';
 import '../../l10n/strings_id.dart';
 import '../auth/pin_screen.dart';
 import '../customer/customer_shell.dart';
+import 'hidden_hotspot.dart';
 
 /// Gateway: 3 slide promo full-bleed @4000ms, dots, swipe/tap/Lewati.
 /// Otomatis masuk Mode Pelanggan (tamu) setelah slide ke-3.
@@ -154,25 +155,27 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                 ),
               ),
               // Powered by KasirQuh (brand developer — bukan header)
-              // + stempel versi build (diagnosis: memastikan APK yang dites).
-              const Positioned(
+              // + stempel versi build. Tap 5x → pintu admin (LogoTapGate).
+              Positioned(
                 left: 0,
                 right: 0,
                 bottom: 12,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      Strings.poweredBy,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white38, fontSize: 11),
-                    ),
-                    Text(
-                      'v3.1.0+6',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white24, fontSize: 10),
-                    ),
-                  ],
+                child: LogoTapGate(
+                  child: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        Strings.poweredBy,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white38, fontSize: 11),
+                      ),
+                      Text(
+                        'v3.2.0+7',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white24, fontSize: 10),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               // Peringatan bila ada init yang gagal (diagnosis, bukan error user).
