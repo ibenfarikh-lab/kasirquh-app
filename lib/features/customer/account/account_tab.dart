@@ -14,6 +14,7 @@ import '../../../data/repositories/order_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../../gateway/gateway_screen.dart';
 import '../session.dart';
+import 'coin_history_page.dart';
 
 /// Tab Akun — bergembok untuk tamu.
 /// Member: data akun + koin + riwayat pesanan + Keluar.
@@ -78,6 +79,13 @@ class AccountTab extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         AppCard(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => CoinHistoryPage(uid: uid),
+              ),
+            );
+          },
           child: Row(
             children: [
               const Icon(Icons.monetization_on_outlined,
@@ -97,6 +105,9 @@ class AccountTab extends ConsumerWidget {
                   color: AppColors.orange,
                 ),
               ),
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right,
+                  color: AppColors.muted, size: 20),
             ],
           ),
         ),

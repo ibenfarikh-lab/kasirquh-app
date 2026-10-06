@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/admin_repository.dart';
 import '../../l10n/strings_id.dart';
+import 'admin_push_bootstrap.dart';
 import 'dashboard/dashboard_tab.dart';
 import 'inbox/inbox_tab.dart';
 import 'menu/menu_tab.dart';
@@ -43,14 +44,20 @@ class AdminShell extends ConsumerWidget {
           centerTitle: false,
           automaticallyImplyLeading: false,
         ),
-        body: IndexedStack(
-          index: index,
-          children: const [
-            DashboardTab(),
-            PosTab(),
-            InboxTab(),
-            NotesTab(),
-            MenuTab(),
+        body: Stack(
+          children: [
+            IndexedStack(
+              index: index,
+              children: const [
+                DashboardTab(),
+                PosTab(),
+                InboxTab(),
+                NotesTab(),
+                MenuTab(),
+              ],
+            ),
+            // Tak kasat mata: token FCM + pantau pesanan baru.
+            const AdminPushBootstrap(),
           ],
         ),
         bottomNavigationBar: BottomNavigationBar(

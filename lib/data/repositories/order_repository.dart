@@ -100,6 +100,7 @@ class OrderRepository {
             id: d.id,
             customerId: customerId,
             customerName: (m['customerName'] as String?) ?? '',
+            code: (m['code'] as String?) ?? d.id,
             items: items,
             total: (m['total'] as num?)?.toInt() ?? 0,
             status: orderStatusFrom((m['status'] as String?) ?? 'menunggu'),

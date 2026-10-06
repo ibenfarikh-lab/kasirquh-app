@@ -10,6 +10,7 @@ class Order {
   final String id;
   final String customerId;
   final String customerName;
+  final String code;
   final List<OrderItem> items;
   final int total;
   final OrderStatus status;
@@ -20,6 +21,7 @@ class Order {
     required this.id,
     required this.customerId,
     required this.customerName,
+    required this.code,
     required this.items,
     required this.total,
     required this.status,
@@ -31,6 +33,7 @@ class Order {
         'id': id,
         'customerId': customerId,
         'customerName': customerName,
+        'code': code,
         'items': items.map((e) => e.toMap()).toList().toString(),
         'total': total,
         'status': status.name,
@@ -41,6 +44,7 @@ class Order {
   Map<String, dynamic> toFirestore() => {
         'customerId': customerId,
         'customerName': customerName,
+        'code': code,
         'items': items.map((e) => e.toMap()).toList(),
         'total': total,
         'status': status.name,

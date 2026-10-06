@@ -8,6 +8,7 @@ class ChatThread {
   final String customerName;
   final String? lastMessage;
   final int unreadAdmin;
+  final int unreadCustomer;
   final DateTime updatedAt;
 
   const ChatThread({
@@ -16,6 +17,7 @@ class ChatThread {
     required this.customerName,
     this.lastMessage,
     this.unreadAdmin = 0,
+    this.unreadCustomer = 0,
     required this.updatedAt,
   });
 
@@ -27,6 +29,7 @@ class ChatThread {
       customerName: (m['customerName'] as String?) ?? '',
       lastMessage: m['lastMessage'] as String?,
       unreadAdmin: (m['unreadAdmin'] as num?)?.toInt() ?? 0,
+      unreadCustomer: (m['unreadCustomer'] as num?)?.toInt() ?? 0,
       updatedAt: ts is Timestamp
           ? ts.toDate()
           : DateTime.fromMillisecondsSinceEpoch(0),

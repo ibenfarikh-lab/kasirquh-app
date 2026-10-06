@@ -348,6 +348,7 @@ class AdminRepository {
       id: id,
       customerId: (m['customerId'] as String?) ?? '',
       customerName: (m['customerName'] as String?) ?? '',
+      code: (m['code'] as String?) ?? id,
       items: items,
       total: (m['total'] as num?)?.toInt() ?? 0,
       status: orderStatusFrom((m['status'] as String?) ?? 'menunggu'),
@@ -451,6 +452,31 @@ class AdminRepository {
         'payload': jsonEncode(safe),
         'createdAt': DateTime.now().millisecondsSinceEpoch,
       });
+    }
+    // Saat disetujui: siapkan thread Chat Toko (1 per pelanggan, id = uid).
+    // Pelanggan tidak bisa membuat thread sendiri (rules: hanya admin
+    // atau pemilik thread yang sudah ada), jadi admin yang membuatnya.
+    if (approved) {
+      final db = _db;
+      if (db != null) {
+        try {
+          final custDoc = await db.collection('customers').doc(uid).get();
+          final nama =
+              (custDoc.data()?['name'] as String?) ?? 'Pelanggan';
+          await db.collection('chat_threads').doc(uid).set({
+            'type': 'toko',
+            'customerId': uid,
+            'customerName': nama,
+            'lastMessage': null,
+            'unreadCustomer': 0,
+            'unreadAdmin': 0,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } catch (_) {
+          // Thread gagal dibuat (offline) → pelanggan lihat empty state
+          // jujur; admin bisa setujui ulang saat online.
+        }
+      }
     }
   }
 

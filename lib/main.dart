@@ -1,12 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'core/utils/startup_report.dart';
+import 'core/widgets/notify.dart';
 import 'data/local/app_database.dart';
+import 'data/remote/messaging_service.dart';
 import 'data/sync/sync_engine.dart';
 import 'firebase_options.dart';
 
@@ -39,6 +42,8 @@ Future<void> main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+      // Handler FCM background (wajib setelah Firebase init).
+      FirebaseMessaging.onBackgroundMessage(fcmBackgroundHandler);
       sync = SyncEngine(FirebaseFirestore.instance);
       await sync.start();
     } catch (e) {
@@ -51,6 +56,13 @@ Future<void> main() async {
     debugPrint(
         'Firebase belum dikonfigurasi (firebase_options placeholder) — '
         'jalan mode lokal saja. Lihat README > Setup.');
+  }
+
+  // Notifikasi lokal (heads-up pesanan/chat) — gagal diam-diam bila tak bisa.
+  try {
+    await Notify.init();
+  } catch (e) {
+    StartupReport.add('notifikasi lokal', e);
   }
 
   runApp(

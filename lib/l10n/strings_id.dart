@@ -58,8 +58,7 @@ class Strings {
   static const belanjaSekarang = 'Belanja Sekarang';
 
   // Chat
-  static const chatSegeraHadir = 'Fitur chat segera hadir';
-  static const chatSegeraHadirHint = 'Nantikan di pembaruan berikutnya ya...';
+  // (dihapus Fase 4: chat pelanggan kini nyata — Rumpi/Toko/Komunitas)
 
   // Akun
   static const pesananSaya = 'Pesanan Saya';
@@ -286,7 +285,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.2.0+7';
+  static const versiApp = 'KasirQuh v3.3.0+8';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';
@@ -326,4 +325,48 @@ class Strings {
   static const belumAdaPercakapan = 'Belum ada percakapan';
   static const chatKosongHint = 'Pesan dari pelanggan muncul di sini.';
   static const ketikPesan = 'Ketik pesan...';
+
+  // Fase 4 — Chat pelanggan (Rumpi / Toko / Komunitas)
+  static const tabRumpi = 'Rumpi';
+  static const tabToko = 'Toko';
+  static const tabKomunitas = 'Komunitas';
+  static const rumpiKosong = 'Belum ada kabar';
+  static const rumpiKosongHint =
+      'Jadilah yang pertama berbagi kabar di warung ini.';
+  static const tulisKabar = 'Tulis kabar';
+  static const kirimKabar = 'Kirim kabar';
+  static const mengirim = 'Mengirim...';
+  static const kabarHint = 'Ada kabar apa hari ini?';
+  static const tulisKabarDulu = 'Tulis kabar dulu ya.';
+  static const tambahFoto = 'Tambah foto';
+  static const fotoTidakTerbaca = 'Foto tidak bisa dibaca.';
+  static const fotoTerlaluBesar =
+      'Foto terlalu besar, pilih yang lebih kecil ya.';
+  static const chatTokoKosong = 'Belum ada percakapan dengan toko';
+  static const chatTokoKosongHint =
+      'Toko akan menyiapkan ruang chat setelah pendaftaranmu disetujui.';
+  static const chatTokoMulai = 'Sapa toko dulu, mis. "Halo, mau tanya stok."';
+  static const tokoChatJudul = 'Chat dengan Warunge Mimi';
+  static const grupJudul = 'Komunitas Warunge Mimi';
+  static const grupKosong = 'Belum ada obrolan';
+  static const grupKosongHint =
+      'Mulai obrolan pertama dengan warga lainnya di sini.';
+  static const warga = 'Warga';
+
+  // Fase 4 — Koin
+  static const riwayatKoin = 'Riwayat Koin';
+  static const koinKosong = 'Belum ada riwayat koin';
+  static const koinKosongHint =
+      'Koin bertambah saat admin memberi bonus atau kamu belanja.';
+
+  // Fase 4 — Notifikasi
+  static const notifIzinJudul = 'Aktifkan notifikasi?';
+  static const notifIzinIsi =
+      'Agar kamu tahu saat status pesanan berubah atau ada kabar '
+      'dari toko. Bisa dimatikan kapan saja di pengaturan HP.';
+  static const notifAktifkan = 'Aktifkan';
+  static const notifNanti = 'Nanti saja';
+  static const pesananBaruJudul = 'Pesanan baru masuk';
+  static const statusPesananJudul = 'Status pesanan berubah';
+  static const chatBaruJudul = 'Pesan baru dari toko';
 }

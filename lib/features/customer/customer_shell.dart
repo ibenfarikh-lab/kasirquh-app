@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/guest_lock_sheet.dart';
+import '../../data/repositories/social_repository.dart';
 import '../../l10n/strings_id.dart';
 import '../gateway/hidden_hotspot.dart';
 import 'account/account_tab.dart';
@@ -11,6 +12,7 @@ import 'cart/cart_tab.dart';
 import 'catalog/catalog_tab.dart';
 import 'chat/chat_tab.dart';
 import 'home/home_tab.dart';
+import 'push_bootstrap.dart';
 import 'session.dart';
 
 /// Tab aktif Mode Pelanggan — bisa diubah dari tab lain (mis. Beranda → Produk).
@@ -29,6 +31,12 @@ class CustomerShell extends ConsumerWidget {
     final index = ref.watch(customerTabProvider);
     final cartCount =
         ref.watch(cartProvider.select((c) => c.fold(0, (s, e) => s + e.qty)));
+    final session = ref.watch(sessionProvider).valueOrNull;
+    final uid = memberUid(session ?? const Session.guest());
+    final unreadChat = uid == null
+        ? 0
+        : ref.watch(myTokoThreadProvider(uid)).valueOrNull?.unreadCustomer ??
+            0;
 
     return Scaffold(
       appBar: AppBar(
@@ -40,14 +48,24 @@ class CustomerShell extends ConsumerWidget {
         ),
         centerTitle: false,
       ),
-      body: IndexedStack(
-        index: index,
-        children: const [
-          HomeTab(),
-          CatalogTab(),
-          CartTab(),
-          ChatTab(),
-          AccountTab(),
+      body: Stack(
+        children: [
+          IndexedStack(
+            index: index,
+            children: const [
+              HomeTab(),
+              CatalogTab(),
+              CartTab(),
+              ChatTab(),
+              AccountTab(),
+            ],
+          ),
+          // Tak kasat mata: izin notifikasi + pantau pesanan/chat.
+          if (uid != null) ...[
+            PushBootstrap(uid: uid),
+            OrderStatusWatcher(uid: uid),
+            TokoUnreadWatcher(uid: uid),
+          ],
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -82,9 +100,19 @@ class CustomerShell extends ConsumerWidget {
             ),
             label: Strings.tabKeranjang,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            activeIcon: Icon(Icons.chat_bubble),
+          BottomNavigationBarItem(
+            icon: Badge(
+              isLabelVisible: unreadChat > 0,
+              label: Text('$unreadChat'),
+              backgroundColor: AppColors.danger,
+              child: const Icon(Icons.chat_bubble_outline),
+            ),
+            activeIcon: Badge(
+              isLabelVisible: unreadChat > 0,
+              label: Text('$unreadChat'),
+              backgroundColor: AppColors.danger,
+              child: const Icon(Icons.chat_bubble),
+            ),
             label: Strings.tabChat,
           ),
           const BottomNavigationBarItem(
