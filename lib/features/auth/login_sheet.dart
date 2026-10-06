@@ -1,0 +1,173 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/widgets/app_button.dart';
+import '../../data/remote/auth_service.dart';
+import '../../l10n/strings_id.dart';
+
+/// Sheet Login/Daftar: dua panel — Masuk & Daftar (email + kata sandi).
+/// Pendaftar baru → menunggu persetujuan admin.
+class LoginSheet extends ConsumerStatefulWidget {
+  const LoginSheet({super.key});
+
+  @override
+  ConsumerState<LoginSheet> createState() => _LoginSheetState();
+}
+
+class _LoginSheetState extends ConsumerState<LoginSheet>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tab;
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    _name.dispose();
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _signIn() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(authServiceProvider).signIn(
+            email: _email.text.trim(),
+            password: _password.text,
+          );
+      if (mounted) Navigator.of(context).pop(true);
+    } on AuthPendingApproval {
+      setState(() => _error = Strings.belumDisetujui);
+    } catch (_) {
+      setState(() => _error = Strings.masukGagal);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _signUp() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(authServiceProvider).signUp(
+            name: _name.text.trim(),
+            email: _email.text.trim(),
+            password: _password.text,
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.menungguPersetujuan)),
+        );
+        Navigator.of(context).pop(false);
+      }
+    } catch (e) {
+      setState(() => _error = 'Pendaftaran gagal: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TabBar(
+              controller: _tab,
+              labelColor: Theme.of(context).colorScheme.primary,
+              tabs: const [
+                Tab(text: Strings.masuk),
+                Tab(text: Strings.daftar),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 320,
+              child: TabBarView(
+                controller: _tab,
+                children: [
+                  _form(isLogin: true, onSubmit: _signIn),
+                  _form(isLogin: false, onSubmit: _signUp),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _form({required bool isLogin, required VoidCallback onSubmit}) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          if (!isLogin)
+            TextField(
+              controller: _name,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: Strings.nama,
+                border: OutlineInputBorder(),
+              ),
+            ),
+          if (!isLogin) const SizedBox(height: 12),
+          TextField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(
+              labelText: Strings.email,
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _password,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: Strings.kataSandi,
+              border: OutlineInputBorder(),
+            ),
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                _error!,
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.error),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          const SizedBox(height: 16),
+          AppButton(
+            label: isLogin ? Strings.masuk : Strings.daftar,
+            onPressed: _busy ? null : onSubmit,
+          ),
+        ],
+      ),
+    );
+  }
+}

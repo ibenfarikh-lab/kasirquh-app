@@ -1,0 +1,89 @@
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
+
+/// Database SQLite lokal — offline-first. Tulis lokal dulu,
+/// sinkron ke Firestore via [SyncEngine] saat online.
+class AppDatabase {
+  static const _name = 'kasirquh.db';
+  static const _version = 1;
+  static Database? _db;
+
+  static Future<Database> get db async {
+    if (_db != null) return _db!;
+    _db = await _open();
+    return _db!;
+  }
+
+  static Future<Database> _open() async {
+    final dir = await getDatabasesPath();
+    return openDatabase(
+      join(dir, _name),
+      version: _version,
+      onCreate: (db, _) async {
+        await db.execute('''
+          CREATE TABLE products(
+            id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL,
+            price INTEGER NOT NULL, cost INTEGER NOT NULL DEFAULT 0,
+            stock INTEGER NOT NULL DEFAULT 0, barcode TEXT,
+            photoPath TEXT, active INTEGER NOT NULL DEFAULT 1,
+            updatedAt INTEGER NOT NULL DEFAULT 0)''');
+        await db.execute('''
+          CREATE TABLE orders(
+            id TEXT PRIMARY KEY, customerId TEXT NOT NULL,
+            customerName TEXT NOT NULL, items TEXT NOT NULL,
+            total INTEGER NOT NULL, status TEXT NOT NULL,
+            payment TEXT NOT NULL, createdAt INTEGER NOT NULL,
+            synced INTEGER NOT NULL DEFAULT 0)''');
+        await db.execute('''
+          CREATE TABLE customers(
+            uid TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL,
+            approvalStatus TEXT NOT NULL DEFAULT 'pending',
+            coins INTEGER NOT NULL DEFAULT 0,
+            createdAt INTEGER NOT NULL)''');
+        await db.execute('''
+          CREATE TABLE journal(
+            id TEXT PRIMARY KEY, kind TEXT NOT NULL, label TEXT NOT NULL,
+            amount INTEGER NOT NULL, createdAt INTEGER NOT NULL,
+            synced INTEGER NOT NULL DEFAULT 0)''');
+        await db.execute('''
+          CREATE TABLE coin_ledger(
+            id TEXT PRIMARY KEY, customerId TEXT NOT NULL,
+            delta INTEGER NOT NULL, reason TEXT NOT NULL,
+            createdAt INTEGER NOT NULL, synced INTEGER NOT NULL DEFAULT 0)''');
+        await db.execute('''
+          CREATE TABLE chat_threads(
+            id TEXT PRIMARY KEY, customerId TEXT NOT NULL,
+            customerName TEXT NOT NULL, unread INTEGER NOT NULL DEFAULT 0,
+            updatedAt INTEGER NOT NULL DEFAULT 0)''');
+        await db.execute('''
+          CREATE TABLE messages(
+            id TEXT PRIMARY KEY, threadId TEXT NOT NULL,
+            senderId TEXT NOT NULL, text TEXT NOT NULL,
+            createdAt INTEGER NOT NULL, synced INTEGER NOT NULL DEFAULT 0)''');
+        await db.execute('''
+          CREATE TABLE rumpi_posts(
+            id TEXT PRIMARY KEY, authorId TEXT NOT NULL,
+            authorName TEXT NOT NULL, text TEXT NOT NULL,
+            likes INTEGER NOT NULL DEFAULT 0, isSeed INTEGER NOT NULL DEFAULT 0,
+            createdAt INTEGER NOT NULL)''');
+        await db.execute('''
+          CREATE TABLE store_settings(
+            key TEXT PRIMARY KEY, value TEXT NOT NULL,
+            updatedAt INTEGER NOT NULL DEFAULT 0)''');
+        // Antrean sinkron: operasi tulis yang belum terkirim ke Firestore.
+        await db.execute('''
+          CREATE TABLE sync_queue(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            collection TEXT NOT NULL, docId TEXT NOT NULL,
+            op TEXT NOT NULL, payload TEXT NOT NULL,
+            createdAt INTEGER NOT NULL)''');
+      },
+    );
+  }
+
+  /// Tutup (untuk tes).
+  static Future<void> close() async {
+    await _db?.close();
+    _db = null;
+  }
+}

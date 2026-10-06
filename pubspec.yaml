@@ -1,0 +1,42 @@
+name: kasirquh_app
+description: "KasirQuh-app — aplikasi warung Warunge Mimi (Mode Pelanggan + Mode Admin). Powered by KasirQuh."
+publish_to: "none"
+version: 3.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase (FlutterFire) — project: kasirquh-app
+  # CATATAN: firebase_storage TIDAK dipakai (user skip — project baru wajib Blaze).
+  firebase_core: ^3.6.0
+  cloud_firestore: ^5.4.0
+  firebase_auth: ^5.3.0
+  firebase_messaging: ^15.1.0
+
+  # Lokal offline-first
+  sqflite: ^2.4.0
+  path: ^1.9.0
+  flutter_secure_storage: ^9.2.0
+  shared_preferences: ^2.3.0
+
+  # State & util
+  flutter_riverpod: ^2.5.0
+  google_fonts: ^6.2.0
+  intl: ^0.19.0
+  uuid: ^4.5.0
+  connectivity_plus: ^6.1.0
+  crypto: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/gateway/

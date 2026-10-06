@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "279862438786",
+    "project_id": "kasirquh-app",
+    "storage_bucket": "kasirquh-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:279862438786:android:2e519e815db081c2b8fd9b",
+        "android_client_info": {
+          "package_name": "com.kasirquh.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKaN5wwA7D3eWL65GkqDtr_aac0t2AQzY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
