@@ -5,6 +5,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_settings.dart';
 import '../../l10n/strings_id.dart';
 import 'admin_login_screen.dart';
 import 'biometric_messages.dart';
@@ -192,94 +193,111 @@ class _PinScreenState extends ConsumerState<PinScreen> {
     final title = _isNew
         ? (_firstPin == null ? Strings.buatPin : Strings.konfirmasiPin)
         : Strings.masukkanPin;
-    return Scaffold(
-      backgroundColor: AppColors.adminBg,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        foregroundColor: AppColors.warmText,
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.storefront, color: AppColors.orange),
-            SizedBox(width: 8),
-            Text(Strings.appName),
-          ],
+    // Gerbang admin ngikutin tema admin (default: gelap). Aturan: tema
+    // gelap tanpa background terang + teks terang, tema terang kebalikannya.
+    final tema = ref.watch(temaAdminProvider);
+    final sistem = MediaQuery.platformBrightnessOf(context);
+    final gelap = temaAdminAktif(tema, sistem).brightness == Brightness.dark;
+    final teksUtama = gelap ? AppColors.warmText : AppColors.ink;
+    final teksRedup = gelap ? AppColors.warmMuted : AppColors.muted;
+    return Theme(
+      data: temaAdminAktif(tema, sistem),
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          foregroundColor: teksUtama,
+          title: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.storefront, color: AppColors.orange),
+              SizedBox(width: 8),
+              Text(Strings.appName),
+            ],
+          ),
         ),
-      ),
-      body: _checking
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Text(title,
-                      style: const TextStyle(
-                        color: AppColors.warmText,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      )),
-                  if (_isNew)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: Text(
-                        Strings.buatPinHint,
-                        style: TextStyle(color: AppColors.warmMuted),
-                        textAlign: TextAlign.center,
+        body: _checking
+            ? const Center(child: CircularProgressIndicator())
+            : Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Text(title,
+                        style: TextStyle(
+                          color: teksUtama,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        )),
+                    if (_isNew)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          Strings.buatPinHint,
+                          style: TextStyle(color: teksRedup),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                    ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      6,
-                      (i) => Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
-                        width: 16,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: i < _pin.length
-                              ? AppColors.orange
-                              : AppColors.panel2,
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        6,
+                        (i) => Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 6),
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: i < _pin.length
+                                ? AppColors.orange
+                                : (gelap
+                                    ? AppColors.panel2
+                                    : AppColors.line),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Text(_error!,
-                          style:
-                              const TextStyle(color: AppColors.danger)),
-                    ),
-                  const SizedBox(height: 24),
-                  Expanded(child: _PinPad(onDigit: _onDigit, onBack: () {
-                    if (_pin.isNotEmpty) setState(() => _pin = _pin.substring(0, _pin.length - 1));
-                  })),
-                  if (!_isNew) ...[
-                    if (_bisaSidikJari)
-                      TextButton.icon(
-                        onPressed:
-                            _terkunci ? null : _pakaiSidikJari,
-                        icon: const Icon(Icons.fingerprint,
-                            color: AppColors.orange),
-                        label: const Text(
-                          Strings.pakaiSidikJari,
-                          style: TextStyle(color: AppColors.orange),
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Text(_error!,
+                            style: const TextStyle(
+                                color: AppColors.danger)),
+                      ),
+                    const SizedBox(height: 24),
+                    Expanded(
+                        child: _PinPad(
+                      onDigit: _onDigit,
+                      onBack: () {
+                        if (_pin.isNotEmpty) {
+                          setState(() => _pin =
+                              _pin.substring(0, _pin.length - 1));
+                        }
+                      },
+                      gelap: gelap,
+                    )),
+                    if (!_isNew) ...[
+                      if (_bisaSidikJari)
+                        TextButton.icon(
+                          onPressed: _terkunci ? null : _pakaiSidikJari,
+                          icon: const Icon(Icons.fingerprint,
+                              color: AppColors.orange),
+                          label: const Text(
+                            Strings.pakaiSidikJari,
+                            style: TextStyle(color: AppColors.orange),
+                          ),
+                        ),
+                      TextButton(
+                        onPressed: _forgot,
+                        child: Text(
+                          Strings.lupaPin,
+                          style: TextStyle(color: teksRedup),
                         ),
                       ),
-                    TextButton(
-                      onPressed: _forgot,
-                      child: const Text(
-                        Strings.lupaPin,
-                        style:
-                            TextStyle(color: AppColors.warmMuted),
-                      ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
+      ),
     );
   }
 }
@@ -287,8 +305,10 @@ class _PinScreenState extends ConsumerState<PinScreen> {
 class _PinPad extends StatelessWidget {
   final void Function(String) onDigit;
   final VoidCallback onBack;
+  final bool gelap;
 
-  const _PinPad({required this.onDigit, required this.onBack});
+  const _PinPad(
+      {required this.onDigit, required this.onBack, required this.gelap});
 
   @override
   Widget build(BuildContext context) {
@@ -304,8 +324,8 @@ class _PinPad extends StatelessWidget {
         _key('0', () => onDigit('0')),
         IconButton(
           onPressed: onBack,
-          icon: const Icon(Icons.backspace_outlined,
-              color: AppColors.warmMuted),
+          icon: Icon(Icons.backspace_outlined,
+              color: gelap ? AppColors.warmMuted : AppColors.muted),
         ),
       ],
     );
@@ -318,14 +338,15 @@ class _PinPad extends StatelessWidget {
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppColors.panel,
+          color: gelap ? AppColors.panel : AppColors.card,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.adminLine),
+          border: Border.all(
+              color: gelap ? AppColors.adminLine : AppColors.line),
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            color: AppColors.warmText,
+          style: TextStyle(
+            color: gelap ? AppColors.warmText : AppColors.ink,
             fontSize: 24,
             fontWeight: FontWeight.w700,
           ),

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../data/models/chat.dart';
 import '../../../data/models/rumpi.dart';
 
-/// Gelembung pesan — dipakai Chat Toko & Chat Komunitas (tema terang).
+/// Gelembung pesan — dipakai Chat Toko & Chat Komunitas.
+/// Warna ngikutin tema aktif (aturan: tema gelap tanpa background terang).
 class ChatBubble extends StatelessWidget {
   final ChatMessage message;
   final bool milikSaya;
@@ -28,11 +30,12 @@ class ChatBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: milikSaya ? AppColors.orange : AppColors.card,
+          color: milikSaya
+              ? AppColors.orange
+              : (context.temaGelap ? AppColors.panel2 : AppColors.card),
           borderRadius: BorderRadius.circular(14),
-          border: milikSaya
-              ? null
-              : Border.all(color: AppColors.line),
+          border:
+              milikSaya ? null : Border.all(color: context.garis),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,7 +56,8 @@ class ChatBubble extends StatelessWidget {
             Text(
               message.text,
               style: TextStyle(
-                color: milikSaya ? Colors.white : AppColors.ink,
+                color:
+                    milikSaya ? Colors.white : context.teksUtama,
                 fontSize: 15,
               ),
             ),
@@ -64,7 +68,7 @@ class ChatBubble extends StatelessWidget {
                 fontSize: 10,
                 color: milikSaya
                     ? Colors.white.withValues(alpha: 0.8)
-                    : AppColors.muted,
+                    : context.teksRedup,
               ),
             ),
           ],

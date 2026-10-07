@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/rumpi.dart';
@@ -23,7 +24,7 @@ class RumpiFeed extends ConsumerWidget {
     final likesAsync = ref.watch(myLikesProvider(uid));
 
     return Scaffold(
-      backgroundColor: AppColors.paper,
+      // Background ngikutin tema (jangan dipaksa terang).
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _tulis(context, ref),
         backgroundColor: AppColors.orange,
@@ -154,16 +155,16 @@ class _PostCard extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: AppColors.muted
+                                color: context.teksRedup
                                     .withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'CONTOH',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.muted,
+                                  color: context.teksRedup,
                                 ),
                               ),
                             ),
@@ -172,8 +173,8 @@ class _PostCard extends StatelessWidget {
                       ),
                       Text(
                         waktuRelatif(post.createdAt),
-                        style: const TextStyle(
-                          color: AppColors.muted,
+                        style: TextStyle(
+                          color: context.teksRedup,
                           fontSize: 12,
                         ),
                       ),
@@ -208,7 +209,7 @@ class _PostCard extends StatelessWidget {
                       size: 20,
                       color: disukai
                           ? AppColors.danger
-                          : AppColors.muted,
+                          : context.teksRedup,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -216,7 +217,7 @@ class _PostCard extends StatelessWidget {
                       style: TextStyle(
                         color: disukai
                             ? AppColors.danger
-                            : AppColors.muted,
+                            : context.teksRedup,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

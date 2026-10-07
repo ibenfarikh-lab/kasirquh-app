@@ -419,7 +419,12 @@ class HomeTab extends ConsumerWidget {
         children: [
           Icon(
             icon,
-            color: featured ? AppColors.orange : AppColors.warmText,
+            // warmText (putih) hilang di kartu terang — ngikutin tema.
+            color: featured
+                ? AppColors.orange
+                : (Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.warmText
+                    : AppColors.ink),
             size: 26,
           ),
           const SizedBox(height: 6),

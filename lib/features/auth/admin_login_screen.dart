@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_settings.dart';
 import '../../core/widgets/app_button.dart';
 import '../../data/remote/auth_service.dart';
 import '../../l10n/strings_id.dart';
@@ -83,61 +84,71 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.adminBg,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        foregroundColor: AppColors.warmText,
-        title: const Text(Strings.appName),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                Strings.adminMasuk,
-                style: TextStyle(
-                  color: AppColors.warmText,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                Strings.adminMasukHint,
-                style: TextStyle(color: AppColors.warmMuted),
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(color: AppColors.warmText),
-                decoration: const InputDecoration(
-                  labelText: Strings.email,
-                  labelStyle: TextStyle(color: AppColors.warmMuted),
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.adminLine),
+    // Ngikutin tema admin (default: gelap) — aturan: tema gelap tanpa
+    // background terang + teks terang, tema terang kebalikannya.
+    final tema = ref.watch(temaAdminProvider);
+    final sistem = MediaQuery.platformBrightnessOf(context);
+    final dataTema = temaAdminAktif(tema, sistem);
+    final gelap = dataTema.brightness == Brightness.dark;
+    final teksUtama = gelap ? AppColors.warmText : AppColors.ink;
+    final teksRedup = gelap ? AppColors.warmMuted : AppColors.muted;
+    final garis = gelap ? AppColors.adminLine : AppColors.line;
+    return Theme(
+      data: dataTema,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          foregroundColor: teksUtama,
+          title: const Text(Strings.appName),
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  Strings.adminMasuk,
+                  style: TextStyle(
+                    color: teksUtama,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _password,
-                obscureText: true,
-                style: const TextStyle(color: AppColors.warmText),
-                decoration: const InputDecoration(
-                  labelText: Strings.kataSandi,
-                  labelStyle: TextStyle(color: AppColors.warmMuted),
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.adminLine),
+                const SizedBox(height: 8),
+                Text(
+                  Strings.adminMasukHint,
+                  style: TextStyle(color: teksRedup),
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  style: TextStyle(color: teksUtama),
+                  decoration: InputDecoration(
+                    labelText: Strings.email,
+                    labelStyle: TextStyle(color: teksRedup),
+                    border: const OutlineInputBorder(),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: garis),
+                    ),
                   ),
                 ),
-                onSubmitted: (_) => _busy ? null : _signIn(),
-              ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _password,
+                  obscureText: true,
+                  style: TextStyle(color: teksUtama),
+                  decoration: InputDecoration(
+                    labelText: Strings.kataSandi,
+                    labelStyle: TextStyle(color: teksRedup),
+                    border: const OutlineInputBorder(),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: garis),
+                    ),
+                  ),
+                  onSubmitted: (_) => _busy ? null : _signIn(),
+                ),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
@@ -156,6 +167,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 }
+

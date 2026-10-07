@@ -3,6 +3,24 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_text.dart';
 
+/// Akses cepat: apakah tema yang aktif itu gelap?
+/// Dipakai widget yang warnanya di-hardcode agar mengikuti aturan:
+/// tema gelap = tanpa background terang + teks terang, tema terang = kebalikannya.
+extension KonteksTema on BuildContext {
+  bool get temaGelap => Theme.of(this).brightness == Brightness.dark;
+
+  /// Teks utama adaptif: terang di tema gelap, gelap di tema terang.
+  Color get teksUtama =>
+      temaGelap ? AppColors.warmText : AppColors.ink;
+
+  /// Teks redup adaptif: warmMuted di tema gelap, muted di tema terang.
+  Color get teksRedup =>
+      temaGelap ? AppColors.warmMuted : AppColors.muted;
+
+  /// Garis/border adaptif.
+  Color get garis => temaGelap ? AppColors.adminLine : AppColors.line;
+}
+
 /// ThemeData ganda: terang untuk Mode Pelanggan, dark warm untuk
 /// Gateway + Mode Admin — dari DESIGN_SYSTEM.md.
 class AppTheme {

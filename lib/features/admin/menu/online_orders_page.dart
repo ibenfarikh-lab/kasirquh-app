@@ -24,7 +24,9 @@ String _statusName(OrderStatus status) => switch (status.name) {
 
 Color _statusColor(OrderStatus status) => switch (status) {
       OrderStatus.menunggu => AppColors.orange,
-      OrderStatus.dikemas => AppColors.warmMuted,
+      // warmMuted terlalu terang untuk teks putih (kontras rendah) —
+      // pakai oranye tua agar terbaca di kedua tema.
+      OrderStatus.dikemas => AppColors.orangeDeep,
       OrderStatus.dikirim => Colors.blue,
       OrderStatus.selesai => AppColors.ok,
       OrderStatus.dibatalkan => AppColors.danger,

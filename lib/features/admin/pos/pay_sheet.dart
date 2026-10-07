@@ -310,7 +310,10 @@ class _PaySheetState extends ConsumerState<PaySheet> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            // Kertas struk ngikutin tema (aturan: tema gelap tanpa putih).
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.panel2
+                : Colors.white,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
@@ -322,10 +325,12 @@ class _PaySheetState extends ConsumerState<PaySheet> {
               total: _lastTotal,
               received: _lastReceived,
             ),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'monospace',
               fontSize: 12,
-              color: Colors.black87,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.warmText
+                  : Colors.black87,
               height: 1.4,
             ),
           ),
