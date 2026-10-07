@@ -29,11 +29,16 @@ class InboxTab extends ConsumerWidget {
     final threads = ref.watch(chatThreadsProvider).valueOrNull ?? const [];
     final unread = threads.where((t) => t.unreadAdmin > 0).toList();
     final low = ref.watch(lowStockProductsProvider);
+    final titipan = (ref.watch(titipRequestsProvider).valueOrNull ??
+            const [])
+        .where((t) => t.status == 'baru')
+        .toList();
 
     final empty = approvals.isEmpty &&
         waiting.isEmpty &&
         unread.isEmpty &&
-        low.isEmpty;
+        low.isEmpty &&
+        titipan.isEmpty;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -130,6 +135,32 @@ class InboxTab extends ConsumerWidget {
                         trailing: _CountBadge(count: p.stock.round()),
                         onTap: () =>
                             _open(context, const ProductsPage()),
+                      ))
+                  .toList(),
+            ),
+          if (titipan.isNotEmpty)
+            _Section(
+              icon: Icons.shopping_bag_outlined,
+              title: '${Strings.titipan} (${titipan.length})',
+              children: titipan
+                  .take(5)
+                  .map((t) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(
+                            Icons.shopping_bag_outlined,
+                            color: AppColors.orange),
+                        title: Text(t.item,
+                            style: const TextStyle(
+                                color: AppColors.warmText,
+                                fontWeight: FontWeight.w700)),
+                        subtitle: Text(
+                          '${t.customerName} · ${t.method}'
+                          '${t.note.isEmpty ? '' : ' · ${t.note}'}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: AppColors.warmMuted),
+                        ),
                       ))
                   .toList(),
             ),

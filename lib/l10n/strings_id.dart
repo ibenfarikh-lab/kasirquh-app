@@ -205,6 +205,8 @@ class Strings {
   // Admin — Inbox
   static const inboxKosong = 'Inbox kosong';
   static const inboxKosongHint = 'Belum ada yang perlu perhatianmu.';
+  static const titipan = 'Titipan';
+  static const titipanKosong = 'Belum ada titipan';
   static const persetujuanPendaftar = 'Persetujuan pendaftar';
   static const pesananBaru = 'Pesanan baru';
   static const chatBelumDibaca = 'Chat belum dibaca';
@@ -389,7 +391,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.18+32';
+  static const versiApp = 'KasirQuh v3.6.19+33';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';

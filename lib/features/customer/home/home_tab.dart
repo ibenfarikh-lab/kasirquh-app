@@ -13,7 +13,7 @@ import '../../../data/models/product.dart';
 import '../../../data/repositories/home_stock_repository.dart';
 import '../../../data/repositories/order_repository.dart';
 import '../../../data/repositories/product_repository.dart';
-import '../../../data/repositories/social_repository.dart';
+
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../account/coin_history_page.dart';
@@ -446,17 +446,20 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  /// Titip belanja: tulis titipan → dikirim sebagai pesan Chat Toko.
+  /// Titip belanja terstruktur (Domain B): form barang + catatan + metode
+  /// → tulis ke `titip_requests`. Titip via pesan Chat Toko DICABUT.
   Future<void> _titipSheet(
       BuildContext context, WidgetRef ref, String? uid) async {
     if (uid == null) {
       await requireLogin(context, ref, () async {});
       return;
     }
-    final thread =
-        ref.read(myTokoThreadProvider(uid)).valueOrNull;
+    final session = ref.read(sessionProvider).valueOrNull;
+    final nama = session == null ? 'Pelanggan' : displayName(session);
     if (!context.mounted) return;
-    final ctrl = TextEditingController();
+    final itemCtrl = TextEditingController();
+    final noteCtrl = TextEditingController();
+    var method = 'Ambil di warung';
     var busy = false;
     String? error;
     await showModalBottomSheet<void>(
@@ -486,19 +489,54 @@ class HomeTab extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Tulis yang mau dicarikan saat toko kulakan. '
-                  'Titipanmu dikirim sebagai pesan ke toko.',
+                  'Barang yang belum ada di rak akan dicari saat '
+                  'warung kulakan. Pilih ambil sendiri atau minta '
+                  'diantar setelah barang tersedia.',
                   style: TextStyle(
                       color: AppColors.muted, fontSize: 13),
                 ),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: ctrl,
-                  maxLines: 3,
+                  controller: itemCtrl,
+                  maxLength: 100,
                   decoration: const InputDecoration(
-                    hintText: 'Mis. "Titip tepung terigu 1 kg ya..."',
+                    labelText: 'Barang yang dicari',
+                    hintText: 'Contoh: susu bayi ukuran 400 g',
                     border: OutlineInputBorder(),
                   ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: noteCtrl,
+                  maxLength: 300,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Rincian atau merek',
+                    hintText:
+                        'Tulis ukuran, merek pilihan, dan jumlah',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    for (final m in [
+                      'Ambil di warung',
+                      'Diantar ke rumah'
+                    ])
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                              right: m == 'Ambil di warung' ? 8 : 0),
+                          child: ChoiceChip(
+                            label: Text(m),
+                            selected: method == m,
+                            onSelected: (_) =>
+                                setState(() => method = m),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 if (error != null) ...[
                   const SizedBox(height: 8),
@@ -508,20 +546,15 @@ class HomeTab extends ConsumerWidget {
                 ],
                 const SizedBox(height: 16),
                 AppButton(
-                  label: busy ? 'Mengirim...' : 'Kirim ke Toko',
+                  label: busy ? 'Mengirim...' : 'Kirim titipan',
                   fullWidth: true,
                   onPressed: busy
                       ? null
                       : () async {
-                          final teks = ctrl.text.trim();
-                          if (teks.isEmpty) {
+                          final barang = itemCtrl.text.trim();
+                          if (barang.isEmpty) {
                             setState(() => error =
-                                'Tulis titipanmu dulu ya.');
-                            return;
-                          }
-                          if (thread == null) {
-                            setState(() => error =
-                                'Chat toko belum siap. Tunggu persetujuan admin dulu ya.');
+                                'Tulis barang yang ingin dititipkan.');
                             return;
                           }
                           setState(() {
@@ -530,19 +563,26 @@ class HomeTab extends ConsumerWidget {
                           });
                           try {
                             await ref
-                                .read(socialRepositoryProvider)
-                                .sendTokoMessage(
-                                  threadId: thread.id,
-                                  uid: uid,
-                                  text: 'Titip belanja: $teks',
+                                .read(orderRepositoryProvider)
+                                .submitTitipRequest(
+                                  customerId: uid,
+                                  customerName: nama,
+                                  item: barang,
+                                  note: noteCtrl.text,
+                                  method: method,
                                 );
                             if (ctx.mounted) {
                               Navigator.of(ctx).pop();
                             }
                             if (context.mounted) {
-                              ref
-                                  .read(customerTabProvider.notifier)
-                                  .state = 3;
+                              ScaffoldMessenger.of(context)
+                                ..hideCurrentSnackBar()
+                                ..showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Terkirim · warung akan memberi kabar'),
+                                  ),
+                                );
                             }
                           } catch (_) {
                             if (ctx.mounted) {
@@ -561,8 +601,10 @@ class HomeTab extends ConsumerWidget {
         ),
       ),
     );
-    ctrl.dispose();
+    itemCtrl.dispose();
+    noteCtrl.dispose();
   }
+
 
   /// Layanan yang masih disiapkan: info jujur + pintu Chat Toko.
   Future<void> _layananInfoSheet(BuildContext context, WidgetRef ref,

@@ -138,6 +138,33 @@ class OrderRepository {
         return list;
       });
   }
+
+  /// Titip belanja terstruktur (Domain B) — tulis ke `titip_requests`.
+  /// Skema SAMA PERSIS dengan PWA. Wajib login & online (ikut PWA).
+  Future<void> submitTitipRequest({
+    required String customerId,
+    required String customerName,
+    required String item,
+    String note = '',
+    String method = 'Ambil di warung',
+  }) async {
+    final db = _db;
+    if (db == null) throw const OfflineCheckout();
+    final barang = item.trim();
+    if (barang.isEmpty) throw ArgumentError('item kosong');
+    await db.collection('titip_requests').add({
+      'customerId': customerId,
+      'customerName':
+          customerName.trim().isEmpty ? 'Pelanggan' : customerName.trim(),
+      'item': barang.length > 100 ? barang.substring(0, 100) : barang,
+      'note': note.trim().length > 300
+          ? note.trim().substring(0, 300)
+          : note.trim(),
+      'method': method,
+      'status': 'baru',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
 }
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {

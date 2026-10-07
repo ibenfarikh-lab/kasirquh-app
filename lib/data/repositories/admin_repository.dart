@@ -12,6 +12,7 @@ import '../../data/models/customer.dart';
 import '../../data/models/customer_note.dart';
 import '../../data/models/journal_entry.dart';
 import '../../data/models/order.dart';
+import '../../data/models/titip_request.dart';
 import '../../data/models/product.dart';
 import '../../data/models/stock_note.dart';
 import '../../data/models/store_note.dart';
@@ -122,6 +123,26 @@ class AdminRepository {
     final db = _db;
     if (db != null) return db.collection(collection).doc().id;
     return _uuid.v4();
+  }
+
+  // ============ TITIP BELANJA (Domain B) ============
+
+  /// Daftar titipan live dari `titip_requests`, urut terbaru.
+  /// Skema SAMA PERSIS dengan PWA. Manajemen status DITUNDA.
+  Stream<List<TitipRequest>> watchTitipRequests({int limit = 50}) async* {
+    final db = _db;
+    if (db == null) {
+      yield const [];
+      return;
+    }
+    yield* db
+        .collection('titip_requests')
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => TitipRequest.fromDoc(d.id, d.data()))
+            .toList());
   }
 
   // ============ PRODUK ============
@@ -1226,6 +1247,12 @@ final adminRepositoryProvider = Provider<AdminRepository>((ref) {
 
 final adminProductsProvider = StreamProvider<List<Product>>((ref) {
   return ref.watch(adminRepositoryProvider).watchAllProducts();
+});
+
+/// Daftar titipan belanja (Domain B) — live dari `titip_requests`.
+final titipRequestsProvider =
+    StreamProvider<List<TitipRequest>>((ref) {
+  return ref.watch(adminRepositoryProvider).watchTitipRequests();
 });
 
 final adminOrdersProvider = StreamProvider<List<Order>>((ref) {
