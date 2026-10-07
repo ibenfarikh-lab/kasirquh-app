@@ -10,7 +10,6 @@ import '../../../data/models/product.dart';
 import '../../../data/models/stock_note.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/product_repository.dart';
-import '../../../data/repositories/store_repository.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -80,7 +79,6 @@ class _NotesTabState extends ConsumerState<NotesTab> {
   Widget build(BuildContext context) {
     final notes = ref.watch(stockNotesProvider).valueOrNull ?? const [];
     final products = ref.watch(productsProvider).valueOrNull ?? const [];
-    final store = ref.watch(storeInfoProvider).valueOrNull;
     final hariIni = notes.where((n) => n.date == _kunci).toList();
     final totalHari = hariIni.fold(0, (s, n) => s + n.total);
 
@@ -123,11 +121,6 @@ class _NotesTabState extends ConsumerState<NotesTab> {
           ),
           const SizedBox(height: 16),
           _NilaiStokCard(nilai: nilaiStokModal(products)),
-          const SizedBox(height: 12),
-          _ModalCard(
-            modal: store?.modal,
-            onIsi: () => _openModalDialog(context, ref, store?.modal),
-          ),
           const SizedBox(height: 16),
           // Navigator tanggal: ‹ tanggal ›
           Row(
@@ -186,61 +179,6 @@ class _NotesTabState extends ConsumerState<NotesTab> {
     );
   }
 
-  void _openModalDialog(
-      BuildContext context, WidgetRef ref, int? current) {
-    final c = TextEditingController(
-        text: current == null ? '' : '$current');
-    showDialog(
-      context: context,
-      builder: (d) => AlertDialog(
-        title: const Text(Strings.isiModal),
-        content: TextField(
-          controller: c,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(
-            labelText: Strings.nominalModal,
-            prefixText: 'Rp ',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(d),
-            child: const Text(Strings.batal),
-          ),
-          TextButton(
-            onPressed: () async {
-              final v = int.tryParse(
-                      c.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
-                  0;
-              if (v <= 0) return;
-              Navigator.pop(d);
-              try {
-                await ref
-                    .read(adminRepositoryProvider)
-                    .saveStoreSettings({'modal': v});
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text(Strings.berhasilDisimpan)),
-                  );
-                }
-              } catch (_) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text(Strings.butuhInternetAdmin)),
-                  );
-                }
-              }
-            },
-            child: const Text(Strings.simpan),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Kartu NILAI STOK · MODAL DI RAK (paling atas).
@@ -273,52 +211,6 @@ class _NilaiStokCard extends StatelessWidget {
             Strings.nilaiStokDeskripsi,
             style:
                 TextStyle(color: AppColors.warmMuted, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ModalCard extends StatelessWidget {
-  final int? modal;
-  final VoidCallback onIsi;
-
-  const _ModalCard({required this.modal, required this.onIsi});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      child: Row(
-        children: [
-          const Icon(Icons.account_balance_wallet_outlined,
-              color: AppColors.orange, size: 28),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  Strings.modalBelanja,
-                  style:
-                      TextStyle(color: AppColors.warmMuted, fontSize: 12),
-                ),
-                Text(
-                  modal == null ? Strings.belumAdaModal : formatRp(modal!),
-                  style: const TextStyle(
-                    color: AppColors.warmText,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          AppButton(
-            label: Strings.isiModal,
-            fullWidth: false,
-            kind: AppButtonKind.secondary,
-            onPressed: onIsi,
           ),
         ],
       ),
