@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../admin_nav.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -141,12 +142,7 @@ class _ThreadTile extends StatelessWidget {
             )
           : null,
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ChatThreadPage(thread: thread),
-          ),
-        );
+        openAdminPage(context, ChatThreadPage(thread: thread));
       },
     );
   }

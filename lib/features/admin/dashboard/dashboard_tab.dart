@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../admin_nav.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -149,7 +150,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
   }
 
   void _open(BuildContext context, Widget page) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    openAdminPage(context, page);
   }
 }
 

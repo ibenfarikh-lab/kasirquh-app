@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../admin_nav.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -62,9 +63,7 @@ class _LaporanCard extends StatelessWidget {
         ),
         trailing: Icon(Icons.chevron_right,
             color: context.teksRedup),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ReportPage()),
-        ),
+        onTap: () => openAdminPage(context, const ReportPage()),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../admin_nav.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -171,8 +172,7 @@ class InboxTab extends ConsumerWidget {
   }
 
   void _open(BuildContext context, Widget page) {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => page));
+    openAdminPage(context, page);
   }
 }
 
@@ -259,9 +259,7 @@ class _ApprovalTile extends ConsumerWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       // Deep link: tap tile → Data Pelanggan (kelola persetujuan di sana).
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const CustomersPage()),
-      ),
+      onTap: () => openAdminPage(context, const CustomersPage()),
       title: Text(customer.name,
           style: TextStyle(
               color: context.teksUtama, fontWeight: FontWeight.w700)),
@@ -328,8 +326,7 @@ class _OrderTile extends StatelessWidget {
       trailing: Icon(Icons.chevron_right,
           color: context.teksRedup),
       // Deep link: buka Kasir Online.
-      onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const OnlineOrdersPage())),
+      onTap: () => openAdminPage(context, const OnlineOrdersPage()),
     );
   }
 }

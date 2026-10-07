@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../admin_nav.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
@@ -90,8 +91,7 @@ class MenuTab extends StatelessWidget {
       ];
 
   void _openPage(BuildContext context, Widget page) {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => page));
+    openAdminPage(context, page);
   }
 
   void _openSheet(BuildContext context, Widget sheet) {
