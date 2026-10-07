@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 /// sinkron ke Firestore via [SyncEngine] saat online.
 class AppDatabase {
   static const _name = 'kasirquh.db';
-  static const _version = 5;
+  static const _version = 6;
   static Database? _db;
 
   static Future<Database> get db async {
@@ -110,6 +110,18 @@ class AppDatabase {
         if (oldVersion < 5) {
           await _createHomeStock(db);
         }
+        if (oldVersion < 6) {
+          // Catatan Toko → cloud: kolom flag migrasi (aturan keras Tahap 1:
+          // hapus baris lokal hanya yang ber-flag, setelah verifikasi).
+          try {
+            await db.execute(
+                'ALTER TABLE store_notes ADD COLUMN cloudId TEXT');
+          } catch (_) {}
+          try {
+            await db.execute(
+                'ALTER TABLE store_notes ADD COLUMN migrated INTEGER NOT NULL DEFAULT 0');
+          } catch (_) {}
+        }
       },
     );
   }
@@ -149,11 +161,13 @@ class AppDatabase {
     _db = null;
   }
 
-  /// Catatan Toko — lokal saja (tidak ada koleksi Firestore/rules untuknya).
+  /// Catatan Toko — outbox lokal + backup pra-verifikasi migrasi cloud.
+  /// `migrated`: 1 = sudah tersalin ke `store_memos` (cloudId = ID dokumen).
   static Future<void> _createStoreNotes(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS store_notes(
         id TEXT PRIMARY KEY, title TEXT NOT NULL,
-        body TEXT NOT NULL, createdAt INTEGER NOT NULL)''');
+        body TEXT NOT NULL, createdAt INTEGER NOT NULL,
+        cloudId TEXT, migrated INTEGER NOT NULL DEFAULT 0)''');
   }
 }

@@ -344,7 +344,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.10+24';
+  static const versiApp = 'KasirQuh v3.6.11+25';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';
@@ -379,6 +379,10 @@ class Strings {
   static const tambahCatatanToko = 'Tambah catatan toko';
   static const isiCatatan = 'Isi catatan';
   static const belumAdaCatatanToko = 'Belum ada catatan toko';
+  static const catatanTokoCloudHint =
+      'Tersimpan di cloud, terbaca di semua perangkat.';
+  static const gagalMuatCatatanToko =
+      'Gagal memuat catatan. Periksa internet lalu coba lagi.';
 
   // Admin — Chat
   static const belumAdaPercakapan = 'Belum ada percakapan';

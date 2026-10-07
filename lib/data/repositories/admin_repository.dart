@@ -954,24 +954,112 @@ class AdminRepository {
 
   // ============ TOKO & PROMO ============
 
-  // ---- Catatan Toko (lokal saja; tidak ada koleksi Firestore/rules) ----
+  // ---- Catatan Toko (cloud: Firestore `store_memos`) ----
+  // Skema terkunci Domain A: title, body, createdAt.
+  // SQLite `store_notes` kini hanya outbox (tulisan saat cloud gagal) dan
+  // backup pra-verifikasi: baris ber-flag migrated=1 dihapus HANYA setelah
+  // verifikasi Tim Utama (aturan keras pola Tahap 1).
+
+  /// Migrasi lazy + idempoten: salin baris lokal yang belum ber-flag ke
+  /// `store_memos` dengan ID dokumen deterministik `local_<id>` (tulis ulang
+  /// aman bila flag gagal tersimpan). Best-effort: gagal (offline/rules
+  /// belum terbit) → baris tetap tak ber-flag, dicoba lagi di akses berikut.
+  /// Tidak pernah melempar.
+  Future<void> _migrateStoreNotes() async {
+    final db = _db;
+    if (db == null) return;
+    final sq = await AppDatabase.db;
+    final rows = await sq.query('store_notes',
+        where: 'migrated = 0', orderBy: 'createdAt ASC');
+    for (final r in rows) {
+      final note = StoreNote.fromMap(r);
+      final cloudId = 'local_${note.id}';
+      try {
+        await db
+            .collection('store_memos')
+            .doc(cloudId)
+            .set(note.toFirestoreMigrasi());
+        await sq.update(
+          'store_notes',
+          {'migrated': 1, 'cloudId': cloudId},
+          where: 'id = ?',
+          whereArgs: [note.id],
+        );
+      } catch (_) {
+        break; // coba lagi di akses berikutnya
+      }
+    }
+  }
+
+  /// Catatan lokal yang belum termigrasi (outbox) — dipakai saat cloud
+  /// tak terjangkau agar catatan user tidak tampak hilang.
+  Future<List<StoreNote>> _readLocalPendingNotes() async {
+    final sq = await AppDatabase.db;
+    final rows = await sq.query('store_notes',
+        where: 'migrated = 0', orderBy: 'createdAt DESC');
+    return rows.map(StoreNote.fromMap).toList();
+  }
 
   Stream<List<StoreNote>> watchStoreNotes() async* {
-    final sq = await AppDatabase.db;
-    final rows = await sq.query('store_notes', orderBy: 'createdAt DESC');
-    yield rows.map(StoreNote.fromMap).toList();
+    await _migrateStoreNotes();
+    final db = _db;
+    if (db == null) {
+      yield await _readLocalPendingNotes();
+      return;
+    }
+    try {
+      await for (final snap in db
+          .collection('store_memos')
+          .orderBy('createdAt', descending: true)
+          .snapshots()) {
+        yield snap.docs
+            .map((d) => StoreNote.fromDoc(d.id, d.data()))
+            .toList();
+      }
+    } catch (_) {
+      // Cloud tak terjangkau (offline/rules belum terbit) →
+      // tampilkan yang lokal, jangan daftar kosong.
+      yield await _readLocalPendingNotes();
+    }
     // UI memanggil ref.invalidate(storeNotesProvider) setelah tulis/hapus.
   }
 
   Future<String> saveStoreNote({String? id, required String title, required String body}) async {
+    final bersihJudul = title.trim();
+    final bersihIsi = body.trim();
+    final db = _db;
+    if (db != null && id == null) {
+      try {
+        final ref = await db.collection('store_memos').add(StoreNote(
+              id: '',
+              title: bersihJudul,
+              body: bersihIsi,
+              createdAt: DateTime.now(),
+            ).toFirestore());
+        return ref.id;
+      } catch (_) {
+        // jatuh ke outbox lokal di bawah; dimigrasi otomatis saat cloud pulih
+      }
+    }
+    if (db != null && id != null) {
+      // Upsert catatan cloud yang sudah ada.
+      await db.collection('store_memos').doc(id).set(StoreNote(
+            id: id,
+            title: bersihJudul,
+            body: bersihIsi,
+            createdAt: DateTime.now(),
+          ).toFirestore());
+      return id;
+    }
+    // Outbox lokal: belum ada ID cloud; baris ini dimigrasi lazy.
     final sq = await AppDatabase.db;
-    final docId = id ?? _newId('store_notes');
+    final docId = _newId('store_notes');
     await sq.insert(
       'store_notes',
       StoreNote(
         id: docId,
-        title: title.trim(),
-        body: body.trim(),
+        title: bersihJudul,
+        body: bersihIsi,
         createdAt: DateTime.now(),
       ).toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -980,8 +1068,22 @@ class AdminRepository {
   }
 
   Future<void> deleteStoreNote(String id) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet untuk menghapus.');
+    await db.collection('store_memos').doc(id).delete();
+    // Bersihkan juga baris lokal (outbox/backup) agar tak muncul lagi
+    // saat fallback offline — ini hapus atas perintah user, bukan
+    // pembersihan migrasi (yang tetap menunggu verifikasi).
     final sq = await AppDatabase.db;
     await sq.delete('store_notes', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Pembersihan pasca-verifikasi: hapus baris lokal yang sudah ber-flag
+  /// migrated=1. HANYA dipanggil setelah Tim Utama memverifikasi isi cloud
+  /// (aturan keras pola Tahap 1). Belum dipanggil di tahap ini.
+  Future<int> purgeMigratedStoreNotes() async {
+    final sq = await AppDatabase.db;
+    return sq.delete('store_notes', where: 'migrated = 1');
   }
 
   Future<void> saveStoreSettings(Map<String, dynamic> patch) async {

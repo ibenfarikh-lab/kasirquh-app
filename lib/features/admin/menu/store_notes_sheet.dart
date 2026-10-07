@@ -8,7 +8,7 @@ import '../../../data/models/store_note.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Sheet Catatan Toko: coretan admin, tersimpan lokal di HP ini.
+/// Sheet Catatan Toko: coretan admin, tersimpan di cloud (`store_memos`).
 class StoreNotesSheet extends ConsumerStatefulWidget {
   const StoreNotesSheet({super.key});
 
@@ -52,6 +52,8 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
       _body.clear();
       setState(() => _showForm = false);
       _snack(Strings.berhasilDisimpan);
+    } catch (_) {
+      _snack(Strings.butuhInternetAdmin);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -82,9 +84,13 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
       ),
     );
     if (ok != true) return;
-    await ref.read(adminRepositoryProvider).deleteStoreNote(note.id);
-    ref.invalidate(storeNotesProvider);
-    _snack(Strings.berhasilDihapus);
+    try {
+      await ref.read(adminRepositoryProvider).deleteStoreNote(note.id);
+      ref.invalidate(storeNotesProvider);
+      _snack(Strings.berhasilDihapus);
+    } catch (_) {
+      _snack(Strings.butuhInternetAdmin);
+    }
   }
 
   InputDecoration _deco(String hint) => InputDecoration(
@@ -171,7 +177,7 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
               return const EmptyState(
                 icon: Icons.note_alt_outlined,
                 title: Strings.belumAdaCatatanToko,
-                hint: 'Catatan tersimpan di HP ini.',
+                hint: Strings.catatanTokoCloudHint,
               );
             }
             return ListView.builder(
@@ -221,7 +227,7 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
           error: (_, __) => const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Text(
-              Strings.belumAdaCatatanToko,
+              Strings.gagalMuatCatatanToko,
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.warmMuted),
             ),
