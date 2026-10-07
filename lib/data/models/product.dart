@@ -5,7 +5,9 @@ class Product {
   final String category;
   final int price; // harga jual (Rp, integer)
   final int cost; // modal/pcs (Rp, integer)
-  final int stock;
+  /// Stok desimal — kg/liter WAJIB mempertahankan presisi
+  /// (cth. 3,75); pcs/dus tampil bulat. Jangan .toInt()/.round().
+  final double stock;
   final int lowStockAt; // batas menipis per produk (default 5)
   final String? barcode;
   final String? photoPath;
@@ -43,7 +45,7 @@ class Product {
         category: m['category'] as String? ?? '',
         price: (m['price'] as num).toInt(),
         cost: (m['cost'] as num?)?.toInt() ?? 0,
-        stock: (m['stock'] as num).toInt(),
+        stock: (m['stock'] as num).toDouble(),
         lowStockAt: (m['lowStockAt'] as num?)?.toInt() ?? 5,
         barcode: m['barcode'] as String?,
         photoPath: m['photoPath'] as String?,

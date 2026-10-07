@@ -67,7 +67,8 @@ class StockNote {
 
 class StockNoteItem {
   final String name;
-  final int qty;
+  /// Jumlah — boleh desimal (cth. 2,5 kg). Jangan .toInt().
+  final double qty;
   final int price; // harga per satuan/baris (Rp integer)
 
   const StockNoteItem({
@@ -82,13 +83,19 @@ class StockNoteItem {
   factory StockNoteItem.fromMap(Map<String, dynamic> m) {
     int asInt(dynamic v) =>
         v is num ? v.toInt() : int.tryParse('$v') ?? 0;
+    double asDouble(dynamic v) {
+      if (v is num) return v.toDouble();
+      // PWA menulis qty sebagai string ('1') — terima keduanya;
+      // koma Indonesia ('3,75') juga diterima.
+      return double.tryParse('$v'.replaceAll(',', '.')) ?? 0;
+    }
+
     return StockNoteItem(
       name: m['name'] as String? ?? '',
-      // PWA menulis qty sebagai string ('1') — terima keduanya.
-      qty: asInt(m['qty']),
+      qty: asDouble(m['qty']),
       price: asInt(m['price']),
     );
   }
 
-  int get subtotal => qty * price;
+  double get subtotal => qty * price;
 }

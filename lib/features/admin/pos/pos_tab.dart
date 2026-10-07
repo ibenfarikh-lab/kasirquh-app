@@ -239,7 +239,7 @@ class _ProductRow extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${formatRp(product.price)} · stok ${product.stock}',
+                    '${formatRp(product.price)} · stok ${formatStok(product.stock)}',
                     style: const TextStyle(
                         color: AppColors.warmMuted, fontSize: 12),
                   ),

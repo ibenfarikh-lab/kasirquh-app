@@ -26,7 +26,9 @@ String labelSumberCatatan(String source) => switch (source) {
 
 /// Fungsi murni (di-test): label satu baris barang di kartu.
 String labelItemBarang(StockNoteItem it) =>
-    it.qty > 1 ? '${it.name} · ${it.qty}' : it.name;
+    it.qty > 1 ? '${it.name} · ${formatStok(it.qty)}' : it.name;
+
+
 
 /// Fungsi murni (di-test): kunci tanggal YYYY-MM-DD untuk filter.
 String kunciTanggal(DateTime d) =>
@@ -34,8 +36,9 @@ String kunciTanggal(DateTime d) =>
     '${d.day.toString().padLeft(2, '0')}';
 
 /// Fungsi murni (di-test): nilai stok = Σ stok × modal/pcs.
-int nilaiStokModal(List<Product> products) =>
-    products.fold(0, (s, p) => s + p.stock * p.cost);
+/// Stok desimal dipertahankan (3,75 × 4000 = 15000, bukan 12000).
+double nilaiStokModal(List<Product> products) =>
+    products.fold(0.0, (s, p) => s + p.stock * p.cost);
 
 /// Mode Admin > Tab Catatan: Catatan Belanja Harian satu halaman.
 /// Acuan tampilan = PWA (halaman Catatan Belanja).
@@ -185,7 +188,7 @@ class _NotesTabState extends ConsumerState<NotesTab> {
 
 /// Kartu NILAI STOK · MODAL DI RAK (paling atas).
 class _NilaiStokCard extends StatelessWidget {
-  final int nilai;
+  final double nilai;
   const _NilaiStokCard({required this.nilai});
 
   @override
@@ -201,7 +204,7 @@ class _NilaiStokCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            formatRp(nilai),
+            formatRp(nilai.round()),
             style: const TextStyle(
               color: AppColors.warmText,
               fontSize: 22,
@@ -519,7 +522,7 @@ class _FormTambahState extends ConsumerState<_FormTambah> {
         supplier: supplier,
         items: baris
             .map((b) =>
-                StockNoteItem(name: b, qty: 1, price: 0))
+                StockNoteItem(name: b, qty: 1.0, price: 0))
             .toList(),
         total: total,
         source: 'manual',
@@ -660,7 +663,7 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
       for (final it in e.items) {
         final r = _ItemRow();
         r.name.text = it.name;
-        r.qty.text = '${it.qty}';
+        r.qty.text = formatStok(it.qty);
         r.price.text = '${it.price}';
         _rows.add(r);
       }
@@ -680,10 +683,10 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
   int get _total {
     var t = 0;
     for (final r in _rows) {
-      final q = int.tryParse(r.qty.text) ?? 0;
+      final q = parseDesimal(r.qty.text);
       final p =
           int.tryParse(r.price.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-      t += q * p;
+      t += (q * p).round();
     }
     return t;
   }
@@ -763,7 +766,9 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
                     const SizedBox(width: 6),
                     Expanded(
                       flex: 2,
-                      child: _num(r.qty, 'Qty', TextInputType.number),
+                      child: _num(r.qty, 'Qty',
+                          const TextInputType.numberWithOptions(decimal: true),
+                          decimal: true),
                     ),
                     const SizedBox(width: 6),
                     Expanded(
@@ -816,13 +821,16 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
     );
   }
 
-  Widget _num(TextEditingController c, String label, TextInputType type) {
+  Widget _num(TextEditingController c, String label, TextInputType type,
+      {bool decimal = false}) {
     return TextField(
       controller: c,
       keyboardType: type,
       inputFormatters: type == TextInputType.text
           ? null
-          : [FilteringTextInputFormatter.digitsOnly],
+          : decimal
+              ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]'))]
+              : [FilteringTextInputFormatter.digitsOnly],
       style: const TextStyle(color: AppColors.warmText, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
@@ -851,7 +859,7 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
           .where((r) => r.name.text.trim().isNotEmpty)
           .map((r) => StockNoteItem(
                 name: r.name.text.trim(),
-                qty: int.tryParse(r.qty.text) ?? 0,
+                qty: parseDesimal(r.qty.text),
                 price: int.tryParse(
                         r.price.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
                     0,
@@ -868,7 +876,7 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
         date: isEdit ? widget.existing!.date : date,
         supplier: _supplier.text.trim(),
         items: items,
-        total: items.fold(0, (s, e) => s + e.subtotal),
+        total: items.fold(0.0, (s, e) => s + e.subtotal).round(),
         source: isEdit ? widget.existing!.source : 'manual',
         createdAt: isEdit ? widget.existing!.createdAt : now,
       );

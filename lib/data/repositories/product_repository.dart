@@ -50,7 +50,7 @@ class ProductRepository {
         category: (m['category'] as String?) ?? '',
         price: (m['price'] as num?)?.toInt() ?? 0,
         cost: (m['costPrice'] as num?)?.toInt() ?? 0,
-        stock: (m['stock'] as num?)?.toInt() ?? 0,
+        stock: (m['stock'] as num?)?.toDouble() ?? 0.0,
         lowStockAt: (m['lowStockAt'] as num?)?.toInt() ?? 5,
         barcode: m['barcode'] as String?,
         photoPath: m['photoUrl'] as String?,
@@ -107,7 +107,7 @@ class ProductRepository {
         category: (m['category'] as String?) ?? '',
         price: (m['price'] as num?)?.toInt() ?? 0,
         cost: (m['costPrice'] as num?)?.toInt() ?? 0,
-        stock: (m['stock'] as num?)?.toInt() ?? 0,
+        stock: (m['stock'] as num?)?.toDouble() ?? 0.0,
         lowStockAt: (m['lowStockAt'] as num?)?.toInt() ?? 5,
         barcode: m['barcode'] as String?,
         photoPath: m['photoUrl'] as String?,
@@ -132,12 +132,12 @@ class ProductRepository {
   }
 
   /// Ambil stok terkini satu produk dari server (untuk validasi checkout).
-  Future<int?> fetchStock(String productId) async {
+  Future<double?> fetchStock(String productId) async {
     if (_db == null) return null;
     final doc = await _db.collection('products').doc(productId).get();
     final data = doc.data();
     if (data == null) return null;
-    return (data['stock'] as num?)?.toInt();
+    return (data['stock'] as num?)?.toDouble();
   }
 }
 

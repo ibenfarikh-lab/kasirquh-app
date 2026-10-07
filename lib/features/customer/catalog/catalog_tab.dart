@@ -232,8 +232,8 @@ class _ProductCard extends ConsumerWidget {
             out
                 ? Strings.habis
                 : product.stock <= product.lowStockAt
-                    ? '${Strings.stokMenipis} (${product.stock})'
-                    : 'Stok ${product.stock}',
+                    ? '${Strings.stokMenipis} (${formatStok(product.stock)})'
+                    : 'Stok ${formatStok(product.stock)}',
             style: TextStyle(
               fontSize: 12,
               color: out ? AppColors.danger : AppColors.muted,
@@ -350,7 +350,7 @@ class ProductDetailSheetState
                 Text(
                   out
                       ? Strings.habis
-                      : 'Stok ${p.stock}',
+                      : 'Stok ${formatStok(p.stock)}',
                   style: TextStyle(
                     color: out ? AppColors.danger : AppColors.muted,
                     fontWeight: FontWeight.w600,

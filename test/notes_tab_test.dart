@@ -25,6 +25,11 @@ void main() {
     );
     expect(
       labelItemBarang(
+          const StockNoteItem(name: 'Bawang', qty: 2.5, price: 0)),
+      'Bawang · 2,5',
+    );
+    expect(
+      labelItemBarang(
           const StockNoteItem(name: 'Minyak 2 dus', qty: 1, price: 0)),
       'Minyak 2 dus',
     );
@@ -54,6 +59,21 @@ void main() {
     ];
     expect(nilaiStokModal(produk), 10 * 5000 + 3 * 2000);
     expect(nilaiStokModal(const []), 0);
+  });
+
+  test('nilaiStokModal: stok desimal dipertahankan (3,75 x 4000 = 15000)', () {
+    // Root cause revisi desimal: native memotong (toInt), PWA membulatkan.
+    // Yang benar: desimal dipertahankan.
+    const produk = [
+      Product(
+          id: 'c',
+          name: 'Bawang Putih Hunan',
+          category: 'Sembako',
+          stock: 3.75,
+          cost: 4000,
+          price: 6000),
+    ];
+    expect(nilaiStokModal(produk), 15000.0);
   });
 
   test('nilaiStokModal: produk nonaktif ikut dihitung (ikut PWA)', () {

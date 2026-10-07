@@ -71,8 +71,8 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
     for (final p in products) {
       final row = _rows.putIfAbsent(p.id, () => _BelanjaRow());
       if (row.qty.text.isEmpty) {
-        final saranQty = ((batas * 2 - p.stock).clamp(1, 1 << 20)).toInt();
-        row.qty.text = saranQty.toString();
+        final saranQty = (batas * 2 - p.stock).clamp(1.0, 1048576.0);
+        row.qty.text = formatStok(saranQty);
         row.isi.text = '1';
         row.hargaJual.text =
             (p.price > 0 ? p.price : saranHargaJual(p.cost)).toString();
@@ -86,8 +86,8 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
     for (final p in products) {
       final row = _rows[p.id];
       if (row == null || !row.dibeli) continue;
-      final qty = _parseAngka(row.qty);
-      final isi = _parseAngka(row.isi);
+      final qty = parseDesimal(row.qty.text);
+      final isi = parseDesimal(row.isi.text);
       final hargaKemasan = _parseAngka(row.hargaKemasan);
       if (qty <= 0 || isi <= 0 || hargaKemasan <= 0) continue;
       dipilih[p] = row;
@@ -103,12 +103,12 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
     setState(() => _saving = true);
     try {
       final items = <StockNoteItem>[];
-      var tunai = 0; // UANG NYATA yang dibayar = Σ(qty kemasan × harga kemasan).
+      var tunai = 0.0; // UANG NYATA yang dibayar = Σ(qty kemasan × harga kemasan).
       for (final e in dipilih.entries) {
         final p = e.key;
         final row = e.value;
-        final qty = _parseAngka(row.qty);
-        final isi = _parseAngka(row.isi);
+        final qty = parseDesimal(row.qty.text);
+        final isi = parseDesimal(row.isi.text);
         final hargaKemasan = _parseAngka(row.hargaKemasan);
         final hargaJual = _parseAngka(row.hargaJual);
         // Harga jual wajib > 0: produk Rp0 = dijual gratis di kasir.
@@ -155,7 +155,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
             '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
         supplier: supplier,
         items: items,
-        total: tunai,
+        total: tunai.round(),
         source: 'belanja_stok',
         createdAt: now,
       );
@@ -163,11 +163,11 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
       await repo.addJournal(
         kind: 'kulakan',
         label: 'Kulakan · $supplier',
-        amount: -tunai,
+        amount: -tunai.round(),
         refId: noteId,
       );
       // Modal sebagai delta antrean: tidak dilewati diam-diam saat offline.
-      await repo.adjustModal(-tunai);
+      await repo.adjustModal(-tunai.round());
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(Strings.belanjaTersimpan)),
@@ -264,8 +264,8 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
   Widget _kartuProduk(Product p) {
     final row = _rows[p.id]!;
     final hargaKemasan = _parseAngka(row.hargaKemasan);
-    final isi = _parseAngka(row.isi);
-    final saranQty = _parseAngka(row.qty);
+    final isi = parseDesimal(row.isi.text);
+    final saranQty = parseDesimal(row.qty.text);
     final modalPcs = isi > 0 ? (hargaKemasan / isi).round() : 0;
 
     return Card(
@@ -285,7 +285,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
               ),
             ),
             subtitle: Text(
-              'Stok ${p.stock} pcs · ${Strings.saranJumlah}: $saranQty',
+              'Stok ${formatStok(p.stock)} · ${Strings.saranJumlah}: ${formatStok(saranQty)}',
               style: const TextStyle(color: AppColors.warmMuted),
             ),
             onChanged: (v) => setState(() => row.dibeli = v ?? false),
@@ -304,6 +304,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
                           row.qty,
                           'Jumlah beli',
                           onChanged: (_) => setState(() {}),
+                          decimal: true,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -312,6 +313,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
                           row.isi,
                           Strings.isiPerKemasan,
                           onChanged: (_) => setState(() {}),
+                          decimal: true,
                         ),
                       ),
                     ],
@@ -374,11 +376,16 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
     TextEditingController c,
     String label, {
     ValueChanged<String>? onChanged,
+    bool decimal = false,
   }) {
     return TextField(
       controller: c,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      keyboardType: decimal
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.number,
+      inputFormatters: decimal
+          ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]'))]
+          : [FilteringTextInputFormatter.digitsOnly],
       style: const TextStyle(color: AppColors.warmText),
       decoration: _dekorasi(label),
       onChanged: onChanged,

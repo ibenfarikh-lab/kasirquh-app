@@ -143,7 +143,7 @@ class AdminRepository {
             category: (m['category'] as String?) ?? '',
             price: (m['price'] as num?)?.toInt() ?? 0,
             cost: (m['costPrice'] as num?)?.toInt() ?? 0,
-            stock: (m['stock'] as num?)?.toInt() ?? 0,
+            stock: (m['stock'] as num?)?.toDouble() ?? 0.0,
             lowStockAt: (m['lowStockAt'] as num?)?.toInt() ?? 5,
             barcode: m['barcode'] as String?,
             photoPath: m['photoUrl'] as String?,
@@ -193,7 +193,7 @@ class AdminRepository {
             category: (m['category'] as String?) ?? '',
             price: (m['price'] as num?)?.toInt() ?? 0,
             cost: (m['costPrice'] as num?)?.toInt() ?? 0,
-            stock: (m['stock'] as num?)?.toInt() ?? 0,
+            stock: (m['stock'] as num?)?.toDouble() ?? 0.0,
             lowStockAt: (m['lowStockAt'] as num?)?.toInt() ?? 5,
             barcode: m['barcode'] as String?,
             active: true,
@@ -217,7 +217,7 @@ class AdminRepository {
     required String category,
     required int price,
     required int cost,
-    required int stock,
+    required double stock,
     int lowStockAt = 5,
     String? barcode,
     bool active = true,
@@ -294,14 +294,14 @@ class AdminRepository {
   /// Stok dikirim sebagai DELTA atomik (FieldValue.increment) — bukan nilai
   /// absolut dari DB lokal — agar dua perangkat yang mengubah bersamaan
   /// tidak saling menimpa (lost-update). Cermin lokal di-update optimistis.
-  Future<void> adjustStock(String productId, int delta,
+  Future<void> adjustStock(String productId, num delta,
       {int? costPrice}) async {
     final sq = await AppDatabase.db;
     final rows =
         await sq.query('products', where: 'id = ?', whereArgs: [productId]);
     if (rows.isEmpty) return;
     final p = Product.fromMap(rows.first);
-    final newStock = (p.stock + delta).clamp(0, 1 << 31);
+    final newStock = (p.stock + delta).clamp(0.0, double.maxFinite).toDouble();
     final newCost = costPrice ?? p.cost;
     await sq.update(
       'products',

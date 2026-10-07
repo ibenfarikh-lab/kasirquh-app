@@ -49,11 +49,13 @@ class CartNotifier extends StateNotifier<List<CartLine>> {
   }
 
   /// Atur qty langsung (0 = hapus baris). Dibatasi stok.
+  /// Penjualan satuan bulat (selaras PWA: stepper kasir ±1) —
+  /// stok desimal 3,75 → maksimal 3 satuan.
   void setQty(String productId, int qty) {
     final i = state.indexWhere((e) => e.product.id == productId);
     if (i < 0) return;
     final line = state[i];
-    final capped = qty.clamp(0, line.product.stock);
+    final capped = qty.clamp(0, line.product.stock.floor());
     if (capped <= 0) {
       state = [...state.sublist(0, i), ...state.sublist(i + 1)];
     } else {

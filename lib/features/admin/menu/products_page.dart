@@ -153,7 +153,7 @@ class _ProductsBodyState extends ConsumerState<_ProductsBody> {
                         ),
                       ),
                       subtitle: Text(
-                        'Rp${formatRp(p.price)} · stok ${p.stock} · ${p.category}',
+                        'Rp${formatRp(p.price)} · stok ${formatStok(p.stock)} · ${p.category}',
                         style: const TextStyle(
                             color: AppColors.warmMuted),
                       ),
@@ -219,8 +219,8 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
         text: p == null ? '' : p.price.toString());
     _costCtrl =
         TextEditingController(text: p == null ? '' : p.cost.toString());
-    _stockCtrl =
-        TextEditingController(text: p == null ? '' : p.stock.toString());
+    _stockCtrl = TextEditingController(
+        text: p == null ? '' : formatStok(p.stock));
     _barcodeCtrl = TextEditingController(text: p?.barcode ?? '');
     // URL online vs data URI dipisah: URL bisa diedit, data URI tidak.
     final existing = p?.photoPath ?? '';
@@ -244,6 +244,13 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
 
   int _parseDigits(String text) =>
       int.tryParse(text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+
+  /// Stok boleh desimal (cth. 3,75 kg) — terima koma maupun titik.
+  double _parseDesimal(String text) {
+    final t =
+        text.replaceAll(',', '.').replaceAll(RegExp(r'[^0-9.]'), '');
+    return double.tryParse(t) ?? 0;
+  }
 
   void _snack(String message) {
     ScaffoldMessenger.of(context)
@@ -282,7 +289,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
             category: _categoryCtrl.text.trim(),
             price: price,
             cost: _parseDigits(_costCtrl.text),
-            stock: _parseDigits(_stockCtrl.text),
+            stock: _parseDesimal(_stockCtrl.text),
             barcode: barcode.isEmpty ? null : barcode,
             active: _active,
             photoPath: _photoPath,
@@ -375,8 +382,11 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
         const SizedBox(height: 12),
         TextField(
           controller: _stockCtrl,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]'))
+          ],
           decoration: const InputDecoration(labelText: Strings.stok),
         ),
         const SizedBox(height: 12),

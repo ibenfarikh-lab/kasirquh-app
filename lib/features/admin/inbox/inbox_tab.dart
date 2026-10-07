@@ -123,11 +123,11 @@ class InboxTab extends ConsumerWidget {
                                 color: AppColors.warmText,
                                 fontWeight: FontWeight.w700)),
                         subtitle: Text(
-                          'Stok ${p.stock} · ${formatRp(p.price)}',
+                          'Stok ${formatStok(p.stock)} · ${formatRp(p.price)}',
                           style: const TextStyle(
                               color: AppColors.warmMuted),
                         ),
-                        trailing: _CountBadge(count: p.stock),
+                        trailing: _CountBadge(count: p.stock.round()),
                         onTap: () =>
                             _open(context, const ProductsPage()),
                       ))

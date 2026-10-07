@@ -93,8 +93,10 @@ class SyncEngine {
             await ref.set(
               {
                 ...sets,
+                // JANGAN .toInt(): delta stok bisa desimal (cth. +2,5 kg).
+                // FieldValue.increment menerima num apa adanya.
                 for (final e in deltas.entries)
-                  e.key: FieldValue.increment((e.value as num).toInt()),
+                  e.key: FieldValue.increment(e.value as num),
               },
               SetOptions(merge: true),
             );
