@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/store_note.dart';
@@ -51,8 +52,6 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
-        // Aturan 3: dialog = L3.
-        backgroundColor: AppColors.panel2,
         title: const Text(Strings.konfirmasiPurgeJudul),
         content: Text(Strings.konfirmasiPurgeIsi(n)),
         actions: [
@@ -126,9 +125,9 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
       builder: (ctx) => AlertDialog(
         // Aturan 3: dialog = L3.
         backgroundColor: AppColors.panel2,
-        title: const Text(
+        title: Text(
           'Hapus catatan ini?',
-          style: TextStyle(color: AppColors.warmText),
+          style: TextStyle(color: context.teksUtama),
         ),
         actions: [
           TextButton(
@@ -157,7 +156,7 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
 
   InputDecoration _deco(String hint) => InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: AppColors.warmMuted),
+        hintStyle: TextStyle(color: context.teksRedup),
         filled: true,
         fillColor: AppColors.panel2,
         contentPadding:
@@ -172,7 +171,7 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.panel,
+        // Aturan 1&3: ikut bottomSheetTheme (adaptif).
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
@@ -204,8 +203,8 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
                     _showForm
                         ? Strings.tambahCatatanToko
                         : Strings.modulCatatanToko,
-                    style: const TextStyle(
-                      color: AppColors.warmText,
+                    style: TextStyle(
+                      color: context.teksUtama,
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                     ),
@@ -214,7 +213,7 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
                 IconButton(
                   tooltip: Strings.tutup,
                   icon:
-                      const Icon(Icons.close, color: AppColors.warmMuted),
+                      Icon(Icons.close, color: context.teksRedup),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -257,8 +256,8 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
                   child: ListTile(
                     title: Text(
                       n.title,
-                      style: const TextStyle(
-                        color: AppColors.warmText,
+                      style: TextStyle(
+                        color: context.teksUtama,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -266,8 +265,8 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
                       n.body,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: AppColors.warmMuted),
+                      style: TextStyle(
+                          color: context.teksRedup),
                     ),
                     trailing: IconButton(
                       tooltip: Strings.hapus,
@@ -287,12 +286,12 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
                   CircularProgressIndicator(color: AppColors.orange),
             ),
           ),
-          error: (_, __) => const Padding(
+          error: (_, __) => Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Text(
               Strings.gagalMuatCatatanToko,
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.warmMuted),
+              style: TextStyle(color: context.teksRedup),
             ),
           ),
         ),
@@ -323,13 +322,13 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
       children: [
         TextField(
           controller: _title,
-          style: const TextStyle(color: AppColors.warmText),
+          style: TextStyle(color: context.teksUtama),
           decoration: _deco('Judul'),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _body,
-          style: const TextStyle(color: AppColors.warmText),
+          style: TextStyle(color: context.teksUtama),
           maxLines: 4,
           decoration: _deco(Strings.isiCatatan),
         ),

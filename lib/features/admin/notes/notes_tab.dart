@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/utils/datetime_id.dart';
 import '../../../data/models/product.dart';
@@ -95,20 +96,20 @@ class _NotesTabState extends ConsumerState<NotesTab> {
           // Kepala halaman: kicker + judul + tombol Belanja Stok.
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       Strings.kickerKulakan,
                       style: TextStyle(
-                          color: AppColors.warmMuted, fontSize: 12),
+                          color: context.teksRedup, fontSize: 12),
                     ),
                     SizedBox(height: 2),
                     Text(
                       Strings.judulCatatanBelanja,
                       style: TextStyle(
-                        color: AppColors.warmText,
+                        color: context.teksUtama,
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                       ),
@@ -133,31 +134,31 @@ class _NotesTabState extends ConsumerState<NotesTab> {
             children: [
               IconButton(
                 onPressed: () => _geserHari(-1),
-                icon: const Icon(Icons.chevron_left,
-                    color: AppColors.warmText),
+                icon: Icon(Icons.chevron_left,
+                    color: context.teksUtama),
               ),
               TextButton(
                 onPressed: _pilihTanggal,
                 child: Text(
                   DateFormat('d MMM yyyy', 'id_ID').format(_tanggal),
-                  style: const TextStyle(
-                    color: AppColors.warmText,
+                  style: TextStyle(
+                    color: context.teksUtama,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               IconButton(
                 onPressed: () => _geserHari(1),
-                icon: const Icon(Icons.chevron_right,
-                    color: AppColors.warmText),
+                icon: Icon(Icons.chevron_right,
+                    color: context.teksUtama),
               ),
             ],
           ),
           // Header hari: tanggal + "N catatan · total RpX".
           Text(
             DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(_tanggal),
-            style: const TextStyle(
-              color: AppColors.warmText,
+            style: TextStyle(
+              color: context.teksUtama,
               fontSize: 16,
               fontWeight: FontWeight.w800,
             ),
@@ -165,8 +166,8 @@ class _NotesTabState extends ConsumerState<NotesTab> {
           Text(
             Strings.labelCatatanHari(
                 hariIni.length, formatRp(totalHari)),
-            style: const TextStyle(
-                color: AppColors.warmMuted, fontSize: 12),
+            style: TextStyle(
+                color: context.teksRedup, fontSize: 12),
           ),
           const SizedBox(height: 8),
           if (hariIni.isEmpty)
@@ -197,25 +198,25 @@ class _NilaiStokCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             Strings.nilaiStokModalRak,
             style:
-                TextStyle(color: AppColors.warmMuted, fontSize: 12),
+                TextStyle(color: context.teksRedup, fontSize: 12),
           ),
           const SizedBox(height: 4),
           Text(
             formatRp(nilai.round()),
-            style: const TextStyle(
-              color: AppColors.warmText,
+            style: TextStyle(
+              color: context.teksUtama,
               fontSize: 22,
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             Strings.nilaiStokDeskripsi,
             style:
-                TextStyle(color: AppColors.warmMuted, fontSize: 12),
+                TextStyle(color: context.teksRedup, fontSize: 12),
           ),
         ],
       ),
@@ -251,24 +252,24 @@ class _NoteCard extends StatelessWidget {
                     children: [
                       Text(
                         note.supplier,
-                        style: const TextStyle(
-                          color: AppColors.warmText,
+                        style: TextStyle(
+                          color: context.teksUtama,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         Strings.labelJenisBarang(note.items.length),
-                        style: const TextStyle(
-                            color: AppColors.warmMuted, fontSize: 12),
+                        style: TextStyle(
+                            color: context.teksRedup, fontSize: 12),
                       ),
                     ],
                   ),
                 ),
                 _SourcePill(source: note.source),
                 const SizedBox(width: 4),
-                const Icon(Icons.chevron_right,
-                    color: AppColors.warmMuted),
+                Icon(Icons.chevron_right,
+                    color: context.teksRedup),
               ],
             ),
             if (note.items.isNotEmpty) ...[
@@ -277,18 +278,18 @@ class _NoteCard extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 2),
                     child: Text(
                       '• ${labelItemBarang(it)}',
-                      style: const TextStyle(
-                          color: AppColors.warmText, fontSize: 13),
+                      style: TextStyle(
+                          color: context.teksUtama, fontSize: 13),
                     ),
                   )),
             ],
             const SizedBox(height: 8),
             Row(
               children: [
-                const Text(
+                Text(
                   Strings.totalBelanja,
                   style: TextStyle(
-                      color: AppColors.warmMuted, fontSize: 12),
+                      color: context.teksRedup, fontSize: 12),
                 ),
                 const Spacer(),
                 Text(
@@ -339,7 +340,7 @@ class _NoteDetailSheet extends ConsumerWidget {
     final date = DateTime.tryParse(note.date);
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.panel,
+        // Aturan 1&3: ikut bottomSheetTheme (adaptif).
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.all(24),
@@ -352,8 +353,8 @@ class _NoteDetailSheet extends ConsumerWidget {
               Expanded(
                 child: Text(
                   note.supplier,
-                  style: const TextStyle(
-                    color: AppColors.warmText,
+                  style: TextStyle(
+                    color: context.teksUtama,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                   ),
@@ -364,7 +365,7 @@ class _NoteDetailSheet extends ConsumerWidget {
           ),
           Text(
             date == null ? note.date : formatTanggal(date),
-            style: const TextStyle(color: AppColors.warmMuted),
+            style: TextStyle(color: context.teksRedup),
           ),
           const SizedBox(height: 12),
           ...note.items.map((it) => Padding(
@@ -374,15 +375,15 @@ class _NoteDetailSheet extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         labelItemBarang(it),
-                        style: const TextStyle(
-                            color: AppColors.warmText),
+                        style: TextStyle(
+                            color: context.teksUtama),
                       ),
                     ),
                     if (it.subtotal > 0)
                       Text(
                         formatRp(it.subtotal),
-                        style: const TextStyle(
-                            color: AppColors.warmMuted),
+                        style: TextStyle(
+                            color: context.teksRedup),
                       ),
                   ],
                 ),
@@ -391,8 +392,8 @@ class _NoteDetailSheet extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(Strings.totalBelanja,
-                  style: TextStyle(color: AppColors.warmMuted)),
+              Text(Strings.totalBelanja,
+                  style: TextStyle(color: context.teksRedup)),
               Text(
                 formatRp(note.total),
                 style: const TextStyle(
@@ -404,9 +405,9 @@ class _NoteDetailSheet extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             Strings.arsipSaja,
-            style: TextStyle(color: AppColors.warmMuted, fontSize: 12),
+            style: TextStyle(color: context.teksRedup, fontSize: 12),
           ),
           const SizedBox(height: 16),
           Row(
@@ -445,8 +446,6 @@ class _NoteDetailSheet extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
-        // Aturan 3: dialog = L3.
-        backgroundColor: AppColors.panel2,
         title: const Text(Strings.hapus),
         content: const Text(Strings.arsipSaja),
         actions: [
@@ -552,7 +551,7 @@ class _FormTambahState extends ConsumerState<_FormTambah> {
 
   InputDecoration _deco(String hint) => InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: AppColors.warmMuted),
+        hintStyle: TextStyle(color: context.teksRedup),
         filled: true,
         fillColor: AppColors.panel2,
         contentPadding:
@@ -569,49 +568,49 @@ class _FormTambahState extends ConsumerState<_FormTambah> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             Strings.tambahCatatan,
             style: TextStyle(
-              color: AppColors.warmText,
+              color: context.teksUtama,
               fontSize: 16,
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             Strings.labelSupplier,
             style:
-                TextStyle(color: AppColors.warmMuted, fontSize: 12),
+                TextStyle(color: context.teksRedup, fontSize: 12),
           ),
           const SizedBox(height: 4),
           TextField(
             controller: _supplier,
-            style: const TextStyle(color: AppColors.warmText),
+            style: TextStyle(color: context.teksUtama),
             decoration: _deco(Strings.contohSupplier),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             Strings.barangDibeli,
             style:
-                TextStyle(color: AppColors.warmMuted, fontSize: 12),
+                TextStyle(color: context.teksRedup, fontSize: 12),
           ),
           const SizedBox(height: 4),
           TextField(
             controller: _items,
-            style: const TextStyle(color: AppColors.warmText),
+            style: TextStyle(color: context.teksUtama),
             maxLines: 3,
             decoration: _deco(Strings.contohBarang),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             Strings.totalHabis,
             style:
-                TextStyle(color: AppColors.warmMuted, fontSize: 12),
+                TextStyle(color: context.teksRedup, fontSize: 12),
           ),
           const SizedBox(height: 4),
           TextField(
             controller: _total,
-            style: const TextStyle(color: AppColors.warmText),
+            style: TextStyle(color: context.teksUtama),
             keyboardType: TextInputType.number,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly
@@ -702,7 +701,7 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
       expand: false,
       builder: (_, controller) => Container(
         decoration: const BoxDecoration(
-          color: AppColors.panel,
+          // Aturan 1&3: ikut bottomSheetTheme (adaptif).
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: ListView(
@@ -724,8 +723,8 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
               widget.existing == null
                   ? Strings.tambahCatatan
                   : Strings.ubah,
-              style: const TextStyle(
-                color: AppColors.warmText,
+              style: TextStyle(
+                color: context.teksUtama,
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),
@@ -733,10 +732,10 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
             const SizedBox(height: 16),
             TextField(
               controller: _supplier,
-              style: const TextStyle(color: AppColors.warmText),
-              decoration: const InputDecoration(
+              style: TextStyle(color: context.teksUtama),
+              decoration: InputDecoration(
                 labelText: Strings.namaSupplier,
-                labelStyle: TextStyle(color: AppColors.warmMuted),
+                labelStyle: TextStyle(color: context.teksRedup),
                 border: OutlineInputBorder(),
                 enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: AppColors.adminLine),
@@ -744,10 +743,10 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               Strings.daftarBarang,
               style: TextStyle(
-                  color: AppColors.warmText, fontWeight: FontWeight.w700),
+                  color: context.teksUtama, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             ..._rows.asMap().entries.map((en) {
@@ -800,8 +799,8 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(Strings.totalBelanja,
-                    style: TextStyle(color: AppColors.warmMuted)),
+                Text(Strings.totalBelanja,
+                    style: TextStyle(color: context.teksRedup)),
                 Text(
                   formatRp(_total),
                   style: const TextStyle(
@@ -833,11 +832,11 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
           : decimal
               ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]'))]
               : [FilteringTextInputFormatter.digitsOnly],
-      style: const TextStyle(color: AppColors.warmText, fontSize: 14),
+      style: TextStyle(color: context.teksUtama, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         labelStyle:
-            const TextStyle(color: AppColors.warmMuted, fontSize: 13),
+            TextStyle(color: context.teksRedup, fontSize: 13),
         border: const OutlineInputBorder(),
         enabledBorder: const OutlineInputBorder(
           borderSide: BorderSide(color: AppColors.adminLine),

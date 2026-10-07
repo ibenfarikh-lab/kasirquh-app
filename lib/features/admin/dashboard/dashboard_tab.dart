@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -133,12 +134,12 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
       children: [
         Text(
           sapaan,
-          style: const TextStyle(color: AppColors.warmMuted, fontSize: 14),
+          style: TextStyle(color: context.teksRedup, fontSize: 14),
         ),
         Text(
           storeName ?? Strings.appName,
-          style: const TextStyle(
-            color: AppColors.warmText,
+          style: TextStyle(
+            color: context.teksUtama,
             fontSize: 22,
             fontWeight: FontWeight.w800,
           ),
@@ -209,8 +210,8 @@ class _MetricCard extends StatelessWidget {
             value ?? Strings.belumAdaData,
             style: TextStyle(
               color: value == null
-                  ? AppColors.warmMuted
-                  : AppColors.warmText,
+                  ? context.teksRedup
+                  : context.teksUtama,
               fontSize: 17,
               fontWeight: FontWeight.w800,
             ),
@@ -218,8 +219,8 @@ class _MetricCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
-                color: AppColors.warmMuted, fontSize: 12),
+            style: TextStyle(
+                color: context.teksRedup, fontSize: 12),
           ),
         ],
       ),
@@ -240,8 +241,8 @@ class _QuickTips extends StatelessWidget {
             child: Text(
               'Mulai dari ${Strings.tabKasir} untuk jualan, '
               '${Strings.tabInbox} untuk pesanan & pendaftar.',
-              style: const TextStyle(
-                  color: AppColors.warmMuted, fontSize: 13),
+              style: TextStyle(
+                  color: context.teksRedup, fontSize: 13),
             ),
           ),
         ],

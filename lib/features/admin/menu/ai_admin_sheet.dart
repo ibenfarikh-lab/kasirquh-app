@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -83,7 +84,7 @@ class AiAdminSheet extends ConsumerWidget {
       expand: false,
       builder: (_, controller) => Container(
         decoration: const BoxDecoration(
-          color: AppColors.panel,
+          // Aturan 1&3: ikut bottomSheetTheme (adaptif).
           borderRadius:
               BorderRadius.vertical(top: Radius.circular(28)),
         ),
@@ -102,7 +103,7 @@ class AiAdminSheet extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Row(
+            Row(
               children: [
                 Icon(Icons.psychology_outlined,
                     color: AppColors.orange, size: 28),
@@ -110,7 +111,7 @@ class AiAdminSheet extends ConsumerWidget {
                 Text(
                   'AI Admin',
                   style: TextStyle(
-                    color: AppColors.warmText,
+                    color: context.teksUtama,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
@@ -118,10 +119,10 @@ class AiAdminSheet extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Ringkasan & saran dari data tokomu. Tanpa data → tanpa klaim.',
               style: TextStyle(
-                  color: AppColors.warmMuted, fontSize: 13),
+                  color: context.teksRedup, fontSize: 13),
             ),
             const SizedBox(height: 16),
             journalAsync.when(
@@ -187,10 +188,10 @@ class AiAdminSheet extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Ringkasan hari ini',
           style: TextStyle(
-            color: AppColors.warmText,
+            color: context.teksUtama,
             fontWeight: FontWeight.w800,
             fontSize: 16,
           ),
@@ -200,6 +201,7 @@ class AiAdminSheet extends ConsumerWidget {
           children: [
             Expanded(
               child: _ringkasanCard(
+                context,
                   'Omzet',
                   transaksi > 0
                       ? formatRp(omzet)
@@ -208,16 +210,17 @@ class AiAdminSheet extends ConsumerWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _ringkasanCard(
+                context,
                   'Transaksi',
                   transaksi > 0 ? '$transaksi' : 'Belum ada'),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Saran',
           style: TextStyle(
-            color: AppColors.warmText,
+            color: context.teksUtama,
             fontWeight: FontWeight.w800,
             fontSize: 16,
           ),
@@ -244,8 +247,8 @@ class AiAdminSheet extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         s.teks,
-                        style: const TextStyle(
-                          color: AppColors.warmText,
+                        style: TextStyle(
+                          color: context.teksUtama,
                           fontSize: 14,
                         ),
                       ),
@@ -258,7 +261,7 @@ class AiAdminSheet extends ConsumerWidget {
     );
   }
 
-  Widget _ringkasanCard(String label, String value) {
+  Widget _ringkasanCard(BuildContext context, String label, String value) {
     return AppCard(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -266,14 +269,14 @@ class AiAdminSheet extends ConsumerWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-                color: AppColors.warmMuted, fontSize: 12),
+            style: TextStyle(
+                color: context.teksRedup, fontSize: 12),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              color: AppColors.warmText,
+            style: TextStyle(
+              color: context.teksUtama,
               fontWeight: FontWeight.w800,
               fontSize: 16,
             ),

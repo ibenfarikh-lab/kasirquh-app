@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../l10n/strings_id.dart';
 import '../pos/scanner_sheet.dart';
 import 'ai_admin_sheet.dart';
@@ -30,10 +31,10 @@ class MenuTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text(
+        Text(
           Strings.tabMenu,
           style: TextStyle(
-            color: AppColors.warmText,
+            color: context.teksUtama,
             fontSize: 22,
             fontWeight: FontWeight.w800,
           ),
@@ -137,8 +138,8 @@ class _ModuleTile extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.warmText,
+                style: TextStyle(
+                  color: context.teksUtama,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),

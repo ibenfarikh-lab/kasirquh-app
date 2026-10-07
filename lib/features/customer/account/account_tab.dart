@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_settings.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
@@ -74,7 +75,7 @@ class AccountTab extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       session.email,
-                      style: const TextStyle(color: AppColors.muted),
+                      style: TextStyle(color: context.teksRedup),
                     ),
                   ],
                 ),
@@ -111,8 +112,8 @@ class AccountTab extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right,
-                  color: AppColors.muted, size: 20),
+              Icon(Icons.chevron_right,
+                  color: context.teksRedup, size: 20),
             ],
           ),
         ),
@@ -134,12 +135,12 @@ class AccountTab extends ConsumerWidget {
               ),
               Text(
                 ref.watch(temaPelangganProvider).label,
-                style: const TextStyle(
-                    color: AppColors.muted, fontSize: 13),
+                style: TextStyle(
+                    color: context.teksRedup, fontSize: 13),
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right,
-                  color: AppColors.muted, size: 20),
+              Icon(Icons.chevron_right,
+                  color: context.teksRedup, size: 20),
             ],
           ),
         ),
@@ -156,7 +157,7 @@ class AccountTab extends ConsumerWidget {
               ),
             );
           },
-          child: const Row(
+          child: Row(
             children: [
               Icon(Icons.emoji_events_outlined,
                   color: AppColors.orange),
@@ -168,7 +169,7 @@ class AccountTab extends ConsumerWidget {
                 ),
               ),
               Icon(Icons.chevron_right,
-                  color: AppColors.muted, size: 20),
+                  color: context.teksRedup, size: 20),
             ],
           ),
         ),
@@ -209,10 +210,10 @@ class AccountTab extends ConsumerWidget {
           onPressed: () => _confirmLogout(context, ref),
         ),
         const SizedBox(height: 24),
-        const Center(
+        Center(
           child: Text(
             Strings.poweredBy,
-            style: TextStyle(color: AppColors.muted, fontSize: 11),
+            style: TextStyle(color: context.teksRedup, fontSize: 11),
           ),
         ),
       ],
@@ -260,10 +261,10 @@ class AccountTab extends ConsumerWidget {
                     mainAxisAlignment:
                         MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Sisa tagihan',
                         style:
-                            TextStyle(color: AppColors.muted),
+                            TextStyle(color: context.teksRedup),
                       ),
                       Text(
                         formatRp(tagihan),
@@ -303,8 +304,8 @@ class AccountTab extends ConsumerWidget {
                                 const SizedBox(height: 2),
                                 Text(
                                   customerNoteTypeLabel(n.type),
-                                  style: const TextStyle(
-                                      color: AppColors.muted,
+                                  style: TextStyle(
+                                      color: context.teksRedup,
                                       fontSize: 12),
                                 ),
                               ],
@@ -353,8 +354,8 @@ class AccountTab extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     '${order.items.fold(0, (s, e) => s + e.qty)} barang • ${formatRp(order.total)}',
-                    style: const TextStyle(
-                        color: AppColors.muted, fontSize: 13),
+                    style: TextStyle(
+                        color: context.teksRedup, fontSize: 13),
                   ),
                 ],
               ),
@@ -415,7 +416,7 @@ class AccountTab extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(date,
-                  style: const TextStyle(color: AppColors.muted)),
+                  style: TextStyle(color: context.teksRedup)),
               const SizedBox(height: 12),
               for (final it in order.items)
                 Padding(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/rumpi.dart';
 import '../../../data/repositories/social_repository.dart';
@@ -75,7 +76,7 @@ class _CoinTile extends StatelessWidget {
       ),
       subtitle: Text(
         date,
-        style: const TextStyle(color: AppColors.muted, fontSize: 12),
+        style: TextStyle(color: context.teksRedup, fontSize: 12),
       ),
       trailing: Text(
         '${plus ? '+' : ''}${NumberFormat('#,###', 'id_ID').format(entry.amount)}',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../l10n/strings_id.dart';
 import '../session.dart';
 import 'rumpi_feed.dart';
@@ -26,7 +27,7 @@ class ChatTab extends ConsumerWidget {
       child: Column(
         children: [
           Container(
-            color: AppColors.card,
+            color: context.permukaanKartu,
             child: const TabBar(
               labelColor: AppColors.orange,
               unselectedLabelColor: AppColors.muted,

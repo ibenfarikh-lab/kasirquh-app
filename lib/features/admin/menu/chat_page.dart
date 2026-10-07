@@ -64,7 +64,7 @@ class _ThreadList extends ConsumerWidget {
         error: (e, _) => Center(
           child: Text(
             Strings.butuhInternetAdmin,
-            style: const TextStyle(color: AppColors.warmMuted),
+            style: TextStyle(color: context.teksRedup),
           ),
         ),
         data: (list) {

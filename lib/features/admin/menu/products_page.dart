@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -148,15 +149,16 @@ class _ProductsBodyState extends ConsumerState<_ProductsBody> {
                       ),
                       title: Text(
                         p.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.warmText,
+                          color: context.teksUtama,
                         ),
                       ),
                       subtitle: Text(
-                        'Rp${formatRp(p.price)} · stok ${formatStok(p.stock)} · ${p.category}',
-                        style: const TextStyle(
-                            color: AppColors.warmMuted),
+                        // formatRp SUDAH ber-prefix "Rp" — jangan tambah literal.
+                        '${formatRp(p.price)} · stok ${formatStok(p.stock)} · ${p.category}',
+                        style: TextStyle(
+                            color: context.teksRedup),
                       ),
                       trailing: p.active
                           ? const Icon(Icons.chevron_right)
@@ -311,8 +313,6 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        // Aturan 3: dialog = L3.
-        backgroundColor: AppColors.panel2,
         title: const Text(Strings.hapusProdukTanya),
         actions: [
           TextButton(
@@ -347,10 +347,10 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
       children: [
         Text(
           isEdit ? Strings.ubahProduk : Strings.tambahProduk,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: AppColors.warmText,
+            color: context.teksUtama,
           ),
         ),
         const SizedBox(height: 16),
@@ -402,11 +402,11 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
         ),
         const SizedBox(height: 16),
         // Foto produk: pilih dari HP (lokal) atau tempel URL online.
-        const Text(
+        Text(
           Strings.fotoProduk,
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: AppColors.warmText,
+            color: context.teksUtama,
           ),
         ),
         const SizedBox(height: 8),

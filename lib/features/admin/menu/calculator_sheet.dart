@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../l10n/strings_id.dart';
 
 /// Sheet Kalkulator: panel tugas cepat Mode Admin (bottom sheet).
@@ -155,7 +156,7 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.panel,
+        // Aturan 1&3: ikut bottomSheetTheme (adaptif).
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.all(24),
@@ -176,11 +177,11 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
           const SizedBox(height: 16),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   Strings.modulKalkulator,
                   style: TextStyle(
-                    color: AppColors.warmText,
+                    color: context.teksUtama,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
@@ -188,7 +189,7 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
               ),
               IconButton(
                 tooltip: Strings.tutup,
-                icon: const Icon(Icons.close, color: AppColors.warmMuted),
+                icon: Icon(Icons.close, color: context.teksRedup),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],
@@ -207,8 +208,8 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
                 if (_op != null && _prev != null)
                   Text(
                     '${_format(_prev!)} ${_displayOp(_op!)}',
-                    style: const TextStyle(
-                      color: AppColors.warmMuted,
+                    style: TextStyle(
+                      color: context.teksRedup,
                       fontSize: 15,
                     ),
                   ),
@@ -218,8 +219,8 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
                   child: Text(
                     _current,
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      color: AppColors.warmText,
+                    style: TextStyle(
+                      color: context.teksUtama,
                       fontSize: 36,
                       fontWeight: FontWeight.w800,
                     ),
@@ -276,7 +277,7 @@ class _CalcButton extends StatelessWidget {
                 style: TextStyle(
                   color: isClear || _isOp
                       ? Colors.white
-                      : AppColors.warmText,
+                      : context.teksUtama,
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                 ),

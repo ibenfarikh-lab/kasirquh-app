@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -103,10 +104,10 @@ class ReportPage extends ConsumerWidget {
                           .titleMedium
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
-                    const Text(
+                    Text(
                       Strings.tujuhHariTerakhir,
                       style:
-                          TextStyle(color: AppColors.warmMuted, fontSize: 12),
+                          TextStyle(color: context.teksRedup, fontSize: 12),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
@@ -116,6 +117,7 @@ class ReportPage extends ConsumerWidget {
                         painter: _BarChartPainter(
                           values: omzet7,
                           warna: AppColors.orange,
+                          warnaTeks: context.teksRedup,
                         ),
                       ),
                     ),
@@ -185,7 +187,7 @@ class _MetricCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(color: AppColors.warmMuted, fontSize: 12),
+            style: TextStyle(color: context.teksRedup, fontSize: 12),
           ),
           const SizedBox(height: 6),
           Text(
@@ -202,8 +204,10 @@ class _MetricCard extends StatelessWidget {
 class _BarChartPainter extends CustomPainter {
   final List<int> values;
   final Color warna;
+  final Color warnaTeks;
 
-  const _BarChartPainter({required this.values, required this.warna});
+  const _BarChartPainter(
+      {required this.values, required this.warna, required this.warnaTeks});
 
   static const _hariSingkat = {
     DateTime.monday: 'S',
@@ -254,7 +258,7 @@ class _BarChartPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: _hariSingkat[day.weekday] ?? '',
-          style: const TextStyle(color: AppColors.warmMuted, fontSize: 11),
+          style: TextStyle(color: warnaTeks, fontSize: 11),
         ),
         textDirection: TextDirection.ltr,
       )..layout();

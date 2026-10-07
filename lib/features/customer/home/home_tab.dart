@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -56,10 +57,10 @@ class HomeTab extends ConsumerWidget {
         _ideMasakSection(),
         _larisSection(context, ref, store, products),
         const SizedBox(height: 24),
-        const Center(
+        Center(
           child: Text(
             Strings.poweredBy,
-            style: TextStyle(color: AppColors.muted, fontSize: 11),
+            style: TextStyle(color: context.teksRedup, fontSize: 11),
           ),
         ),
       ],
@@ -168,13 +169,13 @@ class HomeTab extends ConsumerWidget {
                     member == null
                         ? 'Masuk untuk kumpulkan koin.'
                         : '${member.coins} koin · tukarkan saat checkout',
-                    style: const TextStyle(
-                        color: AppColors.muted, fontSize: 13),
+                    style: TextStyle(
+                        color: context.teksRedup, fontSize: 13),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.muted),
+            Icon(Icons.chevron_right, color: context.teksRedup),
           ],
         ),
       ),
@@ -234,15 +235,15 @@ class HomeTab extends ConsumerWidget {
                               ),
                               Text(
                                 '${orderStatusLabel(o.status)} · ${formatRp(o.total)}',
-                                style: const TextStyle(
-                                    color: AppColors.muted,
+                                style: TextStyle(
+                                    color: context.teksRedup,
                                     fontSize: 13),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right,
-                            color: AppColors.muted),
+                        Icon(Icons.chevron_right,
+                            color: context.teksRedup),
                       ],
                     ),
                   ),
@@ -440,7 +441,7 @@ class HomeTab extends ConsumerWidget {
             hint,
             textAlign: TextAlign.center,
             style:
-                const TextStyle(color: AppColors.muted, fontSize: 10),
+                TextStyle(color: context.teksRedup, fontSize: 10),
           ),
         ],
       ),
@@ -489,12 +490,12 @@ class HomeTab extends ConsumerWidget {
                       fontSize: 18, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Barang yang belum ada di rak akan dicari saat '
                   'warung kulakan. Pilih ambil sendiri atau minta '
                   'diantar setelah barang tersedia.',
                   style: TextStyle(
-                      color: AppColors.muted, fontSize: 13),
+                      color: context.teksRedup, fontSize: 13),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -629,8 +630,8 @@ class HomeTab extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(isi,
-                  style: const TextStyle(
-                      color: AppColors.muted, fontSize: 14)),
+                  style: TextStyle(
+                      color: context.teksRedup, fontSize: 14)),
               const SizedBox(height: 16),
               AppButton(
                 label: 'Chat Toko',
@@ -679,12 +680,12 @@ class HomeTab extends ConsumerWidget {
             error: (_, __) => const SizedBox.shrink(),
             data: (items) {
               if (items.isEmpty) {
-                return const AppCard(
+                return AppCard(
                   child: Row(
                     children: [
                       Icon(
                         Icons.kitchen_outlined,
-                        color: AppColors.muted,
+                        color: context.teksRedup,
                       ),
                       SizedBox(width: 12),
                       Expanded(
@@ -692,7 +693,7 @@ class HomeTab extends ConsumerWidget {
                           'Belum ada catatan. Catat barang yang habis '
                           'di rumah biar tidak lupa saat belanja.',
                           style: TextStyle(
-                              color: AppColors.muted, fontSize: 13),
+                              color: context.teksRedup, fontSize: 13),
                         ),
                       ),
                     ],
@@ -909,8 +910,8 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Text(
           kicker,
-          style: const TextStyle(
-            color: AppColors.muted,
+          style: TextStyle(
+            color: context.teksRedup,
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.8,

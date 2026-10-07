@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../pos/pay_sheet.dart';
@@ -58,7 +59,7 @@ class ReceiptPage extends ConsumerWidget {
                     fontFamily: 'monospace',
                     fontSize: 12,
                     color: Theme.of(context).brightness == Brightness.dark
-                        ? AppColors.warmText
+                        ? context.teksUtama
                         : Colors.black87,
                     height: 1.4,
                   ),

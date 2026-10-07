@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/store_repository.dart';
@@ -87,7 +88,7 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
       builder: (context, controller) {
         return Container(
           decoration: const BoxDecoration(
-            color: AppColors.panel,
+            // Aturan 1&3: ikut bottomSheetTheme (adaptif).
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: ListView(
@@ -107,8 +108,8 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
               const SizedBox(height: 16),
               Text(
                 Strings.modulProfilToko,
-                style: const TextStyle(
-                  color: AppColors.warmText,
+                style: TextStyle(
+                  color: context.teksUtama,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -161,10 +162,10 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
         controller: c,
         maxLines: maxLines,
         keyboardType: keyboard,
-        style: const TextStyle(color: AppColors.warmText),
+        style: TextStyle(color: context.teksUtama),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: AppColors.warmMuted),
+          labelStyle: TextStyle(color: context.teksRedup),
           filled: true,
           fillColor: AppColors.panel2,
           contentPadding:

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -194,11 +195,11 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              const Text(
+              Text(
                 'Selesaikan misi, kumpulkan koin. Hadiah diberikan '
                 'admin lewat Chat Toko.',
                 style:
-                    TextStyle(color: AppColors.muted, fontSize: 13),
+                    TextStyle(color: context.teksRedup, fontSize: 13),
               ),
               const SizedBox(height: 12),
               if (_memuat)
@@ -265,8 +266,8 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
             const SizedBox(height: 4),
             Text(
               misi.deskripsi,
-              style: const TextStyle(
-                  color: AppColors.muted, fontSize: 13),
+              style: TextStyle(
+                  color: context.teksRedup, fontSize: 13),
             ),
             const SizedBox(height: 8),
             ClipRRect(
@@ -283,8 +284,8 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
             const SizedBox(height: 4),
             Text(
               '$capaian/${misi.target}',
-              style: const TextStyle(
-                  color: AppColors.muted, fontSize: 12),
+              style: TextStyle(
+                  color: context.teksRedup, fontSize: 12),
             ),
             if (tuntas) ...[
               const SizedBox(height: 8),

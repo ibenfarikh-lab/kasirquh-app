@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/models/order.dart';
@@ -121,7 +122,7 @@ class _PaySheetState extends ConsumerState<PaySheet> {
       expand: false,
       builder: (_, controller) => Container(
         decoration: const BoxDecoration(
-          color: AppColors.panel,
+          // Aturan 1&3: ikut bottomSheetTheme (adaptif).
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: _doneCode == null
@@ -148,10 +149,10 @@ class _PaySheetState extends ConsumerState<PaySheet> {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           Strings.bayar,
           style: TextStyle(
-            color: AppColors.warmText,
+            color: context.teksUtama,
             fontSize: 20,
             fontWeight: FontWeight.w800,
           ),
@@ -160,8 +161,8 @@ class _PaySheetState extends ConsumerState<PaySheet> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(Strings.totalBayar,
-                style: TextStyle(color: AppColors.warmMuted)),
+            Text(Strings.totalBayar,
+                style: TextStyle(color: context.teksRedup)),
             Text(
               formatRp(_total),
               style: const TextStyle(
@@ -177,15 +178,15 @@ class _PaySheetState extends ConsumerState<PaySheet> {
           controller: _received,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          style: const TextStyle(
-              color: AppColors.warmText,
+          style: TextStyle(
+              color: context.teksUtama,
               fontSize: 20,
               fontWeight: FontWeight.w700),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: Strings.uangDiterima,
-            labelStyle: TextStyle(color: AppColors.warmMuted),
+            labelStyle: TextStyle(color: context.teksRedup),
             prefixText: 'Rp ',
-            prefixStyle: TextStyle(color: AppColors.warmMuted),
+            prefixStyle: TextStyle(color: context.teksRedup),
             border: OutlineInputBorder(),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(color: AppColors.adminLine),
@@ -207,8 +208,8 @@ class _PaySheetState extends ConsumerState<PaySheet> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(Strings.kembalian,
-                style: TextStyle(color: AppColors.warmMuted)),
+            Text(Strings.kembalian,
+                style: TextStyle(color: context.teksRedup)),
             Text(
               change < 0 ? Strings.uangKurang : formatRp(change),
               style: TextStyle(
@@ -284,11 +285,11 @@ class _PaySheetState extends ConsumerState<PaySheet> {
       children: [
         const Icon(Icons.check_circle, color: AppColors.ok, size: 56),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           Strings.penjualanTersimpan,
           textAlign: TextAlign.center,
           style: TextStyle(
-              color: AppColors.warmText,
+              color: context.teksUtama,
               fontSize: 18,
               fontWeight: FontWeight.w800),
         ),
@@ -297,13 +298,13 @@ class _PaySheetState extends ConsumerState<PaySheet> {
           _doneCode ?? '',
           textAlign: TextAlign.center,
           style:
-              const TextStyle(color: AppColors.warmMuted, fontSize: 13),
+              TextStyle(color: context.teksRedup, fontSize: 13),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           Strings.strukBelanja,
           style: TextStyle(
-              color: AppColors.warmMuted, fontWeight: FontWeight.w700),
+              color: context.teksRedup, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         Container(
@@ -329,7 +330,7 @@ class _PaySheetState extends ConsumerState<PaySheet> {
               fontFamily: 'monospace',
               fontSize: 12,
               color: Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.warmText
+                  ? context.teksUtama
                   : Colors.black87,
               height: 1.4,
             ),

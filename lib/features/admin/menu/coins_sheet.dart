@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/models/customer.dart';
@@ -75,7 +76,7 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
 
   InputDecoration _deco(String hint) => InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: AppColors.warmMuted),
+        hintStyle: TextStyle(color: context.teksRedup),
         filled: true,
         fillColor: AppColors.panel2,
         contentPadding:
@@ -102,18 +103,18 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             dense: true,
-            title: const Text(
+            title: Text(
               'Nilai koin',
-              style: TextStyle(color: AppColors.warmText),
+              style: TextStyle(color: context.teksUtama),
             ),
             subtitle: Text(
               rate <= 0
                   ? Strings.belumDiatur
                   : '${formatRp(rate)} per koin',
-              style: const TextStyle(color: AppColors.warmMuted),
+              style: TextStyle(color: context.teksRedup),
             ),
-            trailing: const Icon(Icons.chevron_right,
-                color: AppColors.warmMuted),
+            trailing: Icon(Icons.chevron_right,
+                color: context.teksRedup),
             onTap: () => _ubahAngka(
               judul: 'Nilai koin (Rp)',
               awal: rate,
@@ -124,18 +125,18 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             dense: true,
-            title: const Text(
+            title: Text(
               'Batas penukaran',
-              style: TextStyle(color: AppColors.warmText),
+              style: TextStyle(color: context.teksUtama),
             ),
             subtitle: Text(
               batas <= 0
                   ? Strings.belumDiatur
                   : 'Maks. $batas% dari total belanja',
-              style: const TextStyle(color: AppColors.warmMuted),
+              style: TextStyle(color: context.teksRedup),
             ),
-            trailing: const Icon(Icons.chevron_right,
-                color: AppColors.warmMuted),
+            trailing: Icon(Icons.chevron_right,
+                color: context.teksRedup),
             onTap: () => _ubahAngka(
               judul: 'Batas penukaran (%)',
               awal: batas,
@@ -146,13 +147,13 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             dense: true,
-            title: const Text(
+            title: Text(
               'Event bonus',
-              style: TextStyle(color: AppColors.warmText),
+              style: TextStyle(color: context.teksUtama),
             ),
-            subtitle: const Text(
+            subtitle: Text(
               'Bagi koin ke semua pelanggan sekaligus.',
-              style: TextStyle(color: AppColors.warmMuted),
+              style: TextStyle(color: context.teksRedup),
             ),
             trailing: const Icon(Icons.celebration_outlined,
                 color: AppColors.orange),
@@ -177,7 +178,7 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
           backgroundColor: AppColors.panel2,
           title: Text(judul,
               style:
-                  const TextStyle(color: AppColors.warmText)),
+                  TextStyle(color: context.teksUtama)),
           content: TextField(
             controller: ctrl,
             keyboardType: TextInputType.number,
@@ -185,11 +186,11 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
               FilteringTextInputFormatter.digitsOnly
             ],
             style:
-                const TextStyle(color: AppColors.warmText),
-            decoration: const InputDecoration(
+                TextStyle(color: context.teksUtama),
+            decoration: InputDecoration(
               labelText: 'Nilai',
               labelStyle:
-                  TextStyle(color: AppColors.warmMuted),
+                  TextStyle(color: context.teksRedup),
             ),
           ),
           actions: [
@@ -238,16 +239,16 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
           backgroundColor: AppColors.panel2,
-          title: const Text('Event bonus koin',
+          title: Text('Event bonus koin',
               style:
-                  TextStyle(color: AppColors.warmText)),
+                  TextStyle(color: context.teksUtama)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Koin dibagikan ke SEMUA pelanggan yang disetujui.',
                 style: TextStyle(
-                    color: AppColors.warmMuted, fontSize: 13),
+                    color: context.teksRedup, fontSize: 13),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -256,26 +257,26 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly
                 ],
-                style: const TextStyle(
-                    color: AppColors.warmText),
-                decoration: const InputDecoration(
+                style: TextStyle(
+                    color: context.teksUtama),
+                decoration: InputDecoration(
                   labelText: 'Jumlah koin per pelanggan',
                   labelStyle: TextStyle(
-                      color: AppColors.warmMuted),
+                      color: context.teksRedup),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: alasanCtrl,
-                style: const TextStyle(
-                    color: AppColors.warmText),
-                decoration: const InputDecoration(
+                style: TextStyle(
+                    color: context.teksUtama),
+                decoration: InputDecoration(
                   labelText: Strings.alasan,
                   hintText: 'Mis. "Bonus akhir tahun"',
                   labelStyle: TextStyle(
-                      color: AppColors.warmMuted),
+                      color: context.teksRedup),
                   hintStyle: TextStyle(
-                      color: AppColors.warmMuted),
+                      color: context.teksRedup),
                 ),
               ),
             ],
@@ -336,7 +337,7 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
     final customersAsync = ref.watch(adminCustomersProvider);
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.panel,
+        // Aturan 1&3: ikut bottomSheetTheme (adaptif).
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
@@ -363,11 +364,11 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
             const SizedBox(height: 16),
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     Strings.modulKoin,
                     style: TextStyle(
-                      color: AppColors.warmText,
+                      color: context.teksUtama,
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                     ),
@@ -376,33 +377,33 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
                 IconButton(
                   tooltip: Strings.tutup,
                   icon:
-                      const Icon(Icons.close, color: AppColors.warmMuted),
+                      Icon(Icons.close, color: context.teksRedup),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
-            const Text(
+            Text(
               Strings.koinWargaHint,
-              style: TextStyle(color: AppColors.warmMuted, fontSize: 12),
+              style: TextStyle(color: context.teksRedup, fontSize: 12),
             ),
             const SizedBox(height: 16),
             // Nilai & batas — selaras prototipe (Nilai, event & batas).
             _pengaturanKoin(),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               Strings.pilihPelanggan,
               style: TextStyle(
-                color: AppColors.warmText,
+                color: context.teksUtama,
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _search,
-              style: const TextStyle(color: AppColors.warmText),
+              style: TextStyle(color: context.teksUtama),
               decoration: _deco(Strings.cariNama).copyWith(
                 prefixIcon:
-                    const Icon(Icons.search, color: AppColors.warmMuted),
+                    Icon(Icons.search, color: context.teksRedup),
               ),
               onChanged: (v) =>
                   setState(() => _query = v.trim().toLowerCase()),
@@ -418,11 +419,11 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
                     .take(8)
                     .toList();
                 if (filtered.isEmpty) {
-                  return const Padding(
+                  return Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
                     child: Text(
                       'Tidak ketemu.',
-                      style: TextStyle(color: AppColors.warmMuted),
+                      style: TextStyle(color: context.teksRedup),
                     ),
                   );
                 }
@@ -437,21 +438,21 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         c.name.isEmpty ? c.email : c.name,
-                        style: const TextStyle(
-                          color: AppColors.warmText,
+                        style: TextStyle(
+                          color: context.teksUtama,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       subtitle: Text(
                         '${c.coins} ${Strings.koin}',
-                        style: const TextStyle(
-                            color: AppColors.warmMuted),
+                        style: TextStyle(
+                            color: context.teksRedup),
                       ),
                       trailing: isSel
-                          ? const Icon(Icons.check_circle,
+                          ? Icon(Icons.check_circle,
                               color: AppColors.orange)
-                          : const Icon(Icons.radio_button_unchecked,
-                              color: AppColors.warmMuted),
+                          : Icon(Icons.radio_button_unchecked,
+                              color: context.teksRedup),
                       onTap: () => setState(() {
                         _selected = isSel ? null : c;
                       }),
@@ -466,11 +467,11 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
                       color: AppColors.orange),
                 ),
               ),
-              error: (_, __) => const Padding(
+              error: (_, __) => Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
                 child: Text(
                   'Tidak ketemu.',
-                  style: TextStyle(color: AppColors.warmMuted),
+                  style: TextStyle(color: context.teksRedup),
                 ),
               ),
             ),
@@ -478,15 +479,15 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
               const SizedBox(height: 16),
               Text(
                 '${_selected!.name.isEmpty ? _selected!.email : _selected!.name} · ${_selected!.coins} ${Strings.koin}',
-                style: const TextStyle(
-                  color: AppColors.warmText,
+                style: TextStyle(
+                  color: context.teksUtama,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _jumlah,
-                style: const TextStyle(color: AppColors.warmText),
+                style: TextStyle(color: context.teksUtama),
                 keyboardType: const TextInputType.numberWithOptions(
                     signed: true),
                 decoration: _deco(Strings.jumlahKoin),
@@ -494,7 +495,7 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
               const SizedBox(height: 8),
               TextField(
                 controller: _alasan,
-                style: const TextStyle(color: AppColors.warmText),
+                style: TextStyle(color: context.teksUtama),
                 decoration: _deco(Strings.alasan),
               ),
               const SizedBox(height: 16),

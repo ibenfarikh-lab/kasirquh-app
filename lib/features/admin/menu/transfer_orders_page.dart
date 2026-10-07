@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/order.dart';
@@ -78,8 +79,8 @@ class TransferOrdersPage extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         '${o.code} · ${o.items.length} barang',
-                        style: const TextStyle(
-                            color: AppColors.warmMuted,
+                        style: TextStyle(
+                            color: context.teksRedup,
                             fontSize: 13),
                       ),
                       const SizedBox(height: 12),
@@ -131,8 +132,6 @@ class TransferOrdersPage extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        // Aturan 3: dialog = L3.
-        backgroundColor: AppColors.panel2,
         title: Text(terima
             ? 'Verifikasi transfer ini?'
             : 'Tolak pesanan ini?'),

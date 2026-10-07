@@ -5,6 +5,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_settings.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/theme_picker.dart';
@@ -110,7 +111,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
       builder: (context, controller) {
         return Container(
           decoration: const BoxDecoration(
-            color: AppColors.panel,
+            // Aturan 1&3: ikut bottomSheetTheme (adaptif).
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: ListView(
@@ -131,18 +132,18 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
               _judulGrup(Strings.grupTampilan),
               _kartu([
                 ListTile(
-                  title: const Text(
+                  title: Text(
                     'Tema',
-                    style: TextStyle(color: AppColors.warmText),
+                    style: TextStyle(color: context.teksUtama),
                   ),
                   subtitle: Text(
                     ref.watch(temaAdminProvider).label,
                     style:
-                        const TextStyle(color: AppColors.warmMuted),
+                        TextStyle(color: context.teksRedup),
                   ),
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.chevron_right,
-                    color: AppColors.warmMuted,
+                    color: context.teksRedup,
                   ),
                   onTap: () =>
                       showThemePicker(context, temaAdminProvider),
@@ -180,26 +181,26 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                 ListTile(
                   title: Text(
                     Strings.infoSesi,
-                    style: const TextStyle(color: AppColors.warmText),
+                    style: TextStyle(color: context.teksUtama),
                   ),
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.chevron_right,
-                    color: AppColors.warmMuted,
+                    color: context.teksRedup,
                   ),
                   onTap: () => _dialogInfoSesi(context, ref),
                 ),
                 ListTile(
-                  title: const Text(
+                  title: Text(
                     'Batas stok menipis',
-                    style: TextStyle(color: AppColors.warmText),
+                    style: TextStyle(color: context.teksUtama),
                   ),
                   subtitle: Text(
                     '${ref.watch(storeInfoProvider).valueOrNull?.lowStockDefault ?? 5} pcs',
-                    style: const TextStyle(color: AppColors.warmMuted),
+                    style: TextStyle(color: context.teksRedup),
                   ),
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.chevron_right,
-                    color: AppColors.warmMuted,
+                    color: context.teksRedup,
                   ),
                   onTap: () => _dialogAngka(
                     context,
@@ -214,9 +215,9 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   ),
                 ),
                 ListTile(
-                  title: const Text(
+                  title: Text(
                     'Nilai koin',
-                    style: TextStyle(color: AppColors.warmText),
+                    style: TextStyle(color: context.teksUtama),
                   ),
                   subtitle: Text(
                     () {
@@ -227,11 +228,11 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                       if (rate <= 0) return Strings.belumDiatur;
                       return '${formatRp(rate)} per koin';
                     }(),
-                    style: const TextStyle(color: AppColors.warmMuted),
+                    style: TextStyle(color: context.teksRedup),
                   ),
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.chevron_right,
-                    color: AppColors.warmMuted,
+                    color: context.teksRedup,
                   ),
                   onTap: () => _dialogAngka(
                     context,
@@ -255,39 +256,39 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                       color: AppColors.orange,
                     ),
                   ),
-                  title: const Text(
+                  title: Text(
                     'KasirQuh',
                     style: TextStyle(
-                      color: AppColors.warmText,
+                      color: context.teksUtama,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  subtitle: const Text(
+                  subtitle: Text(
                     '${Strings.versiApp}\nWarunge Mimi · Powered by KasirQuh',
-                    style: TextStyle(color: AppColors.warmMuted),
+                    style: TextStyle(color: context.teksRedup),
                   ),
                   isThreeLine: true,
                 ),
                 ListTile(
-                  title: const Text(
+                  title: Text(
                     'Aturan & privasi',
-                    style: TextStyle(color: AppColors.warmText),
+                    style: TextStyle(color: context.teksUtama),
                   ),
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.chevron_right,
-                    color: AppColors.warmMuted,
+                    color: context.teksRedup,
                   ),
                   onTap: () => showDialog<void>(
                     context: context,
-                    builder: (ctx) => const AlertDialog(
+                    builder: (ctx) => AlertDialog(
                       backgroundColor: AppColors.panel2,
                       title: Text(
                         'Aturan & privasi',
-                        style: TextStyle(color: AppColors.warmText),
+                        style: TextStyle(color: context.teksUtama),
                       ),
                       content: Text(
                         'Data tersimpan di HP ini dan disinkron ke server toko.',
-                        style: TextStyle(color: AppColors.warmMuted),
+                        style: TextStyle(color: context.teksRedup),
                       ),
                     ),
                   ),
@@ -302,15 +303,15 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                     Icons.fingerprint,
                     color: AppColors.orange,
                   ),
-                  title: const Text(
+                  title: Text(
                     Strings.bukaDenganSidikJari,
-                    style: TextStyle(color: AppColors.warmText),
+                    style: TextStyle(color: context.teksUtama),
                   ),
                   subtitle: Text(
                     _sidikJariDidukung
                         ? Strings.bukaDenganSidikJariHint
                         : Strings.sidikJariTakDidukung,
-                    style: const TextStyle(color: AppColors.warmMuted),
+                    style: TextStyle(color: context.teksRedup),
                   ),
                   onChanged:
                       _sidikJariDidukung ? _toggleSidikJari : null,
@@ -337,8 +338,8 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
       padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
       child: Text(
         judul,
-        style: const TextStyle(
-          color: AppColors.warmMuted,
+        style: TextStyle(
+          color: context.teksRedup,
           fontSize: 14,
           fontWeight: FontWeight.bold,
         ),
@@ -360,7 +361,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     return SwitchListTile(
       value: nilai,
       activeThumbColor: AppColors.orange,
-      title: Text(judul, style: const TextStyle(color: AppColors.warmText)),
+      title: Text(judul, style: TextStyle(color: context.teksUtama)),
       onChanged: onChanged,
     );
   }
@@ -373,11 +374,11 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
         backgroundColor: AppColors.panel2,
         title: Text(
           Strings.infoSesi,
-          style: const TextStyle(color: AppColors.warmText),
+          style: TextStyle(color: context.teksUtama),
         ),
         content: Text(
           email,
-          style: const TextStyle(color: AppColors.warmMuted),
+          style: TextStyle(color: context.teksRedup),
         ),
         actions: [
           TextButton(
@@ -407,14 +408,14 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
         backgroundColor: AppColors.panel2,
         title: Text(
           judul,
-          style: const TextStyle(color: AppColors.warmText),
+          style: TextStyle(color: context.teksUtama),
         ),
         content: TextField(
           controller: c,
           autofocus: true,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          style: const TextStyle(color: AppColors.warmText),
+          style: TextStyle(color: context.teksUtama),
           decoration: InputDecoration(
             filled: true,
             // Aturan 3: input = L3.
@@ -436,7 +437,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
             onPressed: () => Navigator.of(ctx).pop(false),
             child: Text(
               Strings.batal,
-              style: const TextStyle(color: AppColors.warmMuted),
+              style: TextStyle(color: context.teksRedup),
             ),
           ),
           TextButton(
@@ -474,14 +475,14 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
         backgroundColor: AppColors.panel2,
         title: Text(
           Strings.yakinKeluar,
-          style: const TextStyle(color: AppColors.warmText),
+          style: TextStyle(color: context.teksUtama),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: Text(
               Strings.batal,
-              style: const TextStyle(color: AppColors.warmMuted),
+              style: TextStyle(color: context.teksRedup),
             ),
           ),
           TextButton(

@@ -137,8 +137,6 @@ class OnlineOrdersPage extends ConsumerWidget {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-          // Aturan 3: dialog = L3.
-          backgroundColor: AppColors.panel2,
           title: const Text(Strings.detailPesanan),
           content: SingleChildScrollView(
             child: Column(

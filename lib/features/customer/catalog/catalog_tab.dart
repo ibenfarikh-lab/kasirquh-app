@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -213,8 +214,8 @@ class _ProductCard extends ConsumerWidget {
           if (adaDiskon)
             Text(
               formatRp(product.price),
-              style: const TextStyle(
-                color: AppColors.muted,
+              style: TextStyle(
+                color: context.teksRedup,
                 fontSize: 12,
                 decoration: TextDecoration.lineThrough,
               ),
@@ -236,7 +237,7 @@ class _ProductCard extends ConsumerWidget {
                     : 'Stok ${formatStok(product.stock)}',
             style: TextStyle(
               fontSize: 12,
-              color: out ? AppColors.danger : AppColors.muted,
+              color: out ? AppColors.danger : context.teksRedup,
               fontWeight: out ? FontWeight.w700 : FontWeight.w400,
             ),
           ),
@@ -325,15 +326,15 @@ class ProductDetailSheetState
                     fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
             Text(p.category,
-                style: const TextStyle(color: AppColors.muted)),
+                style: TextStyle(color: context.teksRedup)),
             const SizedBox(height: 12),
             Row(
               children: [
                 if (adaDiskon)
                   Text(
                     formatRp(p.price),
-                    style: const TextStyle(
-                      color: AppColors.muted,
+                    style: TextStyle(
+                      color: context.teksRedup,
                       decoration: TextDecoration.lineThrough,
                     ),
                   ),
@@ -352,7 +353,7 @@ class ProductDetailSheetState
                       ? Strings.habis
                       : 'Stok ${formatStok(p.stock)}',
                   style: TextStyle(
-                    color: out ? AppColors.danger : AppColors.muted,
+                    color: out ? AppColors.danger : context.teksRedup,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -361,8 +362,8 @@ class ProductDetailSheetState
             if ((p.barcode ?? '').isNotEmpty) ...[
               const SizedBox(height: 8),
               Text('Barcode: ${p.barcode}',
-                  style: const TextStyle(
-                      color: AppColors.muted, fontSize: 13)),
+                  style: TextStyle(
+                      color: context.teksRedup, fontSize: 13)),
             ],
             const SizedBox(height: 16),
             Row(

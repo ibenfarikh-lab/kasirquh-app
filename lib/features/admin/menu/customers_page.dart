@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/models/customer.dart';
 import '../../../data/repositories/admin_repository.dart';
@@ -50,17 +51,17 @@ class _LaporanCard extends StatelessWidget {
       child: ListTile(
         leading: const Icon(Icons.bar_chart_outlined,
             color: AppColors.orange),
-        title: const Text(
+        title: Text(
           Strings.modulLaporan,
           style:
               TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        subtitle: const Text(
+        subtitle: Text(
           'Omzet 7 hari, grafik, dan salin CSV.',
-          style: TextStyle(color: AppColors.warmMuted),
+          style: TextStyle(color: context.teksRedup),
         ),
-        trailing: const Icon(Icons.chevron_right,
-            color: AppColors.warmMuted),
+        trailing: Icon(Icons.chevron_right,
+            color: context.teksRedup),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const ReportPage()),
         ),
@@ -106,10 +107,10 @@ class _ApprovalCard extends ConsumerWidget {
               ),
               data: (pendaftars) {
                 if (pendaftars.isEmpty) {
-                  return const Text(
+                  return Text(
                     Strings.belumAdaPendaftar,
                     style: TextStyle(
-                      color: AppColors.warmMuted,
+                      color: context.teksRedup,
                       fontStyle: FontStyle.italic,
                     ),
                   );
@@ -217,12 +218,12 @@ class _CustomerListCard extends ConsumerWidget {
                             c.email.toLowerCase().contains(query))
                         .toList();
                 if (shown.isEmpty) {
-                  return const Padding(
+                  return Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
                     child: Text(
                       Strings.belumAdaPelanggan,
                       style: TextStyle(
-                        color: AppColors.warmMuted,
+                        color: context.teksRedup,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -344,7 +345,7 @@ class _CoinSheetState extends ConsumerState<_CoinSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.panel,
+        // Aturan 1&3: ikut bottomSheetTheme (adaptif).
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.all(24),
@@ -352,7 +353,7 @@ class _CoinSheetState extends ConsumerState<_CoinSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             Strings.sesuaikanKoin,
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
@@ -360,7 +361,7 @@ class _CoinSheetState extends ConsumerState<_CoinSheet> {
           Text(widget.customer.name),
           Text(
             '${widget.customer.coins} ${Strings.koin}',
-            style: const TextStyle(color: AppColors.warmMuted),
+            style: TextStyle(color: context.teksRedup),
           ),
           const SizedBox(height: 16),
           TextField(

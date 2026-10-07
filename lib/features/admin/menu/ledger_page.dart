@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -154,18 +155,18 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
               children: [
                 IconButton(
                   tooltip: Strings.kembali,
-                  icon: const Icon(Icons.arrow_back,
-                      color: AppColors.warmText),
+                  icon: Icon(Icons.arrow_back,
+                      color: context.teksUtama),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         Strings.satuKas,
                         style: TextStyle(
-                            color: AppColors.warmMuted, fontSize: 12),
+                            color: context.teksRedup, fontSize: 12),
                       ),
                       Text(
                         Strings.modulPembukuan,
@@ -221,18 +222,18 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   Strings.jurnalTransaksi,
                   style: TextStyle(
-                    color: AppColors.warmText,
+                    color: context.teksUtama,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 Text(
                   Strings.labelPergerakan(periodeEntries.length),
-                  style: const TextStyle(
-                      color: AppColors.warmMuted, fontSize: 12),
+                  style: TextStyle(
+                      color: context.teksRedup, fontSize: 12),
                 ),
               ],
             ),
@@ -407,8 +408,8 @@ class _CashCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: AppColors.warmMuted,
+            style: TextStyle(
+              color: context.teksRedup,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -451,9 +452,9 @@ class _FormCatat extends StatelessWidget {
     required this.onTutup,
   });
 
-  InputDecoration _deco(String hint) => InputDecoration(
+  InputDecoration _deco(BuildContext context, String hint) => InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: AppColors.warmMuted),
+        hintStyle: TextStyle(color: context.teksRedup),
         filled: true,
         fillColor: AppColors.panel2,
         contentPadding:
@@ -477,8 +478,8 @@ class _FormCatat extends StatelessWidget {
                   modeSaldoAwal
                       ? Strings.isiSaldoAwal
                       : Strings.catatTransaksiManual,
-                  style: const TextStyle(
-                    color: AppColors.warmText,
+                  style: TextStyle(
+                    color: context.teksUtama,
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                   ),
@@ -486,8 +487,8 @@ class _FormCatat extends StatelessWidget {
               ),
               IconButton(
                 tooltip: Strings.tutup,
-                icon: const Icon(Icons.close,
-                    color: AppColors.warmMuted, size: 20),
+                icon: Icon(Icons.close,
+                    color: context.teksRedup, size: 20),
                 onPressed: onTutup,
               ),
             ],
@@ -496,9 +497,9 @@ class _FormCatat extends StatelessWidget {
           if (!modeSaldoAwal) ...[
             DropdownButtonFormField<bool>(
               initialValue: masuk,
-              decoration: _deco(Strings.jenisTransaksi),
+              decoration: _deco(context, Strings.jenisTransaksi),
               dropdownColor: AppColors.panel2,
-              style: const TextStyle(color: AppColors.warmText),
+              style: TextStyle(color: context.teksUtama),
               items: const [
                 DropdownMenuItem(
                   value: true,
@@ -517,16 +518,16 @@ class _FormCatat extends StatelessWidget {
             controller: ket,
             enabled: !modeSaldoAwal,
             maxLength: 80,
-            style: const TextStyle(color: AppColors.warmText),
-            decoration: _deco(Strings.keterangan),
+            style: TextStyle(color: context.teksUtama),
+            decoration: _deco(context, Strings.keterangan),
           ),
           const SizedBox(height: 8),
           TextField(
             controller: nominal,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: const TextStyle(color: AppColors.warmText),
-            decoration: _deco(Strings.nominal),
+            style: TextStyle(color: context.teksUtama),
+            decoration: _deco(context, Strings.nominal),
           ),
           const SizedBox(height: 12),
           AppButton(
@@ -550,11 +551,11 @@ IconData _kindIcon(String kind) => switch (kind) {
       _ => Icons.account_balance_wallet_outlined,
     };
 
-Color _kindColor(String kind) => switch (kind) {
+Color _kindColor(BuildContext context, String kind) => switch (kind) {
       'penjualan' => AppColors.ok,
       'kulakan' => AppColors.orange,
       'beban' => AppColors.danger,
-      _ => AppColors.warmMuted,
+      _ => context.teksRedup,
     };
 
 /// Satu baris entri jurnal: ikon jenis + keterangan + waktu
@@ -581,7 +582,7 @@ class _JournalTile extends StatelessWidget {
               ),
               child: Icon(
                 _kindIcon(entry.kind),
-                color: _kindColor(entry.kind),
+                color: _kindColor(context, entry.kind),
                 size: 20,
               ),
             ),
@@ -592,16 +593,16 @@ class _JournalTile extends StatelessWidget {
                 children: [
                   Text(
                     entry.label,
-                    style: const TextStyle(
-                      color: AppColors.warmText,
+                    style: TextStyle(
+                      color: context.teksUtama,
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                     ),
                   ),
                   Text(
                     DateFormat('HH:mm').format(entry.createdAt),
-                    style: const TextStyle(
-                        color: AppColors.warmMuted, fontSize: 12),
+                    style: TextStyle(
+                        color: context.teksRedup, fontSize: 12),
                   ),
                 ],
               ),

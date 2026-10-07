@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -55,13 +56,13 @@ class _PosTabState extends ConsumerState<PosTab> {
               Expanded(
                 child: TextField(
                   controller: _search,
-                  style: const TextStyle(color: AppColors.warmText),
+                  style: TextStyle(color: context.teksUtama),
                   decoration: InputDecoration(
                     hintText: Strings.cariAtauPindai,
                     hintStyle:
-                        const TextStyle(color: AppColors.warmMuted),
-                    prefixIcon: const Icon(Icons.search,
-                        color: AppColors.warmMuted),
+                        TextStyle(color: context.teksRedup),
+                    prefixIcon: Icon(Icons.search,
+                        color: context.teksRedup),
                     border: const OutlineInputBorder(),
                     enabledBorder: const OutlineInputBorder(
                       borderSide: BorderSide(color: AppColors.adminLine),
@@ -128,8 +129,8 @@ class _PosTabState extends ConsumerState<PosTab> {
                       children: [
                         Text(
                           '${ref.read(posCartProvider.notifier).totalQty} barang',
-                          style: const TextStyle(
-                              color: AppColors.warmMuted, fontSize: 12),
+                          style: TextStyle(
+                              color: context.teksRedup, fontSize: 12),
                         ),
                         Text(
                           formatRp(total),
@@ -233,15 +234,15 @@ class _ProductRow extends ConsumerWidget {
                 children: [
                   Text(
                     product.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: AppColors.warmText),
+                        color: context.teksUtama),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${formatRp(product.price)} · stok ${formatStok(product.stock)}',
-                    style: const TextStyle(
-                        color: AppColors.warmMuted, fontSize: 12),
+                    style: TextStyle(
+                        color: context.teksRedup, fontSize: 12),
                   ),
                 ],
               ),
@@ -269,9 +270,9 @@ class _ProductRow extends ConsumerWidget {
                         color: AppColors.orange),
                   ),
                   Text('$qty',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.w800,
-                          color: AppColors.warmText)),
+                          color: context.teksUtama)),
                   IconButton(
                     onPressed: () => ref
                         .read(posCartProvider.notifier)

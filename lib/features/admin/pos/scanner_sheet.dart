@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../l10n/strings_id.dart';
 
@@ -46,7 +47,7 @@ class _ScannerSheetState extends State<ScannerSheet> {
       expand: false,
       builder: (_, controller) => Container(
         decoration: const BoxDecoration(
-          color: AppColors.panel,
+          // Aturan 1&3: ikut bottomSheetTheme (adaptif).
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: ListView(
@@ -64,10 +65,10 @@ class _ScannerSheetState extends State<ScannerSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               Strings.pindaiBarcode,
               style: TextStyle(
-                color: AppColors.warmText,
+                color: context.teksUtama,
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),
@@ -85,9 +86,9 @@ class _ScannerSheetState extends State<ScannerSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               Strings.ketikBarcode,
-              style: TextStyle(color: AppColors.warmMuted),
+              style: TextStyle(color: context.teksRedup),
             ),
             const SizedBox(height: 8),
             Row(
@@ -96,10 +97,10 @@ class _ScannerSheetState extends State<ScannerSheet> {
                   child: TextField(
                     controller: _manual,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(color: AppColors.warmText),
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: context.teksUtama),
+                    decoration: InputDecoration(
                       hintText: 'cth: 899123456',
-                      hintStyle: TextStyle(color: AppColors.warmMuted),
+                      hintStyle: TextStyle(color: context.teksRedup),
                       border: OutlineInputBorder(),
                       enabledBorder: OutlineInputBorder(
                         borderSide:
@@ -143,10 +144,10 @@ class _CameraError extends StatelessWidget {
       color: AppColors.panel2,
       alignment: Alignment.center,
       padding: const EdgeInsets.all(24),
-      child: const Text(
+      child: Text(
         'Kamera tidak tersedia. Ketik barcode manual di bawah.',
         textAlign: TextAlign.center,
-        style: TextStyle(color: AppColors.warmMuted),
+        style: TextStyle(color: context.teksRedup),
       ),
     );
   }

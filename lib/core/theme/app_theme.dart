@@ -19,6 +19,11 @@ extension KonteksTema on BuildContext {
 
   /// Garis/border adaptif.
   Color get garis => temaGelap ? AppColors.adminLine : AppColors.line;
+
+  /// Surface kartu adaptif (L2): panel di tema gelap, card di tema terang.
+  Color get permukaanKartu =>
+      Theme.of(this).cardTheme.color ??
+      (temaGelap ? AppColors.panel : AppColors.card);
 }
 
 /// ThemeData ganda: terang untuk Mode Pelanggan, dark warm untuk
@@ -44,6 +49,13 @@ class AppTheme {
         shadowColor: const Color(0x2E2E241D).withValues(alpha: 0.13),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+      dialogTheme: const DialogThemeData(
+        // Aturan 3: dialog = L3.
+        backgroundColor: AppColors.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
@@ -94,6 +106,13 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
           side: const BorderSide(color: AppColors.adminLine, width: 1),
+        ),
+      ),
+      dialogTheme: const DialogThemeData(
+        // Aturan 3: dialog = L3.
+        backgroundColor: AppColors.panel2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
@@ -149,6 +168,13 @@ class AppTheme {
           side: const BorderSide(color: AppColors.adminLine, width: 1),
         ),
       ),
+      dialogTheme: const DialogThemeData(
+        // Aturan 3: dialog = L3.
+        backgroundColor: AppColors.panel2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+      ),
       bottomSheetTheme: const BottomSheetThemeData(
         // Aturan 3: sheet/dialog = L3 = panel2.
         backgroundColor: AppColors.panel2,
@@ -197,6 +223,13 @@ class AppTheme {
         shadowColor: const Color(0x2E2E241D).withValues(alpha: 0.13),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+      dialogTheme: const DialogThemeData(
+        // Aturan 3: dialog = L3.
+        backgroundColor: AppColors.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(

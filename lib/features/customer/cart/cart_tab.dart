@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -91,8 +92,8 @@ class CartTab extends ConsumerWidget {
         ),
         Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          decoration: const BoxDecoration(
-            color: AppColors.card,
+          decoration: BoxDecoration(
+            color: context.permukaanKartu,
             border: Border(top: BorderSide(color: AppColors.line)),
           ),
           child: SafeArea(
@@ -104,8 +105,8 @@ class CartTab extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Total',
-                          style: TextStyle(color: AppColors.muted)),
+                      Text('Total',
+                          style: TextStyle(color: context.teksRedup)),
                       Text(
                         formatRp(total),
                         style: const TextStyle(
@@ -189,7 +190,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
             const SizedBox(height: 12),
             Text(
               '${cart.length} jenis barang • Total ${formatRp(total)}',
-              style: const TextStyle(color: AppColors.muted),
+              style: TextStyle(color: context.teksRedup),
             ),
             const SizedBox(height: 16),
             const Text(

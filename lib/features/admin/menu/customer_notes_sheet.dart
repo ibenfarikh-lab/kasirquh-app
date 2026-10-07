@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -30,7 +31,7 @@ class CustomerNotesSheet extends ConsumerWidget {
       expand: false,
       builder: (_, controller) => Container(
         decoration: const BoxDecoration(
-          color: AppColors.panel,
+          // Aturan 1&3: ikut bottomSheetTheme (adaptif).
           borderRadius:
               BorderRadius.vertical(top: Radius.circular(28)),
         ),
@@ -51,8 +52,8 @@ class CustomerNotesSheet extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               '${Strings.modulCatatanToko} — ${customer.name}',
-              style: const TextStyle(
-                color: AppColors.warmText,
+              style: TextStyle(
+                color: context.teksUtama,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -85,17 +86,18 @@ class CustomerNotesSheet extends ConsumerWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.panel2,
+                        // Aturan 3: kartu = L2.
+                        color: AppColors.panel,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         mainAxisAlignment:
                             MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Sisa tagihan',
                             style: TextStyle(
-                                color: AppColors.warmMuted),
+                                color: context.teksRedup),
                           ),
                           Text(
                             formatRp(tagihan),
@@ -135,17 +137,18 @@ class CustomerNotesSheet extends ConsumerWidget {
     final isTagihan = n.type == 'tagihan';
     final isBayar = n.type == 'pembayaran';
     return Card(
-      color: AppColors.panel2,
+      // Aturan 3: kartu = L2.
+      color: AppColors.panel,
       child: ListTile(
         title: Text(
           n.note.isEmpty
               ? customerNoteTypeLabel(n.type)
               : n.note,
-          style: const TextStyle(color: AppColors.warmText),
+          style: TextStyle(color: context.teksUtama),
         ),
         subtitle: Text(
           '${customerNoteTypeLabel(n.type)}${n.amount > 0 ? ' · ${formatRp(n.amount)}' : ''}',
-          style: const TextStyle(color: AppColors.warmMuted),
+          style: TextStyle(color: context.teksRedup),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -160,7 +163,7 @@ class CustomerNotesSheet extends ConsumerWidget {
                     ? AppColors.danger
                     : isBayar
                         ? AppColors.ok
-                        : AppColors.warmMuted,
+                        : context.teksRedup,
               ),
             ),
             IconButton(
@@ -180,8 +183,8 @@ class CustomerNotesSheet extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.panel2,
-        title: const Text('Hapus catatan ini?',
-            style: TextStyle(color: AppColors.warmText)),
+        title: Text('Hapus catatan ini?',
+            style: TextStyle(color: context.teksUtama)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -221,8 +224,8 @@ class CustomerNotesSheet extends ConsumerWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
           backgroundColor: AppColors.panel2,
-          title: const Text(Strings.tambahCatatanToko,
-              style: TextStyle(color: AppColors.warmText)),
+          title: Text(Strings.tambahCatatanToko,
+              style: TextStyle(color: context.teksUtama)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -231,11 +234,11 @@ class CustomerNotesSheet extends ConsumerWidget {
                   initialValue: type,
                   dropdownColor: AppColors.panel2,
                   style:
-                      const TextStyle(color: AppColors.warmText),
-                  decoration: const InputDecoration(
+                      TextStyle(color: context.teksUtama),
+                  decoration: InputDecoration(
                     labelText: 'Jenis',
                     labelStyle:
-                        TextStyle(color: AppColors.warmMuted),
+                        TextStyle(color: context.teksRedup),
                   ),
                   items: const [
                     DropdownMenuItem(
@@ -259,11 +262,11 @@ class CustomerNotesSheet extends ConsumerWidget {
                     FilteringTextInputFormatter.digitsOnly
                   ],
                   style:
-                      const TextStyle(color: AppColors.warmText),
-                  decoration: const InputDecoration(
+                      TextStyle(color: context.teksUtama),
+                  decoration: InputDecoration(
                     labelText: 'Nominal (Rp)',
                     labelStyle:
-                        TextStyle(color: AppColors.warmMuted),
+                        TextStyle(color: context.teksRedup),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -271,14 +274,14 @@ class CustomerNotesSheet extends ConsumerWidget {
                   controller: noteCtrl,
                   maxLines: 2,
                   style:
-                      const TextStyle(color: AppColors.warmText),
-                  decoration: const InputDecoration(
+                      TextStyle(color: context.teksUtama),
+                  decoration: InputDecoration(
                     labelText: Strings.isiCatatan,
                     hintText: 'Cth: Ambil beras 1 karung',
                     labelStyle:
-                        TextStyle(color: AppColors.warmMuted),
+                        TextStyle(color: context.teksRedup),
                     hintStyle:
-                        TextStyle(color: AppColors.warmMuted),
+                        TextStyle(color: context.teksRedup),
                   ),
                 ),
               ],

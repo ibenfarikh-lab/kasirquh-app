@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../data/models/chat.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
@@ -81,10 +82,10 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
                 }
                 final msgs = snap.data ?? [];
                 if (msgs.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
                       'Belum ada pesan.',
-                      style: TextStyle(color: AppColors.warmMuted),
+                      style: TextStyle(color: context.teksRedup),
                     ),
                   );
                 }
@@ -116,7 +117,7 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
                           style: TextStyle(
                             color: mine
                                 ? AppColors.adminBg
-                                : AppColors.warmText,
+                                : context.teksUtama,
                           ),
                         ),
                       ),

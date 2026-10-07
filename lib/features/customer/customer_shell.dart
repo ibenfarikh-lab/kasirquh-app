@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../core/theme/theme_settings.dart';
 import '../../core/widgets/guest_lock_sheet.dart';
 import '../../data/repositories/social_repository.dart';
@@ -85,7 +86,7 @@ class CustomerShell extends ConsumerWidget {
         currentIndex: index,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.orange,
-        unselectedItemColor: AppColors.muted,
+        unselectedItemColor: context.teksRedup,
         onTap: (i) => _onTap(context, ref, i),
         items: [
           const BottomNavigationBarItem(

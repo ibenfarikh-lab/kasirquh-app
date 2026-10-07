@@ -93,7 +93,7 @@ class ChatInputBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.card,
+      color: context.permukaanKartu,
       padding: const EdgeInsets.all(12),
       child: SafeArea(
         child: Row(

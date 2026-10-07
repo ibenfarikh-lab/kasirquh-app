@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -198,7 +199,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
       builder: (context, controller) {
         return Container(
           decoration: const BoxDecoration(
-            color: AppColors.panel,
+            // Aturan 1&3: ikut bottomSheetTheme (adaptif).
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: ListView(
@@ -218,8 +219,8 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
               const SizedBox(height: 16),
               Text(
                 Strings.modulBelanjaStok,
-                style: const TextStyle(
-                  color: AppColors.warmText,
+                style: TextStyle(
+                  color: context.teksUtama,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -227,14 +228,14 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
               const SizedBox(height: 16),
               TextField(
                 controller: _supplier,
-                style: const TextStyle(color: AppColors.warmText),
+                style: TextStyle(color: context.teksUtama),
                 decoration: _dekorasi('Supplier'),
               ),
               const SizedBox(height: 20),
               Text(
                 Strings.perluDikulak,
-                style: const TextStyle(
-                  color: AppColors.warmMuted,
+                style: TextStyle(
+                  color: context.teksRedup,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
@@ -277,17 +278,17 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
           CheckboxListTile(
             value: row.dibeli,
             activeColor: AppColors.orange,
-            checkColor: AppColors.warmText,
+            checkColor: context.teksUtama,
             title: Text(
               p.name,
-              style: const TextStyle(
-                color: AppColors.warmText,
+              style: TextStyle(
+                color: context.teksUtama,
                 fontWeight: FontWeight.w600,
               ),
             ),
             subtitle: Text(
               'Stok ${formatStok(p.stock)} · ${Strings.saranJumlah}: ${formatStok(saranQty)}',
-              style: const TextStyle(color: AppColors.warmMuted),
+              style: TextStyle(color: context.teksRedup),
             ),
             onChanged: (v) => setState(() => row.dibeli = v ?? false),
           ),
@@ -328,7 +329,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
                   const SizedBox(height: 8),
                   Text(
                     '${Strings.modalBaru}: ${modalPcs > 0 ? formatRp(modalPcs) : '-'}',
-                    style: const TextStyle(color: AppColors.warmMuted),
+                    style: TextStyle(color: context.teksRedup),
                   ),
                   const SizedBox(height: 12),
                   _fieldAngka(row.hargaJual, Strings.hargaJualBaru,
@@ -346,7 +347,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
                           leading: const Radio<bool>(value: true),
                           title: Text(
                             Strings.pakaiModalBaru,
-                            style: const TextStyle(color: AppColors.warmText),
+                            style: TextStyle(color: context.teksUtama),
                           ),
                           onTap: () =>
                               setState(() => row.pakaiBaru = true),
@@ -357,7 +358,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
                           leading: const Radio<bool>(value: false),
                           title: Text(
                             Strings.rataRataModal,
-                            style: const TextStyle(color: AppColors.warmText),
+                            style: TextStyle(color: context.teksUtama),
                           ),
                           onTap: () =>
                               setState(() => row.pakaiBaru = false),
@@ -387,7 +388,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
       inputFormatters: decimal
           ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]'))]
           : [FilteringTextInputFormatter.digitsOnly],
-      style: const TextStyle(color: AppColors.warmText),
+      style: TextStyle(color: context.teksUtama),
       decoration: _dekorasi(label),
       onChanged: onChanged,
     );
@@ -396,7 +397,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
   InputDecoration _dekorasi(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: AppColors.warmMuted),
+      labelStyle: TextStyle(color: context.teksRedup),
       filled: true,
       fillColor: AppColors.panel2,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

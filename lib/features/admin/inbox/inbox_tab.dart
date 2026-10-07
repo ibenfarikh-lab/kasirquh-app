@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/customer.dart';
@@ -43,10 +44,10 @@ class InboxTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text(
+        Text(
           Strings.tabInbox,
           style: TextStyle(
-            color: AppColors.warmText,
+            color: context.teksUtama,
             fontSize: 22,
             fontWeight: FontWeight.w800,
           ),
@@ -96,15 +97,15 @@ class InboxTab extends ConsumerWidget {
                   .map((t) => ListTile(
                         contentPadding: EdgeInsets.zero,
                         title: Text(t.customerName,
-                            style: const TextStyle(
-                                color: AppColors.warmText,
+                            style: TextStyle(
+                                color: context.teksUtama,
                                 fontWeight: FontWeight.w700)),
                         subtitle: Text(
                           t.lastMessage ?? '',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              color: AppColors.warmMuted),
+                          style: TextStyle(
+                              color: context.teksRedup),
                         ),
                         trailing: _CountBadge(count: t.unreadAdmin),
                         onTap: () => _open(
@@ -124,13 +125,13 @@ class InboxTab extends ConsumerWidget {
                   .map((p) => ListTile(
                         contentPadding: EdgeInsets.zero,
                         title: Text(p.name,
-                            style: const TextStyle(
-                                color: AppColors.warmText,
+                            style: TextStyle(
+                                color: context.teksUtama,
                                 fontWeight: FontWeight.w700)),
                         subtitle: Text(
                           'Stok ${formatStok(p.stock)} · ${formatRp(p.price)}',
-                          style: const TextStyle(
-                              color: AppColors.warmMuted),
+                          style: TextStyle(
+                              color: context.teksRedup),
                         ),
                         trailing: _CountBadge(count: p.stock.round()),
                         onTap: () =>
@@ -150,16 +151,16 @@ class InboxTab extends ConsumerWidget {
                             Icons.shopping_bag_outlined,
                             color: AppColors.orange),
                         title: Text(t.item,
-                            style: const TextStyle(
-                                color: AppColors.warmText,
+                            style: TextStyle(
+                                color: context.teksUtama,
                                 fontWeight: FontWeight.w700)),
                         subtitle: Text(
                           '${t.customerName} · ${t.method}'
                           '${t.note.isEmpty ? '' : ' · ${t.note}'}',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              color: AppColors.warmMuted),
+                          style: TextStyle(
+                              color: context.teksRedup),
                         ),
                       ))
                   .toList(),
@@ -204,8 +205,8 @@ class _Section extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      color: AppColors.warmText,
+                    style: TextStyle(
+                      color: context.teksUtama,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -262,10 +263,10 @@ class _ApprovalTile extends ConsumerWidget {
         MaterialPageRoute(builder: (_) => const CustomersPage()),
       ),
       title: Text(customer.name,
-          style: const TextStyle(
-              color: AppColors.warmText, fontWeight: FontWeight.w700)),
+          style: TextStyle(
+              color: context.teksUtama, fontWeight: FontWeight.w700)),
       subtitle: Text(customer.email,
-          style: const TextStyle(color: AppColors.warmMuted)),
+          style: TextStyle(color: context.teksRedup)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -318,14 +319,14 @@ class _OrderTile extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(order.customerName,
-          style: const TextStyle(
-              color: AppColors.warmText, fontWeight: FontWeight.w700)),
+          style: TextStyle(
+              color: context.teksUtama, fontWeight: FontWeight.w700)),
       subtitle: Text(
         '${order.items.fold(0, (s, e) => s + e.qty)} barang · ${formatRp(order.total)}',
-        style: const TextStyle(color: AppColors.warmMuted),
+        style: TextStyle(color: context.teksRedup),
       ),
-      trailing: const Icon(Icons.chevron_right,
-          color: AppColors.warmMuted),
+      trailing: Icon(Icons.chevron_right,
+          color: context.teksRedup),
       // Deep link: buka Kasir Online.
       onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const OnlineOrdersPage())),

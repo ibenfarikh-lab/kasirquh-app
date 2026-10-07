@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/store_repository.dart';
@@ -23,7 +24,7 @@ class CustomerHomeSheet extends ConsumerWidget {
       builder: (context, controller) {
         return Container(
           decoration: const BoxDecoration(
-            color: AppColors.panel,
+            // Aturan 1&3: ikut bottomSheetTheme (adaptif).
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: ListView(
@@ -43,8 +44,8 @@ class CustomerHomeSheet extends ConsumerWidget {
               const SizedBox(height: 16),
               Text(
                 Strings.modulBerandaPelanggan,
-                style: const TextStyle(
-                  color: AppColors.warmText,
+                style: TextStyle(
+                  color: context.teksUtama,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -56,8 +57,8 @@ class CustomerHomeSheet extends ConsumerWidget {
               const SizedBox(height: 20),
               Text(
                 Strings.promo,
-                style: const TextStyle(
-                  color: AppColors.warmMuted,
+                style: TextStyle(
+                  color: context.teksRedup,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
@@ -73,11 +74,11 @@ class CustomerHomeSheet extends ConsumerWidget {
                 error: (_, __) => const SizedBox.shrink(),
                 data: (promos) {
                   if (promos.isEmpty) {
-                    return const Padding(
+                    return Padding(
                       padding: EdgeInsets.symmetric(vertical: 12),
                       child: Text(
                         'Belum ada promo.',
-                        style: TextStyle(color: AppColors.warmMuted),
+                        style: TextStyle(color: context.teksRedup),
                       ),
                     );
                   }
@@ -115,7 +116,7 @@ class CustomerHomeSheet extends ConsumerWidget {
           backgroundColor: AppColors.panel2,
           title: Text(
             Strings.tambahPromo,
-            style: const TextStyle(color: AppColors.warmText),
+            style: TextStyle(color: context.teksUtama),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -123,21 +124,21 @@ class CustomerHomeSheet extends ConsumerWidget {
               TextField(
                 controller: judul,
                 autofocus: true,
-                style: const TextStyle(color: AppColors.warmText),
-                decoration: _dekorasi(Strings.judulPromo),
+                style: TextStyle(color: context.teksUtama),
+                decoration: _dekorasi(context, Strings.judulPromo),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: subjudul,
-                style: const TextStyle(color: AppColors.warmText),
-                decoration: _dekorasi(Strings.subjudulPromo),
+                style: TextStyle(color: context.teksUtama),
+                decoration: _dekorasi(context, Strings.subjudulPromo),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: jenis,
                 dropdownColor: AppColors.panel2,
-                style: const TextStyle(color: AppColors.warmText),
-                decoration: _dekorasi(Strings.jenisDiskon),
+                style: TextStyle(color: context.teksUtama),
+                decoration: _dekorasi(context, Strings.jenisDiskon),
                 items: const [
                   DropdownMenuItem(
                       value: 'none', child: Text('Tanpa diskon')),
@@ -154,8 +155,8 @@ class CustomerHomeSheet extends ConsumerWidget {
                 TextField(
                   controller: nilai,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppColors.warmText),
-                  decoration: _dekorasi(jenis == 'percent'
+                  style: TextStyle(color: context.teksUtama),
+                  decoration: _dekorasi(context, jenis == 'percent'
                       ? Strings.nilaiPersen
                       : Strings.nilaiNominal),
                 ),
@@ -167,7 +168,7 @@ class CustomerHomeSheet extends ConsumerWidget {
               onPressed: () => Navigator.of(ctx).pop(false),
               child: Text(
                 Strings.batal,
-                style: const TextStyle(color: AppColors.warmMuted),
+                style: TextStyle(color: context.teksRedup),
               ),
             ),
             TextButton(
@@ -236,8 +237,8 @@ class _RunningTextSectionState extends ConsumerState<_RunningTextSection> {
       children: [
         Text(
           Strings.teksBerjalan,
-          style: const TextStyle(
-            color: AppColors.warmMuted,
+          style: TextStyle(
+            color: context.teksRedup,
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
@@ -246,8 +247,8 @@ class _RunningTextSectionState extends ConsumerState<_RunningTextSection> {
         TextField(
           controller: _c,
           maxLines: 2,
-          style: const TextStyle(color: AppColors.warmText),
-          decoration: _dekorasi(Strings.teksBerjalan),
+          style: TextStyle(color: context.teksUtama),
+          decoration: _dekorasi(context, Strings.teksBerjalan),
         ),
         const SizedBox(height: 8),
         Align(
@@ -318,19 +319,19 @@ class _PaketSectionState extends ConsumerState<_PaketSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Paket Tanggal Muda',
           style: TextStyle(
-            color: AppColors.warmMuted,
+            color: context.teksRedup,
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 8),
         SwitchListTile(
-          title: const Text(
+          title: Text(
             'Tampilkan di Beranda pelanggan',
-            style: TextStyle(color: AppColors.warmText),
+            style: TextStyle(color: context.teksUtama),
           ),
           value: _aktif,
           activeThumbColor: AppColors.orange,
@@ -339,15 +340,15 @@ class _PaketSectionState extends ConsumerState<_PaketSection> {
         ),
         TextField(
           controller: _judul,
-          style: const TextStyle(color: AppColors.warmText),
-          decoration: _dekorasi('Judul paket'),
+          style: TextStyle(color: context.teksUtama),
+          decoration: _dekorasi(context, 'Judul paket'),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _subjudul,
           maxLines: 2,
-          style: const TextStyle(color: AppColors.warmText),
-          decoration: _dekorasi('Subjudul paket (opsional)'),
+          style: TextStyle(color: context.teksUtama),
+          decoration: _dekorasi(context, 'Subjudul paket (opsional)'),
         ),
         const SizedBox(height: 8),
         Align(
@@ -405,15 +406,15 @@ class _PromoTile extends ConsumerWidget {
       child: ListTile(
         title: Text(
           promo.title,
-          style: const TextStyle(
-            color: AppColors.warmText,
+          style: TextStyle(
+            color: context.teksUtama,
             fontWeight: FontWeight.w600,
           ),
         ),
         subtitle: (promo.subtitle ?? '').isNotEmpty
             ? Text(
                 promo.subtitle!,
-                style: const TextStyle(color: AppColors.warmMuted),
+                style: TextStyle(color: context.teksRedup),
               )
             : null,
         trailing: Row(
@@ -443,9 +444,9 @@ class _PromoTile extends ConsumerWidget {
                   context: context,
                   builder: (ctx) => AlertDialog(
                     backgroundColor: AppColors.panel2,
-                    title: const Text(
+                    title: Text(
                       Strings.hapus,
-                      style: TextStyle(color: AppColors.warmText),
+                      style: TextStyle(color: context.teksUtama),
                     ),
                     actions: [
                       TextButton(
@@ -453,7 +454,7 @@ class _PromoTile extends ConsumerWidget {
                         child: Text(
                           Strings.batal,
                           style:
-                              const TextStyle(color: AppColors.warmMuted),
+                              TextStyle(color: context.teksRedup),
                         ),
                       ),
                       TextButton(
@@ -488,10 +489,10 @@ class _PromoTile extends ConsumerWidget {
   }
 }
 
-InputDecoration _dekorasi(String label) {
+InputDecoration _dekorasi(BuildContext context, String label) {
   return InputDecoration(
     labelText: label,
-    labelStyle: const TextStyle(color: AppColors.warmMuted),
+    labelStyle: TextStyle(color: context.teksRedup),
     filled: true,
     // Aturan 3: input = L3.
     fillColor: AppColors.panel2,

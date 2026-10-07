@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/chat.dart';
 import '../../../data/repositories/social_repository.dart';
@@ -127,15 +128,15 @@ class _IsiThreadState extends ConsumerState<_IsiThread> {
           child: msgsAsync.when(
             loading: () =>
                 const Center(child: CircularProgressIndicator()),
-            error: (_, __) => const Center(
+            error: (_, __) => Center(
                 child: Text(Strings.butuhInternetUmum,
-                    style: TextStyle(color: AppColors.muted))),
+                    style: TextStyle(color: context.teksRedup))),
             data: (msgs) {
               if (msgs.isEmpty) {
-                return const Center(
+                return Center(
                   child: Text(
                     Strings.chatTokoMulai,
-                    style: TextStyle(color: AppColors.muted),
+                    style: TextStyle(color: context.teksRedup),
                   ),
                 );
               }
