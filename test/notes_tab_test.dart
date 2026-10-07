@@ -56,6 +56,30 @@ void main() {
     expect(nilaiStokModal(const []), 0);
   });
 
+  test('nilaiStokModal: produk nonaktif ikut dihitung (ikut PWA)', () {
+    // Root cause selisih Rp21.000: jalur lama membuang isActive == false.
+    // Kontrak: fungsi murni ini menjumlah SEMUA produk yang diberikan.
+    const produk = [
+      Product(
+          id: 'a',
+          name: 'A',
+          category: 'Sembako',
+          stock: 10,
+          cost: 5000,
+          price: 7000,
+          active: true),
+      Product(
+          id: 'b',
+          name: 'B',
+          category: 'Sembako',
+          stock: 7,
+          cost: 3000,
+          price: 4000,
+          active: false),
+    ];
+    expect(nilaiStokModal(produk), 10 * 5000 + 7 * 3000);
+  });
+
   test('StockNoteItem.fromMap tahan qty string ala PWA', () {
     final it = StockNoteItem.fromMap({'name': 'Beras', 'qty': '1'});
     expect(it.name, 'Beras');

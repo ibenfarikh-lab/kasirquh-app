@@ -78,7 +78,9 @@ class _NotesTabState extends ConsumerState<NotesTab> {
   @override
   Widget build(BuildContext context) {
     final notes = ref.watch(stockNotesProvider).valueOrNull ?? const [];
-    final products = ref.watch(productsProvider).valueOrNull ?? const [];
+    // NILAI STOK dihitung dari SEMUA produk tanpa filter isActive
+    // (ikut PWA) — jalur baca khusus, bukan productsProvider.
+    final products = ref.watch(allProductsProvider).valueOrNull ?? const [];
     final hariIni = notes.where((n) => n.date == _kunci).toList();
     final totalHari = hariIni.fold(0, (s, n) => s + n.total);
 
