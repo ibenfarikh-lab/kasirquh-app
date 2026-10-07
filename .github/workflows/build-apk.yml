@@ -27,7 +27,19 @@ jobs:
 
       - run: flutter build apk --release
 
+      # Nama file APK memuat id aplikasi + versi (instruksi user):
+      # contoh: kasirquh-v3.6.15+29.apk
+      - name: Beri nama APK (id aplikasi + versi)
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          APP_ID=$(grep -oP 'applicationId\s*=\s*"\K[^"]+' android/app/build.gradle.kts | head -1)
+          SHORT=$(echo "$APP_ID" | cut -d. -f2)
+          SRC=build/app/outputs/flutter-apk/app-release.apk
+          DST=build/app/outputs/flutter-apk/${SHORT}-v${VERSION}.apk
+          mv "$SRC" "$DST"
+          echo "APK_NAME=$(basename "$DST")" >> "$GITHUB_ENV"
+
       - uses: actions/upload-artifact@v4
         with:
           name: kasirquh-app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/${{ env.APK_NAME }}
