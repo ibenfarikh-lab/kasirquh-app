@@ -8,6 +8,10 @@ class RumpiPost {
   final String id;
   final String authorId;
   final String authorName;
+
+  /// Peran penulis: 'admin' atau 'customer'. Dokumen lama tanpa field ini
+  /// diperlakukan sebagai 'customer' (tanpa backfill).
+  final String authorRole;
   final String text;
   final String? imageUrl;
   final int likeCount;
@@ -18,6 +22,7 @@ class RumpiPost {
     required this.id,
     required this.authorId,
     required this.authorName,
+    this.authorRole = 'customer',
     required this.text,
     this.imageUrl,
     this.likeCount = 0,
@@ -26,6 +31,7 @@ class RumpiPost {
   });
 
   bool get punyaFoto => imageUrl != null && imageUrl!.isNotEmpty;
+  bool get isAdmin => authorRole == 'admin';
 
   factory RumpiPost.fromDoc(String id, Map<String, dynamic> m) {
     final ts = m['createdAt'];
@@ -33,6 +39,7 @@ class RumpiPost {
       id: id,
       authorId: (m['authorId'] as String?) ?? '',
       authorName: (m['authorName'] as String?) ?? '',
+      authorRole: (m['authorRole'] as String?) ?? 'customer',
       text: (m['text'] as String?) ?? '',
       imageUrl: m['imageUrl'] as String?,
       likeCount: (m['likeCount'] as num?)?.toInt() ?? 0,
@@ -47,6 +54,7 @@ class RumpiPost {
   Map<String, dynamic> toFirestore() => {
         'authorId': authorId,
         'authorName': authorName,
+        'authorRole': authorRole,
         'text': text,
         if (imageUrl != null) 'imageUrl': imageUrl,
         'likeCount': 0,

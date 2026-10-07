@@ -78,6 +78,7 @@ class SocialRepository {
           id: '',
           authorId: uid,
           authorName: authorName,
+          authorRole: 'customer',
           text: bersih,
           imageUrl: imageUrl,
           createdAt: DateTime.now(),

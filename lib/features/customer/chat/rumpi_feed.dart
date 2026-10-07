@@ -169,6 +169,26 @@ class _PostCard extends StatelessWidget {
                               ),
                             ),
                           ],
+                          if (post.isAdmin) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.orange
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                Strings.lencanaAdmin,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.orange,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                       Text(
