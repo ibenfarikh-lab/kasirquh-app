@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/chat.dart';
 import '../../../data/repositories/admin_repository.dart';
@@ -112,7 +113,7 @@ class _ThreadTile extends StatelessWidget {
       title: Text(
         name,
         style: TextStyle(
-          color: AppColors.warmText,
+          color: context.teksUtama,
           fontWeight: hasUnread ? FontWeight.w800 : FontWeight.bold,
         ),
       ),
@@ -120,7 +121,7 @@ class _ThreadTile extends StatelessWidget {
         thread.lastMessage ?? '',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(color: AppColors.warmMuted),
+        style: TextStyle(color: context.teksRedup),
       ),
       trailing: hasUnread
           ? Container(
