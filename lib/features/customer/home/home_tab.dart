@@ -79,7 +79,8 @@ class HomeTab extends ConsumerWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: AppColors.ctaGradient,
+            // Aturan 2: oranye tunggal solid, bukan gradient.
+            color: AppColors.orange,
             borderRadius: BorderRadius.circular(14),
           ),
           child: Column(

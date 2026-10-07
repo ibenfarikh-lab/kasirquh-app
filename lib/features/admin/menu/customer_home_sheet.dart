@@ -399,7 +399,8 @@ class _PromoTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
-      color: AppColors.panel2,
+      // Aturan 3: kartu = L2.
+      color: AppColors.panel,
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         title: Text(
@@ -492,7 +493,8 @@ InputDecoration _dekorasi(String label) {
     labelText: label,
     labelStyle: const TextStyle(color: AppColors.warmMuted),
     filled: true,
-    fillColor: AppColors.panel,
+    // Aturan 3: input = L3.
+    fillColor: AppColors.panel2,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),

@@ -131,6 +131,8 @@ class TransferOrdersPage extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        // Aturan 3: dialog = L3.
+        backgroundColor: AppColors.panel2,
         title: Text(terima
             ? 'Verifikasi transfer ini?'
             : 'Tolak pesanan ini?'),

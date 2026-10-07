@@ -51,6 +51,8 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
+        // Aturan 3: dialog = L3.
+        backgroundColor: AppColors.panel2,
         title: const Text(Strings.konfirmasiPurgeJudul),
         content: Text(Strings.konfirmasiPurgeIsi(n)),
         actions: [
@@ -122,7 +124,8 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.panel,
+        // Aturan 3: dialog = L3.
+        backgroundColor: AppColors.panel2,
         title: const Text(
           'Hapus catatan ini?',
           style: TextStyle(color: AppColors.warmText),
@@ -246,7 +249,8 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
               itemBuilder: (_, i) {
                 final n = notes[i];
                 return Card(
-                  color: AppColors.panel2,
+                  // Aturan 3: kartu = L2.
+                  color: AppColors.panel,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),

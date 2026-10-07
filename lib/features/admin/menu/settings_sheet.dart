@@ -348,7 +348,8 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
 
   Widget _kartu(List<Widget> children) {
     return Card(
-      color: AppColors.panel2,
+      // Aturan 3: kartu = L2.
+      color: AppColors.panel,
       margin: const EdgeInsets.only(bottom: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Column(children: children),
@@ -416,7 +417,8 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
           style: const TextStyle(color: AppColors.warmText),
           decoration: InputDecoration(
             filled: true,
-            fillColor: AppColors.panel,
+            // Aturan 3: input = L3.
+            fillColor: AppColors.panel2,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             enabledBorder: OutlineInputBorder(

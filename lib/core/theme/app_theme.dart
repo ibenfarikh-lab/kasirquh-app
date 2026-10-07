@@ -97,7 +97,8 @@ class AppTheme {
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.panel,
+        // Aturan 3: sheet/dialog = L3 = panel2.
+        backgroundColor: AppColors.panel2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
@@ -149,7 +150,8 @@ class AppTheme {
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.panel,
+        // Aturan 3: sheet/dialog = L3 = panel2.
+        backgroundColor: AppColors.panel2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),

@@ -445,6 +445,8 @@ class _NoteDetailSheet extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
+        // Aturan 3: dialog = L3.
+        backgroundColor: AppColors.panel2,
         title: const Text(Strings.hapus),
         content: const Text(Strings.arsipSaja),
         actions: [

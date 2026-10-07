@@ -19,16 +19,9 @@ class AppColors {
   static const warmMuted = Color(0xFFBDB2AD);
   static const warmHighlight = Color(0xFFFFB45F);
 
-  // Aksen oranye (kedua mode)
+  // Aksen oranye TUNGGAL (Aturan 2, dikunci): 0xFFF49A24.
+  // Token oranye lain (orange2, orangeDeep, ctaGradient) DIHAPUS.
   static const orange = Color(0xFFF49A24);
-  static const orange2 = Color(0xFFFFBD61);
-  static const orangeDeep = Color(0xFFA95F12);
-  static const ctaGradient = LinearGradient(
-    colors: [Color(0xFFFF8D25), Color(0xFFFFC267)],
-    // 100deg ala spek: dominan kiri→kanan, sedikit menurun.
-    begin: Alignment(-0.98, -0.17),
-    end: Alignment(0.98, 0.17),
-  );
 
   // Semantik
   static const danger = Color(0xFFDF624F);

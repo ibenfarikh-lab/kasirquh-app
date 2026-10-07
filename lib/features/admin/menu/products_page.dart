@@ -40,7 +40,8 @@ class ProductsPage extends ConsumerWidget {
         expand: false,
         builder: (ctx, scrollController) => Container(
           decoration: const BoxDecoration(
-            color: AppColors.panel,
+            // Aturan 3: sheet = L3.
+            color: AppColors.panel2,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: ProductFormSheet(
@@ -310,6 +311,8 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        // Aturan 3: dialog = L3.
+        backgroundColor: AppColors.panel2,
         title: const Text(Strings.hapusProdukTanya),
         actions: [
           TextButton(

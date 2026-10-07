@@ -106,8 +106,9 @@ class _GradientButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: onPressed == null ? null : AppColors.ctaGradient,
-        color: onPressed == null ? Colors.grey.shade400 : null,
+        // Aturan 2: oranye tunggal solid (0xFFF49A24), bukan gradient.
+        color:
+            onPressed == null ? Colors.grey.shade400 : AppColors.orange,
         borderRadius: BorderRadius.circular(14),
       ),
       child: ElevatedButton(

@@ -269,7 +269,8 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
     final modalPcs = isi > 0 ? (hargaKemasan / isi).round() : 0;
 
     return Card(
-      color: AppColors.panel2,
+      // Aturan 3: kartu = L2.
+      color: AppColors.panel,
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         children: [

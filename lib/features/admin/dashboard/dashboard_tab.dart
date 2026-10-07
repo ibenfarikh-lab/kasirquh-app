@@ -234,7 +234,7 @@ class _QuickTips extends StatelessWidget {
       child: Row(
         children: [
           const Icon(Icons.lightbulb_outline,
-              color: AppColors.orange2),
+              color: AppColors.orange),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

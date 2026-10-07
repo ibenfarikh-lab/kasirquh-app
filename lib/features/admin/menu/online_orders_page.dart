@@ -24,9 +24,8 @@ String _statusName(OrderStatus status) => switch (status.name) {
 
 Color _statusColor(OrderStatus status) => switch (status) {
       OrderStatus.menunggu => AppColors.orange,
-      // warmMuted terlalu terang untuk teks putih (kontras rendah) —
-      // pakai oranye tua agar terbaca di kedua tema.
-      OrderStatus.dikemas => AppColors.orangeDeep,
+      // Aturan 2: oranye tunggal.
+      OrderStatus.dikemas => AppColors.orange,
       OrderStatus.dikirim => Colors.blue,
       OrderStatus.selesai => AppColors.ok,
       OrderStatus.dibatalkan => AppColors.danger,
@@ -138,6 +137,8 @@ class OnlineOrdersPage extends ConsumerWidget {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+          // Aturan 3: dialog = L3.
+          backgroundColor: AppColors.panel2,
           title: const Text(Strings.detailPesanan),
           content: SingleChildScrollView(
             child: Column(

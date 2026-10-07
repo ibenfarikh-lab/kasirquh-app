@@ -337,7 +337,8 @@ class _SlideView extends StatelessWidget {
                   Text(
                     slide.kicker,
                     style: const TextStyle(
-                      color: Color(0xFFFFC078),
+                      // Aturan 2: oranye tunggal.
+                      color: AppColors.orange,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.2,
