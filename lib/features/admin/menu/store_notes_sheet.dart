@@ -124,7 +124,7 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
       context: context,
       builder: (ctx) => AlertDialog(
         // Aturan 3: dialog = L3.
-        backgroundColor: AppColors.panel2,
+        // Aturan 1&3: ikut dialogTheme (adaptif).,
         title: Text(
           'Hapus catatan ini?',
           style: TextStyle(color: context.teksUtama),
@@ -158,7 +158,7 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
         hintText: hint,
         hintStyle: TextStyle(color: context.teksRedup),
         filled: true,
-        fillColor: AppColors.panel2,
+        fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
@@ -249,7 +249,7 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
                 final n = notes[i];
                 return Card(
                   // Aturan 3: kartu = L2.
-                  color: AppColors.panel,
+                  // Aturan 1&3: ikut cardTheme (adaptif).
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),

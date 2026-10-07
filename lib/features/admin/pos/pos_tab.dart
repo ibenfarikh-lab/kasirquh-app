@@ -114,8 +114,8 @@ class _PosTabState extends ConsumerState<PosTab> {
         if (cart.isNotEmpty)
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            decoration: const BoxDecoration(
-              color: AppColors.panel,
+            decoration: BoxDecoration(
+              color: context.permukaanKartu, // Aturan 1&3: adaptif.
               border: Border(top: BorderSide(color: AppColors.adminLine)),
             ),
             child: SafeArea(

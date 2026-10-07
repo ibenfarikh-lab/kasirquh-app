@@ -47,7 +47,7 @@ class _LaporanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppColors.panel,
+      // Aturan 1&3: ikut cardTheme (adaptif).
       child: ListTile(
         leading: const Icon(Icons.bar_chart_outlined,
             color: AppColors.orange),
@@ -80,7 +80,7 @@ class _ApprovalCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pendingAsync = ref.watch(pendingApprovalsProvider);
     return Card(
-      color: AppColors.panel,
+      // Aturan 1&3: ikut cardTheme (adaptif).
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -181,7 +181,7 @@ class _CustomerListCard extends ConsumerWidget {
     final query = ref.watch(_customerSearchProvider).toLowerCase();
     final customersAsync = ref.watch(adminCustomersProvider);
     return Card(
-      color: AppColors.panel,
+      // Aturan 1&3: ikut cardTheme (adaptif).
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

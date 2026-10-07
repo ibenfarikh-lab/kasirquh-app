@@ -41,8 +41,7 @@ class ProductsPage extends ConsumerWidget {
         expand: false,
         builder: (ctx, scrollController) => Container(
           decoration: const BoxDecoration(
-            // Aturan 3: sheet = L3.
-            color: AppColors.panel2,
+            // Aturan 1&3: ikut bottomSheetTheme (adaptif).
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: ProductFormSheet(

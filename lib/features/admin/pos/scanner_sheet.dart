@@ -141,7 +141,7 @@ class _CameraError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.panel2,
+      // Aturan 1&3: ikut theme (adaptif).
       alignment: Alignment.center,
       padding: const EdgeInsets.all(24),
       child: Text(

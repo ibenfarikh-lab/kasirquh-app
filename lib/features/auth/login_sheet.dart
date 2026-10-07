@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/app_button.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import '../../data/remote/auth_service.dart';
 import '../../l10n/strings_id.dart';
 
@@ -145,10 +146,10 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               Strings.akunWarungJudul,
               style: TextStyle(
-                color: AppColors.warmText,
+                color: context.teksUtama, // Aturan 4: adaptif.
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),

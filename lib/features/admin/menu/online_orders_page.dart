@@ -96,7 +96,7 @@ class OnlineOrdersPage extends ConsumerWidget {
                   itemBuilder: (context, i) {
                     final order = shown[i];
                     return Card(
-                      color: AppColors.panel,
+                      // Aturan 1&3: ikut cardTheme (adaptif).
                       child: ListTile(
                         title: Text(
                           order.customerName,

@@ -78,7 +78,7 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
         hintText: hint,
         hintStyle: TextStyle(color: context.teksRedup),
         filled: true,
-        fillColor: AppColors.panel2,
+        fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
@@ -95,7 +95,7 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.panel2,
+        color: context.permukaanKartu, // Aturan 1&3: adaptif.
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -175,7 +175,7 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          backgroundColor: AppColors.panel2,
+          // Aturan 1&3: ikut dialogTheme (adaptif).,
           title: Text(judul,
               style:
                   TextStyle(color: context.teksUtama)),
@@ -238,7 +238,7 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          backgroundColor: AppColors.panel2,
+          // Aturan 1&3: ikut dialogTheme (adaptif).,
           title: Text('Event bonus koin',
               style:
                   TextStyle(color: context.teksUtama)),

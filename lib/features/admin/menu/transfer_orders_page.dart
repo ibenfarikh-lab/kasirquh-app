@@ -49,7 +49,7 @@ class TransferOrdersPage extends ConsumerWidget {
             itemBuilder: (context, i) {
               final o = menunggu[i];
               return Card(
-                color: AppColors.panel,
+                // Aturan 1&3: ikut cardTheme (adaptif).
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(

@@ -456,7 +456,7 @@ class _FormCatat extends StatelessWidget {
         hintText: hint,
         hintStyle: TextStyle(color: context.teksRedup),
         filled: true,
-        fillColor: AppColors.panel2,
+        fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
@@ -498,7 +498,7 @@ class _FormCatat extends StatelessWidget {
             DropdownButtonFormField<bool>(
               initialValue: masuk,
               decoration: _deco(context, Strings.jenisTransaksi),
-              dropdownColor: AppColors.panel2,
+              dropdownColor: context.permukaanKartu, // Aturan 1&3: adaptif.
               style: TextStyle(color: context.teksUtama),
               items: const [
                 DropdownMenuItem(
@@ -577,7 +577,7 @@ class _JournalTile extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppColors.panel2,
+                color: context.permukaanKartu, // Aturan 1&3: adaptif.
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(

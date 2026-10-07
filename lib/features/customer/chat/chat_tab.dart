@@ -28,9 +28,9 @@ class ChatTab extends ConsumerWidget {
         children: [
           Container(
             color: context.permukaanKartu,
-            child: const TabBar(
+            child: TabBar(
               labelColor: AppColors.orange,
-              unselectedLabelColor: AppColors.muted,
+              unselectedLabelColor: context.teksRedup, // Aturan 4: adaptif.
               indicatorColor: AppColors.orange,
               tabs: [
                 Tab(text: Strings.tabRumpi),

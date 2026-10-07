@@ -113,7 +113,7 @@ class CustomerHomeSheet extends ConsumerWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          backgroundColor: AppColors.panel2,
+          // Aturan 1&3: ikut dialogTheme (adaptif).,
           title: Text(
             Strings.tambahPromo,
             style: TextStyle(color: context.teksUtama),
@@ -136,7 +136,7 @@ class CustomerHomeSheet extends ConsumerWidget {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: jenis,
-                dropdownColor: AppColors.panel2,
+                dropdownColor: context.permukaanKartu, // Aturan 1&3: adaptif.
                 style: TextStyle(color: context.teksUtama),
                 decoration: _dekorasi(context, Strings.jenisDiskon),
                 items: const [
@@ -401,7 +401,7 @@ class _PromoTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       // Aturan 3: kartu = L2.
-      color: AppColors.panel,
+      // Aturan 1&3: ikut cardTheme (adaptif).
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         title: Text(
@@ -443,7 +443,7 @@ class _PromoTile extends ConsumerWidget {
                 final ok = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    backgroundColor: AppColors.panel2,
+                    // Aturan 1&3: ikut dialogTheme (adaptif).,
                     title: Text(
                       Strings.hapus,
                       style: TextStyle(color: context.teksUtama),
@@ -495,7 +495,7 @@ InputDecoration _dekorasi(BuildContext context, String label) {
     labelStyle: TextStyle(color: context.teksRedup),
     filled: true,
     // Aturan 3: input = L3.
-    fillColor: AppColors.panel2,
+    fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),

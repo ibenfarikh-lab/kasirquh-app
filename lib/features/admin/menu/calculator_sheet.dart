@@ -197,7 +197,7 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
           const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
-              color: AppColors.adminBg,
+              color: context.permukaanKartu, // Aturan 1&3: adaptif.
               borderRadius: BorderRadius.circular(16),
             ),
             padding:
@@ -266,7 +266,7 @@ class _CalcButton extends StatelessWidget {
               ? AppColors.danger
               : _isOp
                   ? AppColors.orange
-                  : AppColors.panel2,
+                  : context.permukaanKartu, // Aturan 1: adaptif.
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),

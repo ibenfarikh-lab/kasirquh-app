@@ -271,7 +271,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
 
     return Card(
       // Aturan 3: kartu = L2.
-      color: AppColors.panel,
+      // Aturan 1&3: ikut cardTheme (adaptif).
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         children: [
@@ -399,7 +399,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
       labelText: label,
       labelStyle: TextStyle(color: context.teksRedup),
       filled: true,
-      fillColor: AppColors.panel2,
+      fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

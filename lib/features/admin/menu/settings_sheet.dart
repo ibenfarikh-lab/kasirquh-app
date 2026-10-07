@@ -281,7 +281,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   onTap: () => showDialog<void>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      backgroundColor: AppColors.panel2,
+                      // Aturan 1&3: ikut dialogTheme (adaptif).,
                       title: Text(
                         'Aturan & privasi',
                         style: TextStyle(color: context.teksUtama),
@@ -350,7 +350,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
   Widget _kartu(List<Widget> children) {
     return Card(
       // Aturan 3: kartu = L2.
-      color: AppColors.panel,
+      // Aturan 1&3: ikut cardTheme (adaptif).
       margin: const EdgeInsets.only(bottom: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Column(children: children),
@@ -371,7 +371,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.panel2,
+        // Aturan 1&3: ikut dialogTheme (adaptif).,
         title: Text(
           Strings.infoSesi,
           style: TextStyle(color: context.teksUtama),
@@ -405,7 +405,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.panel2,
+        // Aturan 1&3: ikut dialogTheme (adaptif).,
         title: Text(
           judul,
           style: TextStyle(color: context.teksUtama),
@@ -419,7 +419,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
           decoration: InputDecoration(
             filled: true,
             // Aturan 3: input = L3.
-            fillColor: AppColors.panel2,
+            fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             enabledBorder: OutlineInputBorder(
@@ -472,7 +472,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.panel2,
+        // Aturan 1&3: ikut dialogTheme (adaptif).,
         title: Text(
           Strings.yakinKeluar,
           style: TextStyle(color: context.teksUtama),

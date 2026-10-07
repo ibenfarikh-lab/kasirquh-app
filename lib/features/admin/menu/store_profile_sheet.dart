@@ -167,7 +167,7 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
           labelText: label,
           labelStyle: TextStyle(color: context.teksRedup),
           filled: true,
-          fillColor: AppColors.panel2,
+          fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           enabledBorder: OutlineInputBorder(

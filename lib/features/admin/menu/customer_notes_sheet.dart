@@ -86,8 +86,7 @@ class CustomerNotesSheet extends ConsumerWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        // Aturan 3: kartu = L2.
-                        color: AppColors.panel,
+                        color: context.permukaanKartu, // Aturan 1&3: adaptif.
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -138,7 +137,7 @@ class CustomerNotesSheet extends ConsumerWidget {
     final isBayar = n.type == 'pembayaran';
     return Card(
       // Aturan 3: kartu = L2.
-      color: AppColors.panel,
+      // Aturan 1&3: ikut cardTheme (adaptif).
       child: ListTile(
         title: Text(
           n.note.isEmpty
@@ -182,7 +181,7 @@ class CustomerNotesSheet extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.panel2,
+        // Aturan 1&3: ikut dialogTheme (adaptif).,
         title: Text('Hapus catatan ini?',
             style: TextStyle(color: context.teksUtama)),
         actions: [
@@ -223,7 +222,7 @@ class CustomerNotesSheet extends ConsumerWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          backgroundColor: AppColors.panel2,
+          // Aturan 1&3: ikut dialogTheme (adaptif).,
           title: Text(Strings.tambahCatatanToko,
               style: TextStyle(color: context.teksUtama)),
           content: SingleChildScrollView(
@@ -232,7 +231,7 @@ class CustomerNotesSheet extends ConsumerWidget {
               children: [
                 DropdownButtonFormField<String>(
                   initialValue: type,
-                  dropdownColor: AppColors.panel2,
+                  dropdownColor: context.permukaanKartu, // Aturan 1&3: adaptif.
                   style:
                       TextStyle(color: context.teksUtama),
                   decoration: InputDecoration(

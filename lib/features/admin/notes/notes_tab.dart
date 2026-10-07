@@ -319,7 +319,7 @@ class _SourcePill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: otomatis ? AppColors.ok : AppColors.panel2,
+        color: otomatis ? AppColors.ok : context.permukaanKartu, // Aturan 1: adaptif.
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -553,7 +553,7 @@ class _FormTambahState extends ConsumerState<_FormTambah> {
         hintText: hint,
         hintStyle: TextStyle(color: context.teksRedup),
         filled: true,
-        fillColor: AppColors.panel2,
+        fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(

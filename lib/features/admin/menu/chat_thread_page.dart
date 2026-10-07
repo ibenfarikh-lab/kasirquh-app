@@ -128,7 +128,7 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
             ),
           ),
           Container(
-            color: AppColors.panel,
+            color: context.permukaanKartu, // Aturan 1&3: adaptif.
             padding: const EdgeInsets.all(12),
             child: SafeArea(
               child: Row(

@@ -120,7 +120,7 @@ class _ModuleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.panel,
+      color: context.permukaanKartu, // Aturan 1&3: adaptif.
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
