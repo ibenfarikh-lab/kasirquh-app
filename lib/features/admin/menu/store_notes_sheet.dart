@@ -22,6 +22,65 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
   bool _showForm = false;
   bool _busy = false;
 
+  /// Baris lokal ber-flag migrated=1 (salinan yang sudah pindah ke cloud).
+  /// Tombol purge hanya tampil bila > 0.
+  int? _sisaMigrasi;
+
+  @override
+  void initState() {
+    super.initState();
+    _muatSisa();
+  }
+
+  Future<void> _muatSisa() async {
+    try {
+      final n = await ref
+          .read(adminRepositoryProvider)
+          .countMigratedStoreNotes();
+      if (mounted) setState(() => _sisaMigrasi = n);
+    } catch (_) {
+      if (mounted) setState(() => _sisaMigrasi = 0);
+    }
+  }
+
+  /// Purge pasca-verifikasi (instruksi Tim Utama, ACC user):
+  /// hapus HANYA baris lokal migrated=1. Cloud tidak tersentuh.
+  Future<void> _purge() async {
+    final n = _sisaMigrasi ?? 0;
+    if (n <= 0 || _busy) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text(Strings.konfirmasiPurgeJudul),
+        content: Text(Strings.konfirmasiPurgeIsi(n)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(d, false),
+            child: const Text(Strings.batal),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(d, true),
+            child: const Text(Strings.yaBersihkan,
+                style: TextStyle(color: AppColors.danger)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      final dihapus = await ref
+          .read(adminRepositoryProvider)
+          .purgeMigratedStoreNotes();
+      _snack(Strings.purgeSelesai(dihapus));
+    } catch (_) {
+      _snack(Strings.gagalMuatCatatanToko);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+      _muatSisa();
+    }
+  }
+
   @override
   void dispose() {
     _title.dispose();
@@ -238,6 +297,17 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
           label: Strings.tambahCatatanToko,
           onPressed: () => setState(() => _showForm = true),
         ),
+        // Tombol purge: hanya tampil bila ada salinan lokal yang
+        // sudah pindah ke cloud (migrated=1). Hilang sendiri setelah
+        // dibersihkan.
+        if ((_sisaMigrasi ?? 0) > 0) ...[
+          const SizedBox(height: 8),
+          AppButton(
+            label: Strings.bersihkanSalinanLokal(_sisaMigrasi!),
+            kind: AppButtonKind.secondary,
+            onPressed: _busy ? null : _purge,
+          ),
+        ],
       ],
     );
   }

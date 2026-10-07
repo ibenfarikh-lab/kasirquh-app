@@ -1080,10 +1080,18 @@ class AdminRepository {
 
   /// Pembersihan pasca-verifikasi: hapus baris lokal yang sudah ber-flag
   /// migrated=1. HANYA dipanggil setelah Tim Utama memverifikasi isi cloud
-  /// (aturan keras pola Tahap 1). Belum dipanggil di tahap ini.
+  /// (aturan keras pola Tahap 1).
   Future<int> purgeMigratedStoreNotes() async {
     final sq = await AppDatabase.db;
     return sq.delete('store_notes', where: 'migrated = 1');
+  }
+
+  /// Jumlah baris lokal ber-flag migrated=1 (untuk tombol purge).
+  Future<int> countMigratedStoreNotes() async {
+    final sq = await AppDatabase.db;
+    final r = await sq.rawQuery(
+        'SELECT COUNT(*) AS c FROM store_notes WHERE migrated = 1');
+    return (r.first['c'] as int?) ?? 0;
   }
 
   Future<void> saveStoreSettings(Map<String, dynamic> patch) async {

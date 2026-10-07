@@ -370,7 +370,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.12+26';
+  static const versiApp = 'KasirQuh v3.6.13+27';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';
@@ -409,6 +409,22 @@ class Strings {
       'Tersimpan di cloud, terbaca di semua perangkat.';
   static const gagalMuatCatatanToko =
       'Gagal memuat catatan. Periksa internet lalu coba lagi.';
+  static const konfirmasiPurgeJudul = 'Bersihkan salinan lokal?';
+  static const yaBersihkan = 'Ya, bersihkan';
+
+  /// "Bersihkan 7 salinan lokal"
+  static String bersihkanSalinanLokal(int n) =>
+      'Bersihkan $n salinan lokal';
+
+  /// "7 catatan di HP ini sudah tersalin ke cloud dan akan dihapus
+  /// dari HP. Data di cloud tidak tersentuh."
+  static String konfirmasiPurgeIsi(int n) =>
+      '$n catatan di HP ini sudah tersalin ke cloud dan akan dihapus '
+      'dari HP. Data di cloud tidak tersentuh.';
+
+  /// "7 salinan lokal dibersihkan. Catatan di cloud aman."
+  static String purgeSelesai(int n) =>
+      '$n salinan lokal dibersihkan. Catatan di cloud aman.';
 
   // Admin — Chat
   static const belumAdaPercakapan = 'Belum ada percakapan';
