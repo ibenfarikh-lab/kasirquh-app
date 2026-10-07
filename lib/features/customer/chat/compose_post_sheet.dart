@@ -16,8 +16,15 @@ import '../../../l10n/strings_id.dart';
 class ComposePostSheet extends ConsumerStatefulWidget {
   final String uid;
   final String nama;
-  const ComposePostSheet(
-      {super.key, required this.uid, required this.nama});
+
+  /// Peran penulis: 'customer' (default) atau 'admin'.
+  final String authorRole;
+  const ComposePostSheet({
+    super.key,
+    required this.uid,
+    required this.nama,
+    this.authorRole = 'customer',
+  });
 
   @override
   ConsumerState<ComposePostSheet> createState() =>
@@ -87,6 +94,7 @@ class _ComposePostSheetState extends ConsumerState<ComposePostSheet> {
             authorName: widget.nama,
             text: teks,
             imageUrl: dataUri,
+            authorRole: widget.authorRole,
           );
       if (mounted) Navigator.of(context).pop();
     } catch (_) {

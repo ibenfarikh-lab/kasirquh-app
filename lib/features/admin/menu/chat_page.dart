@@ -5,19 +5,60 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/chat.dart';
 import '../../../data/repositories/admin_repository.dart';
+import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
+import '../../customer/chat/rumpi_feed.dart';
+import '../admin_session.dart';
 import 'chat_thread_page.dart';
 
-/// Mode Admin > Chat — daftar percakapan (thread) dengan pelanggan.
+/// Mode Admin > Chat — 2 tab: Rumpi (feed + posting + moderasi)
+/// dan Chat Toko (daftar thread pelanggan).
 class ChatPage extends ConsumerWidget {
   const ChatPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final admin = ref.watch(adminSessionProvider).valueOrNull;
+    final namaToko =
+        ref.watch(storeInfoProvider).valueOrNull?.storeName ?? 'Warunge Mimi';
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(Strings.modulChat),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: Strings.tabRumpi),
+              Tab(text: Strings.tabAdminChatToko),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            if (admin == null)
+              const Center(child: CircularProgressIndicator())
+            else
+              RumpiFeed(
+                uid: admin.user.uid,
+                nama: namaToko,
+                modeAdmin: true,
+              ),
+            const _ThreadList(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tab Chat Toko: daftar percakapan (thread) dengan pelanggan.
+class _ThreadList extends ConsumerWidget {
+  const _ThreadList();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final threads = ref.watch(chatThreadsProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text(Strings.modulChat)),
-      body: threads.when(
+    return threads.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Text(
@@ -45,7 +86,6 @@ class ChatPage extends ConsumerWidget {
             },
           );
         },
-      ),
     );
   }
 }

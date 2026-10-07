@@ -69,6 +69,7 @@ class SocialRepository {
     required String authorName,
     required String text,
     String? imageUrl,
+    String authorRole = 'customer',
   }) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk posting.');
@@ -78,11 +79,26 @@ class SocialRepository {
           id: '',
           authorId: uid,
           authorName: authorName,
-          authorRole: 'customer',
+          authorRole: authorRole,
           text: bersih,
           imageUrl: imageUrl,
           createdAt: DateTime.now(),
         ).toFirestore());
+  }
+
+  /// Hapus postingan Rumpi (moderasi admin) beserta like-nya.
+  /// Rules: hanya admin atau penulis yang boleh hapus.
+  Future<void> deletePost(String postId) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet untuk menghapus.');
+    final postRef = db.collection('rumpi_posts').doc(postId);
+    final likes = await postRef.collection('likes').get();
+    final batch = db.batch();
+    for (final d in likes.docs) {
+      batch.delete(d.reference);
+    }
+    batch.delete(postRef);
+    await batch.commit();
   }
 
   /// Suka / batal suka. Transaksi: doc likes/{uid} + likeCount.

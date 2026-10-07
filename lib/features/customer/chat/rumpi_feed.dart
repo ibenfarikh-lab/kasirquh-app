@@ -12,11 +12,21 @@ import '../../../data/repositories/social_repository.dart';
 import '../../../l10n/strings_id.dart';
 import 'compose_post_sheet.dart';
 
-/// Mode Pelanggan > Chat > Rumpi — feed kabar warga + tombol tulis.
+/// Feed kabar Rumpi + tombol tulis. Dipakai Mode Pelanggan dan
+/// (modeAdmin) Tab Rumpi admin — admin bisa posting sebagai admin dan
+/// menghapus postingan (moderasi).
 class RumpiFeed extends ConsumerWidget {
   final String uid;
   final String nama;
-  const RumpiFeed({super.key, required this.uid, required this.nama});
+
+  /// true bila dipakai admin: tulis sebagai admin + tombol hapus tiap post.
+  final bool modeAdmin;
+  const RumpiFeed({
+    super.key,
+    required this.uid,
+    required this.nama,
+    this.modeAdmin = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -61,6 +71,8 @@ class RumpiFeed extends ConsumerWidget {
                   post: p,
                   disukai: disukai.contains(p.id),
                   onLike: () => _like(context, ref, p.id),
+                  tampilkanHapus: modeAdmin,
+                  onHapus: () => _hapus(context, ref, p.id),
                 );
               },
             ),
@@ -77,8 +89,51 @@ class RumpiFeed extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (_) => ComposePostSheet(uid: uid, nama: nama),
+      builder: (_) => ComposePostSheet(
+        uid: uid,
+        nama: nama,
+        authorRole: modeAdmin ? 'admin' : 'customer',
+      ),
     );
+  }
+
+  Future<void> _hapus(
+      BuildContext context, WidgetRef ref, String postId) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text(Strings.hapusPostinganTanya),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(Strings.batal),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              Strings.hapus,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    try {
+      await ref.read(socialRepositoryProvider).deletePost(postId);
+      ref.invalidate(rumpiPostsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.berhasilDihapus)),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.hapusPostinganGagal)),
+        );
+      }
+    }
   }
 
   Future<void> _like(
@@ -103,10 +158,16 @@ class _PostCard extends StatelessWidget {
   final RumpiPost post;
   final bool disukai;
   final VoidCallback onLike;
+
+  /// Moderasi admin: tampilkan tombol hapus + aksi hapus.
+  final bool tampilkanHapus;
+  final VoidCallback? onHapus;
   const _PostCard({
     required this.post,
     required this.disukai,
     required this.onLike,
+    this.tampilkanHapus = false,
+    this.onHapus,
   });
 
   @override
@@ -201,6 +262,13 @@ class _PostCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (tampilkanHapus)
+                  IconButton(
+                    onPressed: onHapus,
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    color: AppColors.danger,
+                    tooltip: Strings.hapus,
+                  ),
               ],
             ),
             if (post.text.isNotEmpty) ...[
