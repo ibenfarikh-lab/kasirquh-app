@@ -164,7 +164,7 @@ class SyncEngine {
             'category': data['category'] ?? '',
             'price': (data['price'] as num?)?.toInt() ?? 0,
             'cost': (data['costPrice'] as num?)?.toInt() ?? 0,
-            'stock': (data['stock'] as num?)?.toInt() ?? 0,
+            'stock': (data['stock'] as num?)?.toDouble() ?? 0.0,
             'lowStockAt': (data['lowStockAt'] as num?)?.toInt() ?? 5,
             'barcode': data['barcode'],
             'photoPath': data['photoUrl'],

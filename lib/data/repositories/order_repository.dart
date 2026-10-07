@@ -53,7 +53,10 @@ class OrderRepository {
       for (final item in items) {
         final pRef = db.collection('products').doc(item.productId);
         final pSnap = await tx.get(pRef);
-        final stock = (pSnap.data()?['stock'] as num?)?.toInt();
+        // JANGAN .toInt(): stok desimal (3,75) wajib utuh —
+        // versi lama memotong lalu menulis balik hasil potongan
+        // ke Firestore (korupsi data).
+        final stock = (pSnap.data()?['stock'] as num?)?.toDouble();
         if (stock == null || stock < item.qty) {
           lacking.add(item.name);
         } else {
