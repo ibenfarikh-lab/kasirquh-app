@@ -25,10 +25,28 @@ jobs:
 
       - run: flutter analyze
 
+      # Signing konsisten: keystore khusus sideload CI (BUKAN keystore
+      # Play Store) dari secrets. Tanpa ini tiap build memakai debug key
+      # yang berbeda-beda → Android menolak update → user harus uninstall.
+      - name: Siapkan keystore sideload CI
+        env:
+          CI_KEYSTORE_BASE64: ${{ secrets.CI_KEYSTORE_BASE64 }}
+          CI_KEYSTORE_PASSWORD: ${{ secrets.CI_KEYSTORE_PASSWORD }}
+          CI_KEY_ALIAS: ${{ secrets.CI_KEY_ALIAS }}
+          CI_KEY_PASSWORD: ${{ secrets.CI_KEY_PASSWORD }}
+        run: |
+          echo "$CI_KEYSTORE_BASE64" | base64 -d > android/ci-sideload.keystore
+          cat > android/key.properties <<EOF
+          storePassword=$CI_KEYSTORE_PASSWORD
+          keyPassword=$CI_KEY_PASSWORD
+          keyAlias=$CI_KEY_ALIAS
+          storeFile=../ci-sideload.keystore
+          EOF
+
       - run: flutter build apk --release
 
       # Nama file APK memuat id aplikasi + versi (instruksi user):
-      # contoh: kasirquh-v3.6.15+29.apk
+      # contoh: kasirquh-v3.6.18+32.apk
       - name: Beri nama APK (id aplikasi + versi)
         run: |
           VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
@@ -38,8 +56,11 @@ jobs:
           DST=build/app/outputs/flutter-apk/${SHORT}-v${VERSION}.apk
           mv "$SRC" "$DST"
           echo "APK_NAME=$(basename "$DST")" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=${SHORT}-v${VERSION}" >> "$GITHUB_ENV"
 
+      # Nama artifact berversi (instruksi user) — contoh:
+      # kasirquh-v3.6.18+32.zip (bukan kasirquh-app-release generik).
       - uses: actions/upload-artifact@v4
         with:
-          name: kasirquh-app-release
+          name: ${{ env.ARTIFACT_NAME }}
           path: build/app/outputs/flutter-apk/${{ env.APK_NAME }}
