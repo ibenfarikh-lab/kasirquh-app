@@ -4,12 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/strings_id.dart';
 import '../session.dart';
-import 'group_chat_page.dart';
 import 'rumpi_feed.dart';
 import 'toko_chat_page.dart';
 
-/// Mode Pelanggan > Tab Chat — 3 ruang: Rumpi (feed sosial),
-/// Toko (chat dengan Warunge Mimi), Komunitas (grup warga).
+/// Mode Pelanggan > Tab Chat — 2 ruang: Rumpi (feed komunitas),
+/// Toko (chat privat dengan Warunge Mimi).
 /// Tab ini bergembok untuk tamu (diatur di CustomerShell).
 class ChatTab extends ConsumerWidget {
   const ChatTab({super.key});
@@ -23,7 +22,7 @@ class ChatTab extends ConsumerWidget {
       return const Center(child: Text(Strings.guestLockTitle));
     }
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Column(
         children: [
           Container(
@@ -35,7 +34,6 @@ class ChatTab extends ConsumerWidget {
               tabs: [
                 Tab(text: Strings.tabRumpi),
                 Tab(text: Strings.tabToko),
-                Tab(text: Strings.tabKomunitas),
               ],
             ),
           ),
@@ -44,7 +42,6 @@ class ChatTab extends ConsumerWidget {
               children: [
                 RumpiFeed(uid: uid, nama: displayName(session!)),
                 TokoChatPage(uid: uid),
-                GroupChatPage(uid: uid, nama: displayName(session)),
               ],
             ),
           ),

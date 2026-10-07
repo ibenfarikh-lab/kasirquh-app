@@ -201,69 +201,6 @@ class SocialRepository {
     } catch (_) {}
   }
 
-  // ============ CHAT KOMUNITAS (grup tunggal 'rumpi') ============
-  // BUTUH rules tambahan (lihat laporan): baca thread + tulis pesan grup.
-
-  static const groupThreadId = 'rumpi';
-
-  Stream<List<ChatMessage>> watchGroupMessages({int limit = 100}) async* {
-    final db = _db;
-    if (db == null) {
-      yield const [];
-      return;
-    }
-    try {
-      yield* db
-          .collection('chat_threads')
-          .doc(groupThreadId)
-          .collection('messages')
-          .orderBy('createdAt', descending: true)
-          .limit(limit)
-          .snapshots()
-          .map((snap) => snap.docs
-              .map((d) => ChatMessage.fromDoc(d.id, d.data()))
-              .toList()
-              .reversed
-              .toList());
-    } catch (_) {
-      yield const [];
-    }
-  }
-
-  Future<void> sendGroupMessage({
-    required String uid,
-    required String senderName,
-    required String text,
-  }) async {
-    final db = _db;
-    if (db == null) throw StateError('Butuh internet untuk chat.');
-    final bersih = text.trim();
-    if (bersih.isEmpty) return;
-    final threadRef = db.collection('chat_threads').doc(groupThreadId);
-    final msgRef = threadRef.collection('messages').doc();
-    final batch = db.batch();
-    batch.set(
-        msgRef,
-        ChatMessage(
-          id: msgRef.id,
-          senderId: uid,
-          senderRole: 'customer',
-          text: bersih,
-          createdAt: DateTime.now(),
-        ).toFirestore());
-    batch.set(
-        threadRef,
-        {
-          'type': 'group',
-          'customerId': '',
-          'customerName': 'Komunitas',
-          'lastMessage': '$senderName: $bersih',
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true));
-    await batch.commit();
-  }
-
   // ============ RIWAYAT KOIN ============
 
   Stream<List<CoinEntry>> watchCoinLedger(String uid,
@@ -310,10 +247,6 @@ final myTokoThreadProvider =
 final tokoMessagesProvider =
     StreamProvider.family<List<ChatMessage>, String>((ref, threadId) {
   return ref.watch(socialRepositoryProvider).watchThreadMessages(threadId);
-});
-
-final groupMessagesProvider = StreamProvider<List<ChatMessage>>((ref) {
-  return ref.watch(socialRepositoryProvider).watchGroupMessages();
 });
 
 final coinLedgerProvider =

@@ -344,7 +344,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.6+20';
+  static const versiApp = 'KasirQuh v3.6.7+21';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';
@@ -388,7 +388,6 @@ class Strings {
   // Fase 4 — Chat pelanggan (Rumpi / Toko / Komunitas)
   static const tabRumpi = 'Rumpi';
   static const tabToko = 'Toko';
-  static const tabKomunitas = 'Komunitas';
   static const rumpiKosong = 'Belum ada kabar';
   static const rumpiKosongHint =
       'Jadilah yang pertama berbagi kabar di warung ini.';
