@@ -335,6 +335,25 @@ class Strings {
   static const labaBersih = 'Laba bersih';
   static const jurnalKosongHint =
       'Jual di Kasir atau catat kulakan di Belanja Stok.';
+  static const satuKas = 'Satu kas · seluruh aplikasi';
+  static const isiSaldoAwal = 'Isi saldo awal';
+  static const catat = 'Catat';
+  static const catatTransaksiManual = 'Catat transaksi manual';
+  static const uangMasuk = 'UANG MASUK';
+  static const uangKeluar = 'UANG KELUAR';
+  static const saldoKas = 'SALDO KAS';
+  static const jurnalTransaksi = 'Jurnal transaksi';
+  static const labelHari = 'Hari';
+  static const labelMinggu = 'Minggu';
+  static const labelBulan = 'Bulan';
+  static const uangMasukOpt = 'Uang masuk';
+  static const uangKeluarOpt = 'Uang keluar';
+  static const saldoAwalKas = 'Saldo awal kas';
+  static const belumAdaTransaksiPeriode =
+      'Belum ada transaksi pada periode ini.';
+
+  /// "3 pergerakan"
+  static String labelPergerakan(int n) => '$n pergerakan';
 
   // Admin — Laporan
   static const tujuhHariTerakhir = '7 hari terakhir';
@@ -370,7 +389,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.15+29';
+  static const versiApp = 'KasirQuh v3.6.16+30';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency.dart';
@@ -11,157 +12,533 @@ import '../../../data/models/journal_entry.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Halaman Pembukuan (Mode Admin): ringkasan jurnal kas + riwayat entri.
-/// Tanpa data contoh — kosong berarti belum ada transaksi.
-class LedgerPage extends ConsumerWidget {
+/// Batas periode [from, to) — fungsi murni (di-test).
+/// 0 = hari ini, 1 = minggu ini (Senin–Minggu), 2 = bulan ini.
+(DateTime, DateTime) batasPeriode(int periode, DateTime now) {
+  final hari = DateTime(now.year, now.month, now.day);
+  return switch (periode) {
+    1 => (
+        hari.subtract(Duration(days: hari.weekday - 1)),
+        hari
+            .subtract(Duration(days: hari.weekday - 1))
+            .add(const Duration(days: 7)),
+      ),
+    2 => (
+        DateTime(now.year, now.month),
+        DateTime(now.year, now.month + 1),
+      ),
+    _ => (hari, hari.add(const Duration(days: 1))),
+  };
+}
+
+/// Filter entri ke dalam [from, to) — fungsi murni (di-test).
+List<JournalEntry> filterJurnalPeriode(
+        List<JournalEntry> semua, DateTime from, DateTime to) =>
+    semua
+        .where(
+            (e) => !e.createdAt.isBefore(from) && e.createdAt.isBefore(to))
+        .toList();
+
+/// Saldo awal sudah pernah diisi — fungsi murni (di-test).
+/// Label 'Saldo awal kas' sama persis dengan yang ditulis PWA.
+bool saldoAwalSudahAda(List<JournalEntry> semua) =>
+    semua.any((e) => e.label == Strings.saldoAwalKas);
+
+/// Halaman Pembukuan (Mode Admin) — selaras bentuk ideal PWA:
+/// tab Hari|Minggu|Bulan, tombol Isi saldo awal & Catat,
+/// kartu UANG MASUK / UANG KELUAR (per periode) + SALDO KAS (semua waktu),
+/// jurnal berikon + waktu + nominal bertanda.
+class LedgerPage extends ConsumerStatefulWidget {
   const LedgerPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(title: const Text(Strings.modulPembukuan)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const _SummaryCard(),
-          const SizedBox(height: 16),
-          Text(
-            'Riwayat',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
-          const _JournalList(),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.orange,
-        onPressed: () => _openForm(context),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-    );
+  ConsumerState<LedgerPage> createState() => _LedgerPageState();
+}
+
+class _LedgerPageState extends ConsumerState<LedgerPage> {
+  int _periode = 0;
+  bool _tampilForm = false;
+  bool _modeSaldoAwal = false;
+
+  bool _masuk = true;
+  final _ket = TextEditingController();
+  final _nominal = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _ket.dispose();
+    _nominal.dispose();
+    super.dispose();
   }
 
-  static void _openForm(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.panel,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  void _bukaCatat() {
+    setState(() {
+      _modeSaldoAwal = false;
+      _ket.clear();
+      _tampilForm = !_tampilForm;
+    });
+  }
+
+  void _bukaSaldoAwal() {
+    setState(() {
+      _modeSaldoAwal = true;
+      _masuk = true;
+      _ket.text = Strings.saldoAwalKas;
+      _tampilForm = true;
+    });
+  }
+
+  Future<void> _simpan() async {
+    final nominal =
+        int.tryParse(_nominal.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    final ket = _ket.text.trim();
+    if (nominal <= 0 || ket.isEmpty || _saving) return;
+    setState(() => _saving = true);
+    try {
+      final repo = ref.read(adminRepositoryProvider);
+      if (_modeSaldoAwal) {
+        // Saldo awal: pemasukan kind 'modal' → Firestore
+        // {type: 'pemasukan', category: 'lainnya', note: 'Saldo awal kas'}
+        // persis seperti yang ditulis PWA.
+        await repo.addJournal(
+          kind: 'modal',
+          label: Strings.saldoAwalKas,
+          amount: nominal,
+        );
+      } else {
+        await repo.addJournal(
+          kind: _masuk ? 'penjualan' : 'beban',
+          label: ket,
+          amount: _masuk ? nominal : -nominal,
+        );
+      }
+      _ket.clear();
+      _nominal.clear();
+      if (_modeSaldoAwal) {
+        setState(() {
+          _tampilForm = false;
+          _modeSaldoAwal = false;
+        });
+      }
+      _snack(Strings.berhasilDisimpan);
+    } catch (_) {
+      _snack(Strings.butuhInternetAdmin);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (from, to) = batasPeriode(_periode, DateTime.now());
+    final journalAsync = ref.watch(adminJournalProvider);
+    final semua = journalAsync.valueOrNull ?? const <JournalEntry>[];
+    final adaSaldoAwal = saldoAwalSudahAda(semua);
+    final periodeEntries = filterJurnalPeriode(semua, from, to);
+
+    return Scaffold(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Kepala: kembali + kicker/judul + aksi.
+            Row(
+              children: [
+                IconButton(
+                  tooltip: Strings.kembali,
+                  icon: const Icon(Icons.arrow_back,
+                      color: AppColors.warmText),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        Strings.satuKas,
+                        style: TextStyle(
+                            color: AppColors.warmMuted, fontSize: 12),
+                      ),
+                      Text(
+                        Strings.modulPembukuan,
+                        style: TextStyle(
+                          color: AppColors.orange,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!adaSaldoAwal)
+                  AppButton(
+                    label: Strings.isiSaldoAwal,
+                    fullWidth: false,
+                    kind: AppButtonKind.secondary,
+                    onPressed: _bukaSaldoAwal,
+                  ),
+                if (!adaSaldoAwal) const SizedBox(width: 8),
+                AppButton(
+                  label: Strings.catat,
+                  fullWidth: false,
+                  onPressed: _bukaCatat,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Tab periode: Hari | Minggu | Bulan.
+            _PeriodTabs(
+              index: _periode,
+              onChanged: (i) => setState(() => _periode = i),
+            ),
+            const SizedBox(height: 12),
+            _SummarySection(from: from, to: to),
+            if (_tampilForm) ...[
+              const SizedBox(height: 12),
+              _FormCatat(
+                modeSaldoAwal: _modeSaldoAwal,
+                masuk: _masuk,
+                onJenisChanged: (v) => setState(() => _masuk = v),
+                ket: _ket,
+                nominal: _nominal,
+                saving: _saving,
+                onSimpan: _simpan,
+                onTutup: () => setState(() {
+                  _tampilForm = false;
+                  _modeSaldoAwal = false;
+                }),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  Strings.jurnalTransaksi,
+                  style: TextStyle(
+                    color: AppColors.warmText,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  Strings.labelPergerakan(periodeEntries.length),
+                  style: const TextStyle(
+                      color: AppColors.warmMuted, fontSize: 12),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (journalAsync.isLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(
+                      color: AppColors.orange),
+                ),
+              )
+            else if (periodeEntries.isEmpty)
+              const EmptyState(
+                icon: Icons.book_outlined,
+                title: Strings.belumAdaTransaksi,
+                hint: Strings.belumAdaTransaksiPeriode,
+              )
+            else
+              ...periodeEntries.map((e) => _JournalTile(entry: e)),
+          ],
         ),
-        padding: const EdgeInsets.all(24),
-        child: const _JournalFormSheet(),
       ),
     );
   }
 }
 
-/// Kartu ringkasan: pemasukan, pengeluaran, laba bersih (semua waktu).
-class _SummaryCard extends ConsumerWidget {
-  const _SummaryCard();
+/// Tab periode Hari | Minggu | Bulan.
+class _PeriodTabs extends StatelessWidget {
+  final int index;
+  final ValueChanged<int> onChanged;
+
+  const _PeriodTabs({required this.index, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    const labels = [
+      Strings.labelHari,
+      Strings.labelMinggu,
+      Strings.labelBulan
+    ];
+    return Row(
+      children: List.generate(3, (i) {
+        final aktif = i == index;
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+                left: i == 0 ? 0 : 4, right: i == 2 ? 0 : 4),
+            child: AppButton(
+              label: labels[i],
+              fullWidth: true,
+              kind: aktif
+                  ? AppButtonKind.primary
+                  : AppButtonKind.secondary,
+              onPressed: () => onChanged(i),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+/// Kartu ringkasan: UANG MASUK / UANG KELUAR (per periode aktif)
+/// + SALDO KAS (semua waktu).
+class _SummarySection extends ConsumerWidget {
+  final DateTime from;
+  final DateTime to;
+
+  const _SummarySection({required this.from, required this.to});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final repo = ref.watch(adminRepositoryProvider);
-    return FutureBuilder<JournalSummary>(
-      future: repo.journalSummary(),
+    return FutureBuilder<List<JournalSummary>>(
+      future: Future.wait([
+        repo.journalSummary(from: from, to: to),
+        repo.journalSummary(),
+      ]),
       builder: (context, snap) {
         if (!snap.hasData) {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(24),
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                  color: AppColors.orange),
             ),
           );
         }
-        final s = snap.data!;
-        // Prinsip: mending "belum ada transaksi" daripada Rp0/Rp0/Rp0
+        final periode = snap.data![0];
+        final semua = snap.data![1];
+        // Prinsip: mending "belum ada transaksi" daripada angka
         // dari ketiadaan data.
-        if (s.transaksi == 0) {
+        if (semua.transaksi == 0) {
           return const EmptyState(
             icon: Icons.book_outlined,
             title: Strings.belumAdaTransaksi,
             hint: Strings.jurnalKosongHint,
           );
         }
-        return AppCard(
-          child: Column(
-            children: [
-              _summaryRow(Strings.pemasukan, s.masuk, AppColors.ok),
-              const SizedBox(height: 8),
-              _summaryRow(Strings.pengeluaran, s.keluar, AppColors.danger),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Divider(height: 1, color: AppColors.adminLine),
+        final saldo = semua.masuk - semua.keluar;
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _CashCard(
+                    label: Strings.uangMasuk,
+                    value: periode.masuk,
+                    color: AppColors.ok,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _CashCard(
+                    label: Strings.uangKeluar,
+                    value: periode.keluar,
+                    color: AppColors.danger,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.orange,
+                borderRadius: BorderRadius.circular(14),
               ),
-              _summaryRow(
-                Strings.labaBersih,
-                s.masuk - s.keluar,
-                AppColors.orange,
-                bold: true,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    Strings.saldoKas,
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    formatRp(saldo),
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
-    );
-  }
-
-  Widget _summaryRow(String label, int value, Color color, {bool bold = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(color: AppColors.warmMuted)),
-        Text(
-          formatRp(value),
-          style: TextStyle(
-            color: color,
-            fontWeight: bold ? FontWeight.w800 : FontWeight.w700,
-            fontSize: bold ? 17 : 15,
-          ),
-        ),
-      ],
     );
   }
 }
 
-/// Daftar riwayat entri jurnal dari stream.
-class _JournalList extends ConsumerWidget {
-  const _JournalList();
+class _CashCard extends StatelessWidget {
+  final String label;
+  final int value;
+  final Color color;
+
+  const _CashCard(
+      {required this.label, required this.value, required this.color});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final journalAsync = ref.watch(adminJournalProvider);
-    return journalAsync.when(
-      loading: () => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: CircularProgressIndicator(),
-        ),
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.warmMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            formatRp(value),
+            style: TextStyle(
+              color: color,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
-      error: (e, _) => Center(child: Text('$e')),
-      data: (entries) {
-        if (entries.isEmpty) {
-          return const EmptyState(
-            icon: Icons.book_outlined,
-            title: Strings.belumAdaTransaksi,
-            hint: Strings.jurnalKosongHint,
-          );
-        }
-        return ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: entries.length,
-          separatorBuilder: (_, __) =>
-              const Divider(height: 1, color: AppColors.adminLine),
-          itemBuilder: (context, i) => _JournalTile(entry: entries[i]),
-        );
-      },
+    );
+  }
+}
+
+/// Form "Catat transaksi manual" inline (toggle dari tombol Catat).
+/// Mode saldo awal: jenis & keterangan dikunci.
+class _FormCatat extends StatelessWidget {
+  final bool modeSaldoAwal;
+  final bool masuk;
+  final ValueChanged<bool> onJenisChanged;
+  final TextEditingController ket;
+  final TextEditingController nominal;
+  final bool saving;
+  final VoidCallback onSimpan;
+  final VoidCallback onTutup;
+
+  const _FormCatat({
+    required this.modeSaldoAwal,
+    required this.masuk,
+    required this.onJenisChanged,
+    required this.ket,
+    required this.nominal,
+    required this.saving,
+    required this.onSimpan,
+    required this.onTutup,
+  });
+
+  InputDecoration _deco(String hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: AppColors.warmMuted),
+        filled: true,
+        fillColor: AppColors.panel2,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  modeSaldoAwal
+                      ? Strings.isiSaldoAwal
+                      : Strings.catatTransaksiManual,
+                  style: const TextStyle(
+                    color: AppColors.warmText,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: Strings.tutup,
+                icon: const Icon(Icons.close,
+                    color: AppColors.warmMuted, size: 20),
+                onPressed: onTutup,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (!modeSaldoAwal) ...[
+            DropdownButtonFormField<bool>(
+              initialValue: masuk,
+              decoration: _deco(Strings.jenisTransaksi),
+              dropdownColor: AppColors.panel2,
+              style: const TextStyle(color: AppColors.warmText),
+              items: const [
+                DropdownMenuItem(
+                  value: true,
+                  child: Text(Strings.uangMasukOpt),
+                ),
+                DropdownMenuItem(
+                  value: false,
+                  child: Text(Strings.uangKeluarOpt),
+                ),
+              ],
+              onChanged: (v) => onJenisChanged(v ?? true),
+            ),
+            const SizedBox(height: 8),
+          ],
+          TextField(
+            controller: ket,
+            enabled: !modeSaldoAwal,
+            maxLength: 80,
+            style: const TextStyle(color: AppColors.warmText),
+            decoration: _deco(Strings.keterangan),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: nominal,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            style: const TextStyle(color: AppColors.warmText),
+            decoration: _deco(Strings.nominal),
+          ),
+          const SizedBox(height: 12),
+          AppButton(
+            label: saving
+                ? '...'
+                : (modeSaldoAwal
+                    ? Strings.isiSaldoAwal
+                    : Strings.simpan),
+            onPressed: saving ? null : onSimpan,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -180,7 +557,8 @@ Color _kindColor(String kind) => switch (kind) {
       _ => AppColors.warmMuted,
     };
 
-/// Satu baris entri jurnal.
+/// Satu baris entri jurnal: ikon jenis + keterangan + waktu
+/// + nominal bertanda.
 class _JournalTile extends StatelessWidget {
   final JournalEntry entry;
 
@@ -189,161 +567,56 @@ class _JournalTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final positive = entry.amount >= 0;
-    final c = entry.createdAt;
-    final date =
-        '${c.day}/${c.month}/${c.year} ${c.hour.toString().padLeft(2, '0')}:${c.minute.toString().padLeft(2, '0')}';
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(_kindIcon(entry.kind), color: _kindColor(entry.kind)),
-      title: Text(entry.label),
-      subtitle: Text(
-        date,
-        style: const TextStyle(color: AppColors.warmMuted, fontSize: 12),
-      ),
-      trailing: Text(
-        '${positive ? '+' : ''}${formatRp(entry.amount)}',
-        style: TextStyle(
-          color: positive ? AppColors.ok : AppColors.danger,
-          fontWeight: FontWeight.w700,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: AppCard(
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.panel2,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                _kindIcon(entry.kind),
+                color: _kindColor(entry.kind),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entry.label,
+                    style: const TextStyle(
+                      color: AppColors.warmText,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    DateFormat('HH:mm').format(entry.createdAt),
+                    style: const TextStyle(
+                        color: AppColors.warmMuted, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '${positive ? '+' : '−'}${formatRp(entry.amount.abs())}',
+              style: TextStyle(
+                color:
+                    positive ? AppColors.ok : AppColors.danger,
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
-      ),
-    );
-  }
-}
-
-/// Form tambah catatan keuangan (bottom sheet).
-class _JournalFormSheet extends ConsumerStatefulWidget {
-  const _JournalFormSheet();
-
-  @override
-  ConsumerState<_JournalFormSheet> createState() => _JournalFormSheetState();
-}
-
-class _JournalFormSheetState extends ConsumerState<_JournalFormSheet> {
-  static const _kindLabels = {
-    'penjualan': Strings.penjualan,
-    'kulakan': Strings.kulakan,
-    'beban': Strings.beban,
-    'modal': Strings.modal,
-  };
-
-  String _kind = 'penjualan';
-  bool _isKeluar = false;
-  bool _saving = false;
-  final _labelCtrl = TextEditingController();
-  final _amountCtrl = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _labelCtrl.addListener(_refresh);
-    _amountCtrl.addListener(_refresh);
-  }
-
-  void _refresh() => setState(() {});
-
-  @override
-  void dispose() {
-    _labelCtrl.dispose();
-    _amountCtrl.dispose();
-    super.dispose();
-  }
-
-  bool get _valid =>
-      _labelCtrl.text.trim().isNotEmpty &&
-      (int.tryParse(_amountCtrl.text) ?? 0) > 0;
-
-  Future<void> _save() async {
-    setState(() => _saving = true);
-    try {
-      final nominal = int.parse(_amountCtrl.text);
-      await ref.read(adminRepositoryProvider).addJournal(
-            kind: _kind,
-            label: _labelCtrl.text.trim(),
-            amount: _isKeluar ? -nominal : nominal,
-          );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(Strings.berhasilDisimpan)),
-      );
-      Navigator.of(context).pop();
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(Strings.butuhInternetAdmin)),
-      );
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding:
-          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            Strings.tambahCatatanKeuangan,
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            initialValue: _kind,
-            decoration:
-                const InputDecoration(labelText: Strings.jenisTransaksi),
-            items: _kindLabels.entries
-                .map((e) => DropdownMenuItem(
-                      value: e.key,
-                      child: Text(e.value),
-                    ))
-                .toList(),
-            onChanged: (v) => setState(() => _kind = v ?? 'penjualan'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _labelCtrl,
-            decoration: const InputDecoration(labelText: Strings.keterangan),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _amountCtrl,
-            decoration: const InputDecoration(labelText: Strings.nominal),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          ),
-          SwitchListTile(
-            title: const Text(Strings.pengeluaran),
-            value: _isKeluar,
-            activeThumbColor: AppColors.orange,
-            contentPadding: EdgeInsets.zero,
-            onChanged: (v) => setState(() => _isKeluar = v),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text(Strings.batal),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AppButton(
-                  label: Strings.simpan,
-                  fullWidth: false,
-                  onPressed: _valid && !_saving ? _save : null,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
