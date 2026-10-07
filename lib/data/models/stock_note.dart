@@ -79,11 +79,16 @@ class StockNoteItem {
   Map<String, dynamic> toMap() =>
       {'name': name, 'qty': qty, 'price': price};
 
-  factory StockNoteItem.fromMap(Map<String, dynamic> m) => StockNoteItem(
-        name: m['name'] as String? ?? '',
-        qty: (m['qty'] as num?)?.toInt() ?? 0,
-        price: (m['price'] as num?)?.toInt() ?? 0,
-      );
+  factory StockNoteItem.fromMap(Map<String, dynamic> m) {
+    int asInt(dynamic v) =>
+        v is num ? v.toInt() : int.tryParse('$v') ?? 0;
+    return StockNoteItem(
+      name: m['name'] as String? ?? '',
+      // PWA menulis qty sebagai string ('1') — terima keduanya.
+      qty: asInt(m['qty']),
+      price: asInt(m['price']),
+    );
+  }
 
   int get subtotal => qty * price;
 }

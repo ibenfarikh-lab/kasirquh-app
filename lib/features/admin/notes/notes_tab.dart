@@ -1,75 +1,188 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/utils/datetime_id.dart';
+import '../../../data/models/product.dart';
+import '../../../data/models/stock_note.dart';
+import '../../../data/repositories/admin_repository.dart';
+import '../../../data/repositories/product_repository.dart';
+import '../../../data/repositories/store_repository.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
-import '../../../data/models/stock_note.dart';
-import '../../../data/repositories/admin_repository.dart';
-import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
+import '../menu/stock_shopping_sheet.dart';
 
-/// Tab Catatan: Catatan Belanja Harian satu halaman.
-/// Isi: modal belanja, daftar catatan (manual + dari Belanja Stok).
+/// Fungsi murni (di-test): label pil sumber catatan.
+/// Perbaikan bug: 'impor' selama ini tampil 'Manual'.
+String labelSumberCatatan(String source) => switch (source) {
+      'belanja_stok' => Strings.dariBelanjaStok,
+      'impor' => Strings.labelImpor,
+      _ => Strings.manualTeks,
+    };
+
+/// Fungsi murni (di-test): label satu baris barang di kartu.
+String labelItemBarang(StockNoteItem it) =>
+    it.qty > 1 ? '${it.name} · ${it.qty}' : it.name;
+
+/// Fungsi murni (di-test): kunci tanggal YYYY-MM-DD untuk filter.
+String kunciTanggal(DateTime d) =>
+    '${d.year}-${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
+
+/// Fungsi murni (di-test): nilai stok = Σ stok × modal/pcs.
+int nilaiStokModal(List<Product> products) =>
+    products.fold(0, (s, p) => s + p.stock * p.cost);
+
+/// Mode Admin > Tab Catatan: Catatan Belanja Harian satu halaman.
+/// Acuan tampilan = PWA (halaman Catatan Belanja).
 /// Ubah/hapus HANYA mengubah arsip — pembukuan & stok tidak dihitung ulang.
-class NotesTab extends ConsumerWidget {
+class NotesTab extends ConsumerStatefulWidget {
   const NotesTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotesTab> createState() => _NotesTabState();
+}
+
+class _NotesTabState extends ConsumerState<NotesTab> {
+  DateTime _tanggal = DateTime.now();
+
+  String get _kunci => kunciTanggal(_tanggal);
+
+  void _geserHari(int delta) {
+    setState(() => _tanggal = _tanggal.add(Duration(days: delta)));
+  }
+
+  Future<void> _pilihTanggal() async {
+    final hasil = await showDatePicker(
+      context: context,
+      initialDate: _tanggal,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (hasil != null) setState(() => _tanggal = hasil);
+  }
+
+  void _bukaBelanjaStok() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const StockShoppingSheet(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final notes = ref.watch(stockNotesProvider).valueOrNull ?? const [];
+    final products = ref.watch(productsProvider).valueOrNull ?? const [];
     final store = ref.watch(storeInfoProvider).valueOrNull;
+    final hariIni = notes.where((n) => n.date == _kunci).toList();
+    final totalHari = hariIni.fold(0, (s, n) => s + n.total);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(context),
-        backgroundColor: AppColors.orange,
-        foregroundColor: AppColors.adminBg,
-        icon: const Icon(Icons.add),
-        label: const Text(Strings.tambahCatatan),
-      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Kepala halaman: kicker + judul + tombol Belanja Stok.
+          Row(
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      Strings.kickerKulakan,
+                      style: TextStyle(
+                          color: AppColors.warmMuted, fontSize: 12),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      Strings.judulCatatanBelanja,
+                      style: TextStyle(
+                        color: AppColors.warmText,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              AppButton(
+                label: Strings.modulBelanjaStok,
+                fullWidth: false,
+                kind: AppButtonKind.secondary,
+                onPressed: _bukaBelanjaStok,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _NilaiStokCard(nilai: nilaiStokModal(products)),
+          const SizedBox(height: 12),
           _ModalCard(
             modal: store?.modal,
             onIsi: () => _openModalDialog(context, ref, store?.modal),
           ),
           const SizedBox(height: 16),
-          const Text(
-            Strings.catatanHarian,
-            style: TextStyle(
+          // Navigator tanggal: ‹ tanggal ›
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: () => _geserHari(-1),
+                icon: const Icon(Icons.chevron_left,
+                    color: AppColors.warmText),
+              ),
+              TextButton(
+                onPressed: _pilihTanggal,
+                child: Text(
+                  DateFormat('d MMM yyyy', 'id_ID').format(_tanggal),
+                  style: const TextStyle(
+                    color: AppColors.warmText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () => _geserHari(1),
+                icon: const Icon(Icons.chevron_right,
+                    color: AppColors.warmText),
+              ),
+            ],
+          ),
+          // Header hari: tanggal + "N catatan · total RpX".
+          Text(
+            DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(_tanggal),
+            style: const TextStyle(
               color: AppColors.warmText,
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
             ),
           ),
+          Text(
+            Strings.labelCatatanHari(
+                hariIni.length, formatRp(totalHari)),
+            style: const TextStyle(
+                color: AppColors.warmMuted, fontSize: 12),
+          ),
           const SizedBox(height: 8),
-          if (notes.isEmpty)
+          if (hariIni.isEmpty)
             const EmptyState(
               icon: Icons.note_alt_outlined,
-              title: Strings.belumAdaData,
-              hint: Strings.belumAdaModalHint,
+              title: Strings.belumAdaCatatanTanggal,
             )
           else
-            ...notes.map((n) => _NoteCard(note: n)),
+            ...hariIni.map((n) => _NoteCard(note: n)),
+          const SizedBox(height: 16),
+          _FormTambah(tanggal: _kunci),
           const SizedBox(height: 80),
         ],
       ),
-    );
-  }
-
-  void _openForm(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const _NoteFormSheet(),
     );
   }
 
@@ -130,6 +243,43 @@ class NotesTab extends ConsumerWidget {
   }
 }
 
+/// Kartu NILAI STOK · MODAL DI RAK (paling atas).
+class _NilaiStokCard extends StatelessWidget {
+  final int nilai;
+  const _NilaiStokCard({required this.nilai});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            Strings.nilaiStokModalRak,
+            style:
+                TextStyle(color: AppColors.warmMuted, fontSize: 12),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            formatRp(nilai),
+            style: const TextStyle(
+              color: AppColors.warmText,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            Strings.nilaiStokDeskripsi,
+            style:
+                TextStyle(color: AppColors.warmMuted, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ModalCard extends StatelessWidget {
   final int? modal;
   final VoidCallback onIsi;
@@ -176,6 +326,8 @@ class _ModalCard extends StatelessWidget {
   }
 }
 
+/// Kartu catatan ala PWA: judul + pil sumber, "N jenis barang",
+/// daftar isi barang, footer total, chevron ›. Tap → detail arsip.
 class _NoteCard extends StatelessWidget {
   final StockNote note;
 
@@ -183,80 +335,97 @@ class _NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = DateTime.tryParse(note.date);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: AppCard(
-        onTap: () => _openDetail(context),
-        child: Row(
+        onTap: () => showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          builder: (_) => _NoteDetailSheet(note: note),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          note.supplier,
-                          style: const TextStyle(
-                            color: AppColors.warmText,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      Text(
+                        note.supplier,
+                        style: const TextStyle(
+                          color: AppColors.warmText,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      _SourceChip(source: note.source),
+                      const SizedBox(height: 2),
+                      Text(
+                        Strings.labelJenisBarang(note.items.length),
+                        style: const TextStyle(
+                            color: AppColors.warmMuted, fontSize: 12),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${date == null ? note.date : formatTanggal(date)} · '
-                    '${note.items.length} barang',
-                    style: const TextStyle(
-                        color: AppColors.warmMuted, fontSize: 12),
-                  ),
-                ],
-              ),
+                ),
+                _SourcePill(source: note.source),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right,
+                    color: AppColors.warmMuted),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              formatRp(note.total),
-              style: const TextStyle(
-                color: AppColors.orange,
-                fontWeight: FontWeight.w800,
-              ),
+            if (note.items.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ...note.items.map((it) => Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      '• ${labelItemBarang(it)}',
+                      style: const TextStyle(
+                          color: AppColors.warmText, fontSize: 13),
+                    ),
+                  )),
+            ],
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text(
+                  Strings.totalBelanja,
+                  style: TextStyle(
+                      color: AppColors.warmMuted, fontSize: 12),
+                ),
+                const Spacer(),
+                Text(
+                  formatRp(note.total),
+                  style: const TextStyle(
+                    color: AppColors.orange,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
   }
-
-  void _openDetail(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _NoteDetailSheet(note: note),
-    );
-  }
 }
 
-class _SourceChip extends StatelessWidget {
+class _SourcePill extends StatelessWidget {
   final String source;
 
-  const _SourceChip({required this.source});
+  const _SourcePill({required this.source});
 
   @override
   Widget build(BuildContext context) {
-    final isAuto = source == 'belanja_stok';
+    final otomatis = source == 'belanja_stok';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: isAuto ? AppColors.ok : AppColors.panel2,
+        color: otomatis ? AppColors.ok : AppColors.panel2,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        isAuto ? Strings.dariBelanjaStok : Strings.manualTeks,
+        labelSumberCatatan(source),
         style: const TextStyle(color: Colors.white, fontSize: 11),
       ),
     );
@@ -293,7 +462,7 @@ class _NoteDetailSheet extends ConsumerWidget {
                   ),
                 ),
               ),
-              _SourceChip(source: note.source),
+              _SourcePill(source: note.source),
             ],
           ),
           Text(
@@ -307,16 +476,17 @@ class _NoteDetailSheet extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '${it.name} × ${it.qty}',
+                        labelItemBarang(it),
                         style: const TextStyle(
                             color: AppColors.warmText),
                       ),
                     ),
-                    Text(
-                      formatRp(it.subtotal),
-                      style: const TextStyle(
-                          color: AppColors.warmMuted),
-                    ),
+                    if (it.subtotal > 0)
+                      Text(
+                        formatRp(it.subtotal),
+                        style: const TextStyle(
+                            color: AppColors.warmMuted),
+                      ),
                   ],
                 ),
               )),
@@ -402,7 +572,165 @@ class _NoteDetailSheet extends ConsumerWidget {
   }
 }
 
-/// Form tambah/ubah catatan (sheet tugas cepat).
+/// Form "Tambah catatan" di bawah daftar (ikut PWA):
+/// Supplier, Barang yang dibeli (satu per baris), Total habis.
+class _FormTambah extends ConsumerStatefulWidget {
+  final String tanggal;
+  const _FormTambah({required this.tanggal});
+
+  @override
+  ConsumerState<_FormTambah> createState() => _FormTambahState();
+}
+
+class _FormTambahState extends ConsumerState<_FormTambah> {
+  final _supplier = TextEditingController();
+  final _items = TextEditingController();
+  final _total = TextEditingController();
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _supplier.dispose();
+    _items.dispose();
+    _total.dispose();
+    super.dispose();
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  Future<void> _simpan() async {
+    final supplier = _supplier.text.trim();
+    final baris = _items.text
+        .split(RegExp(r'\n|,'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    final total =
+        int.tryParse(_total.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    if (supplier.isEmpty || baris.isEmpty || total <= 0) {
+      _snack(Strings.lengkapiCatatanBelanja);
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final repo = ref.read(adminRepositoryProvider);
+      final note = StockNote(
+        id: '',
+        date: widget.tanggal,
+        supplier: supplier,
+        items: baris
+            .map((b) =>
+                StockNoteItem(name: b, qty: 1, price: 0))
+            .toList(),
+        total: total,
+        source: 'manual',
+        createdAt: DateTime.now(),
+      );
+      final noteId = await repo.saveStockNote(note);
+      // Catatan baru: jurnal kulakan + kurangi modal (seperti sebelumnya).
+      await repo.addJournal(
+        kind: 'kulakan',
+        label: 'Kulakan · $supplier',
+        amount: -total,
+        refId: noteId,
+      );
+      await repo.adjustModal(-total);
+      _supplier.clear();
+      _items.clear();
+      _total.clear();
+      _snack(Strings.berhasilDisimpan);
+    } catch (_) {
+      _snack(Strings.butuhInternetAdmin);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  InputDecoration _deco(String hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: AppColors.warmMuted),
+        filled: true,
+        fillColor: AppColors.panel2,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            Strings.tambahCatatan,
+            style: TextStyle(
+              color: AppColors.warmText,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            Strings.labelSupplier,
+            style:
+                TextStyle(color: AppColors.warmMuted, fontSize: 12),
+          ),
+          const SizedBox(height: 4),
+          TextField(
+            controller: _supplier,
+            style: const TextStyle(color: AppColors.warmText),
+            decoration: _deco(Strings.contohSupplier),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            Strings.barangDibeli,
+            style:
+                TextStyle(color: AppColors.warmMuted, fontSize: 12),
+          ),
+          const SizedBox(height: 4),
+          TextField(
+            controller: _items,
+            style: const TextStyle(color: AppColors.warmText),
+            maxLines: 3,
+            decoration: _deco(Strings.contohBarang),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            Strings.totalHabis,
+            style:
+                TextStyle(color: AppColors.warmMuted, fontSize: 12),
+          ),
+          const SizedBox(height: 4),
+          TextField(
+            controller: _total,
+            style: const TextStyle(color: AppColors.warmText),
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly
+            ],
+            decoration: _deco(Strings.contohTotal),
+          ),
+          const SizedBox(height: 16),
+          AppButton(
+            label: _busy ? '...' : Strings.simpanCatatanBelanja,
+            onPressed: _busy ? null : _simpan,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Form ubah catatan (dipakai dari sheet detail; sifat arsip).
 class _NoteFormSheet extends ConsumerStatefulWidget {
   final StockNote? existing;
 

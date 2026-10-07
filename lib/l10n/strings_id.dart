@@ -232,6 +232,32 @@ class Strings {
       'Ubah/hapus hanya mengubah arsip — pembukuan & stok tidak dihitung ulang.';
   static const dariBelanjaStok = 'Dari Belanja Stok';
   static const manualTeks = 'Manual';
+  static const labelImpor = 'Impor';
+  static const judulCatatanBelanja = 'Catatan Belanja';
+  static const kickerKulakan = 'Kulakan per tanggal';
+  static const nilaiStokModalRak = 'NILAI STOK · MODAL DI RAK';
+  static const nilaiStokDeskripsi =
+      'Dihitung dari stok × modal per pcs seluruh produk. '
+      'Saldo kas dikelola di Pembukuan.';
+  static const labelSupplier = 'Supplier';
+  static const barangDibeli = 'Barang yang dibeli';
+  static const totalHabis = 'Total habis';
+  static const simpanCatatanBelanja = 'Simpan Catatan Belanja';
+  static const belumAdaCatatanTanggal =
+      'Belum ada catatan belanja pada tanggal ini.';
+  static const lengkapiCatatanBelanja =
+      'Lengkapi supplier, daftar barang, dan total.';
+  static const contohSupplier = 'Contoh: Agen sembako';
+  static const contohBarang =
+      'Satu barang per baris, contoh: Minyak 2 dus';
+  static const contohTotal = 'Contoh: 725.000';
+
+  /// "3 jenis barang"
+  static String labelJenisBarang(int n) => '$n jenis barang';
+
+  /// "2 catatan · total Rp50.000"
+  static String labelCatatanHari(int n, String totalRp) =>
+      '$n catatan · total $totalRp';
 
   // Admin — Menu & modul
   static const modulProduk = 'Data Barang';
@@ -344,7 +370,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.11+25';
+  static const versiApp = 'KasirQuh v3.6.12+26';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';
