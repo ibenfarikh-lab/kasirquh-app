@@ -142,15 +142,12 @@ class SocialRepository {
       yield null;
       return;
     }
-    try {
-      yield* db.collection('chat_threads').doc(uid).snapshots().map((doc) {
-        final data = doc.data();
-        if (data == null) return null;
-        return ChatThread.fromDoc(doc.id, data);
-      });
-    } catch (_) {
-      yield null;
-    }
+    // Anti-gagal-diam-diam: error DITERUSKAN ke UI.
+    yield* db.collection('chat_threads').doc(uid).snapshots().map((doc) {
+      final data = doc.data();
+      if (data == null) return null;
+      return ChatThread.fromDoc(doc.id, data);
+    });
   }
 
   Stream<List<ChatMessage>> watchThreadMessages(String threadId) async* {
@@ -159,19 +156,16 @@ class SocialRepository {
       yield const [];
       return;
     }
-    try {
-      yield* db
-          .collection('chat_threads')
-          .doc(threadId)
-          .collection('messages')
-          .orderBy('createdAt')
-          .snapshots()
-          .map((snap) => snap.docs
-              .map((d) => ChatMessage.fromDoc(d.id, d.data()))
-              .toList());
-    } catch (_) {
-      yield const [];
-    }
+    // Anti-gagal-diam-diam: error DITERUSKAN ke UI.
+    yield* db
+        .collection('chat_threads')
+        .doc(threadId)
+        .collection('messages')
+        .orderBy('createdAt')
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => ChatMessage.fromDoc(d.id, d.data()))
+            .toList());
   }
 
   Future<void> sendTokoMessage({

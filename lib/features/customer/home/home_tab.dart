@@ -38,16 +38,33 @@ class HomeTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final store = ref.watch(storeInfoProvider).valueOrNull ?? const StoreInfo();
+    final storeAsync = ref.watch(storeInfoProvider);
+    if (storeAsync.hasError) {
+      // ignore: avoid_print
+      print('[home_tab] Gagal muat storeInfo: ${storeAsync.error}');
+    }
+    final store = storeAsync.valueOrNull ?? const StoreInfo();
     final session = ref.watch(sessionProvider).valueOrNull;
-    final promos = ref.watch(promosProvider).valueOrNull ?? const <Promo>[];
-    final products =
-        ref.watch(productsProvider).valueOrNull ?? const <Product>[];
+    final promosAsync = ref.watch(promosProvider);
+    if (promosAsync.hasError) {
+      // ignore: avoid_print
+      print('[home_tab] Gagal muat promos: ${promosAsync.error}');
+    }
+    final promos = promosAsync.valueOrNull ?? const <Promo>[];
+    // Anti-gagal-diam-diam: error produk ditampilkan eksplisit (bukan kosong).
+    final productsAsync = ref.watch(productsProvider);
+    final products = productsAsync.valueOrNull ?? const <Product>[];
     final uid = memberUid(session ?? const Session.guest());
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (productsAsync.hasError)
+          _ErrorBanner(
+            title: Strings.gagalMuatProduk,
+            hint: Strings.periksaKoneksi,
+            onRetry: () => ref.invalidate(productsProvider),
+          ),
         _paketSection(store),
         _koinCard(context, ref, session),
         _pesananAktifSection(context, ref, uid),
@@ -323,81 +340,6 @@ class HomeTab extends ConsumerWidget {
                 featured: true,
                 onTap: () => _titipSheet(context, ref, uid),
               ),
-              _serviceCard(
-                context,
-                icon: Icons.account_balance_wallet_outlined,
-                label: 'Mode anggaran',
-                hint: 'Belanja sesuai uangmu',
-                onTap: () => _layananInfoSheet(
-                  context,
-                  ref,
-                  judul: 'Mode anggaran',
-                  isi: 'Atur batas belanja bulananmu, lalu pantau '
-                      'total keranjang agar tidak kebablasan.\n\n'
-                      'Layanan ini masih disiapkan — tanya dulu ke toko '
-                      'via chat ya.',
-                ),
-              ),
-              _serviceCard(
-                context,
-                icon: Icons.group_outlined,
-                label: 'Patungan',
-                hint: 'Grosir bareng warga',
-                onTap: () => _layananInfoSheet(
-                  context,
-                  ref,
-                  judul: 'Patungan',
-                  isi: 'Beli grosir bareng warga lain biar dapat harga '
-                      'lebih miring.\n\n'
-                      'Layanan ini masih disiapkan — tanya dulu ke toko '
-                      'via chat ya.',
-                ),
-              ),
-              _serviceCard(
-                context,
-                icon: Icons.qr_code_outlined,
-                label: 'Harga grosir',
-                hint: 'Otomatis per dus',
-                onTap: () => _layananInfoSheet(
-                  context,
-                  ref,
-                  judul: 'Harga grosir',
-                  isi: 'Beli per dus langsung dapat harga grosir, '
-                      'otomatis di keranjang.\n\n'
-                      'Layanan ini masih disiapkan — tanya dulu ke toko '
-                      'via chat ya.',
-                ),
-              ),
-              _serviceCard(
-                context,
-                icon: Icons.refresh_outlined,
-                label: 'Belanja rutin',
-                hint: 'Paket mingguan',
-                onTap: () => _layananInfoSheet(
-                  context,
-                  ref,
-                  judul: 'Belanja rutin',
-                  isi: 'Daftar belanja mingguan yang bisa dipesan ulang '
-                      'sekali ketuk.\n\n'
-                      'Layanan ini masih disiapkan — tanya dulu ke toko '
-                      'via chat ya.',
-                ),
-              ),
-              _serviceCard(
-                context,
-                icon: Icons.celebration_outlined,
-                label: 'Paket hajatan',
-                hint: 'Siap untuk acara',
-                onTap: () => _layananInfoSheet(
-                  context,
-                  ref,
-                  judul: 'Paket hajatan',
-                  isi: 'Paket sembako siap saji untuk hajatan dan acara '
-                      'keluarga.\n\n'
-                      'Layanan ini masih disiapkan — tanya dulu ke toko '
-                      'via chat ya.',
-                ),
-              ),
             ],
           ),
         ],
@@ -609,48 +551,6 @@ class HomeTab extends ConsumerWidget {
 
 
   /// Layanan yang masih disiapkan: info jujur + pintu Chat Toko.
-  Future<void> _layananInfoSheet(BuildContext context, WidgetRef ref,
-      {required String judul, required String isi}) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                judul,
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 8),
-              Text(isi,
-                  style: TextStyle(
-                      color: context.teksRedup, fontSize: 14)),
-              const SizedBox(height: 16),
-              AppButton(
-                label: 'Chat Toko',
-                fullWidth: true,
-                onPressed: () async {
-                  Navigator.of(ctx).pop();
-                  final ok = await requireLogin(context, ref, () async {});
-                  if (ok && context.mounted) {
-                    ref.read(customerTabProvider.notifier).state = 3;
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   // ---------- 6. Stok rumah habis? ----------
   Widget _stokRumahSection(BuildContext context, WidgetRef ref) {
     final stockAsync = ref.watch(homeStockProvider);
@@ -999,3 +899,48 @@ class CatalogFilter {
 
 final catalogFilterProvider =
     StateProvider<CatalogFilter>((ref) => const CatalogFilter());
+
+/// Banner error inline — anti-gagal-diam-diam.
+/// Tampil saat stream data gagal, dengan tombol coba lagi.
+class _ErrorBanner extends StatelessWidget {
+  final String title;
+  final String hint;
+  final VoidCallback onRetry;
+  const _ErrorBanner({
+    required this.title,
+    required this.hint,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.danger.withValues(alpha: 0.1),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            const Icon(Icons.cloud_off_outlined, color: AppColors.danger),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          color: context.teksUtama,
+                          fontWeight: FontWeight.w700)),
+                  Text(hint,
+                      style: TextStyle(
+                          color: context.teksRedup, fontSize: 12)),
+                ],
+              ),
+            ),
+            TextButton(onPressed: onRetry, child: const Text('Coba lagi')),
+          ],
+        ),
+      ),
+    );
+  }
+}

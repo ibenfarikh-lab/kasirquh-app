@@ -136,17 +136,26 @@ class SyncEngine {
   }
 
   /// Pull koleksi publik → tulis ke SQLite lokal (server menang).
+  /// Anti-gagal-diam-diam: error listener dicatat (bukan ditelan).
   void _startPullListeners() {
+    void onPullError(Object e, String koleksi) {
+      // Catat agar kegagalan sync terlihat di log, bukan hilang diam-diam.
+      // ignore: avoid_print
+      print('[SyncEngine] Gagal pull $koleksi: $e');
+    }
+
     _pullSubs.add(_firestore.collection('products').snapshots().listen(
           (snap) => _pullInto('products', snap),
+          onError: (e) => onPullError(e, 'products'),
         ));
     _pullSubs.add(_firestore.collection('promos').snapshots().listen(
           (snap) => _pullInto('promos', snap),
+          onError: (e) => onPullError(e, 'promos'),
         ));
-    _pullSubs.add(_firestore
-        .collection('store_settings')
-        .snapshots()
-        .listen((snap) => _pullSettings(snap)));
+    _pullSubs.add(_firestore.collection('store_settings').snapshots().listen(
+          (snap) => _pullSettings(snap),
+          onError: (e) => onPullError(e, 'store_settings'),
+        ));
   }
 
   Future<void> _pullInto(

@@ -28,14 +28,12 @@ class ProductRepository {
       yield await _fromSqlite();
       return;
     }
-    try {
-      yield* _db
-          .collection('products')
-          .snapshots()
-          .map((snap) => _fromDocs(snap.docs));
-    } catch (_) {
-      yield await _fromSqlite();
-    }
+    // Anti-gagal-diam-diam: error Firestore DITERUSKAN ke UI (bukan ditelan).
+    // UI wajib menangani via .when(error:) + tombol "Coba lagi".
+    yield* _db
+        .collection('products')
+        .snapshots()
+        .map((snap) => _fromDocs(snap.docs));
   }
 
   List<Product> _fromDocs(

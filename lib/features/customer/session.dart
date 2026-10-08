@@ -43,22 +43,18 @@ final sessionProvider = StreamProvider<Session>((ref) async* {
       yield const Session.guest();
       continue;
     }
-    try {
-      final doc =
-          await db.collection('customers').doc(user.uid).get();
-      final data = doc.data();
-      if (data != null && data['approvalStatus'] == 'approved') {
-        yield Session.member(
-          user: user,
-          name: (data['name'] as String?) ?? '',
-          email: (data['email'] as String?) ?? user.email ?? '',
-          coins: (data['coins'] as num?)?.toInt() ?? 0,
-        );
-      } else {
-        yield const Session.guest();
-      }
-    } catch (_) {
-      // Offline / dokumen belum ada → tamu, tanpa crash.
+    // Anti-gagal-diam-diam: error baca dokumen DITERUSKAN (bukan jadi tamu).
+    // "Dokumen tidak ada" sudah ditangani oleh cek data != null di bawah.
+    final doc = await db.collection('customers').doc(user.uid).get();
+    final data = doc.data();
+    if (data != null && data['approvalStatus'] == 'approved') {
+      yield Session.member(
+        user: user,
+        name: (data['name'] as String?) ?? '',
+        email: (data['email'] as String?) ?? user.email ?? '',
+        coins: (data['coins'] as num?)?.toInt() ?? 0,
+      );
+    } else {
       yield const Session.guest();
     }
   }

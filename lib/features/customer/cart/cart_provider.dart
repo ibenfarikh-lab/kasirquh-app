@@ -67,8 +67,6 @@ class CartNotifier extends StateNotifier<List<CartLine>> {
     }
   }
 
-  void remove(String productId) => setQty(productId, 0);
-
   void clear() => state = const [];
 
   int get totalQty => state.fold(0, (s, e) => s + e.qty);
