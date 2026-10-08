@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/remote/firestore_service.dart';
+import '../models/recipe.dart';
 
 /// Info toko — mirror doc `store_settings/main`.
 /// Nilai default jujur bila dokumen belum ada (bukan data siluman).
@@ -185,6 +186,29 @@ class StoreRepository {
       yield const [];
     }
   }
+
+  /// Langganan resep publik — selaras PWA `watchRecipes()`.
+  /// Koleksi `recipes` boleh dibaca publik (rule: allow read: if true),
+  /// jadi langganan ini permanen dan tidak ikut terputus saat ganti mode.
+  Stream<List<Recipe>> watchRecipes() async* {
+    if (_db == null) {
+      yield const [];
+      return;
+    }
+    try {
+      yield* _db
+          .collection('recipes')
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .snapshots()
+          .map((snap) => snap.docs
+              .map((d) => Recipe.fromDoc(d.id, d.data()))
+              .where((r) => r.nama.isNotEmpty)
+              .toList());
+    } catch (_) {
+      yield const [];
+    }
+  }
 }
 
 final storeRepositoryProvider = Provider<StoreRepository>((ref) {
@@ -197,4 +221,9 @@ final storeInfoProvider = StreamProvider<StoreInfo>((ref) {
 
 final promosProvider = StreamProvider<List<Promo>>((ref) {
   return ref.watch(storeRepositoryProvider).watchPromos();
+});
+
+/// Daftar resep Ide Masak Warga (publik, permanen) — selaras PWA.
+final recipesProvider = StreamProvider<List<Recipe>>((ref) {
+  return ref.watch(storeRepositoryProvider).watchRecipes();
 });
