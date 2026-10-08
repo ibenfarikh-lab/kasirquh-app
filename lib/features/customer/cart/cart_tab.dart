@@ -279,11 +279,33 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
     } on StockShortage catch (e) {
       setState(() =>
           _error = '${Strings.stokTidakCukup} ${e.productNames.join(', ')}');
-    } catch (_) {
-      setState(() => _error = Strings.checkoutGagal);
+    } catch (e) {
+      // ALAT DIAGNOSIS: tampilkan jenis error asli (bukan generik).
+      // Log lengkap ke console untuk analisis.
+      // ignore: avoid_print
+      print('[checkout] ERROR ASLI: $e');
+      final kode = _kodeError(e);
+      setState(() => _error = 'Pesanan gagal ($kode). Coba lagi ya...');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Ambil kode error singkat dari exception untuk diagnosis.
+  /// Contoh: "permission-denied", "not-found", "unavailable".
+  String _kodeError(Object e) {
+    final s = e.toString().toLowerCase();
+    if (s.contains('permission-denied')) return 'permission-denied';
+    if (s.contains('not-found')) return 'not-found';
+    if (s.contains('unavailable')) return 'unavailable';
+    if (s.contains('deadline-exceeded')) return 'timeout';
+    if (s.contains('unauthenticated')) return 'belum-login';
+    if (s.contains('already-exists')) return 'sudah-ada';
+    if (s.contains('failed-precondition')) return 'gagal-prasyarat';
+    if (s.contains('aborted')) return 'dibatalkan';
+    // Potong 60 karakter pertama sebagai fallback.
+    final raw = e.toString();
+    return raw.length > 60 ? '${raw.substring(0, 60)}…' : raw;
   }
 
   Future<void> _showSuccess(
