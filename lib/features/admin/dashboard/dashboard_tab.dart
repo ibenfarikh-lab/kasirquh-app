@@ -30,10 +30,60 @@ class DashboardTab extends ConsumerStatefulWidget {
 }
 
 class _DashboardTabState extends ConsumerState<DashboardTab> {
+  /// Mode ubah susunan shortcut.
+  bool _isEditing = false;
+
+  /// ID shortcut yang tampil (tersimpan di SharedPreferences).
+  List<String> _shortcutIds = [
+    'kasir',
+    'inbox',
+    'pembukuan',
+    'kasir_online',
+    'chat',
+    'catatan_belanja',
+  ];
+
+  /// Definisi semua shortcut yang tersedia.
+  static const _allShortcuts = <String, Map<String, dynamic>>{
+    'kasir': {'icon': Icons.receipt_long_outlined, 'label': 'Buka Kasir'},
+    'inbox': {'icon': Icons.inbox_outlined, 'label': 'Cek Inbox'},
+    'pembukuan': {'icon': Icons.book_outlined, 'label': 'Pembukuan'},
+    'kasir_online': {
+      'icon': Icons.shopping_bag_outlined,
+      'label': 'Kasir Online'
+    },
+    'chat': {'icon': Icons.chat_bubble_outline, 'label': 'Chat & Rumpi'},
+    'catatan_belanja': {'icon': Icons.note_outlined, 'label': 'Catatan Belanja'},
+    'produk': {'icon': Icons.inventory_2_outlined, 'label': 'Data Produk'},
+    'laporan': {'icon': Icons.bar_chart_outlined, 'label': 'Laporan'},
+  };
+
   @override
   void initState() {
     super.initState();
     _maybeRefreshTopProducts();
+    _loadShortcuts();
+  }
+
+  Future<void> _loadShortcuts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getStringList('dashboard_shortcuts');
+      if (saved != null && saved.isNotEmpty && mounted) {
+        setState(() {
+          _shortcutIds = saved
+              .where((id) => _allShortcuts.containsKey(id))
+              .toList();
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveShortcuts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('dashboard_shortcuts', _shortcutIds);
+    } catch (_) {}
   }
 
   Future<void> _maybeRefreshTopProducts() async {
@@ -133,7 +183,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
               final omzetValue =
                   s.transaksi == 0 ? null : formatRp(s.masuk);
               return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
                     child: _UniformMetricCard(
@@ -174,7 +224,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             },
           ),
           const SizedBox(height: 20),
-          // Buka pekerjaan utama + Ubah.
+          // Buka pekerjaan utama + Ubah/Selesai.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -188,22 +238,32 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
               ),
               OutlinedButton(
                 onPressed: () {
-                  // TODO: mode ubah susunan shortcut.
+                  setState(() => _isEditing = !_isEditing);
+                  if (!_isEditing) _saveShortcuts();
                 },
                 style: OutlinedButton.styleFrom(
-                  side:
-                      const BorderSide(color: AppColors.orange),
+                  side: const BorderSide(color: AppColors.orange),
                   foregroundColor: AppColors.orange,
+                  backgroundColor: _isEditing
+                      ? AppColors.orange
+                      : Colors.transparent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: const Text('Ubah'),
+                child: Text(
+                  _isEditing ? 'Selesai' : 'Ubah',
+                  style: TextStyle(
+                    color: _isEditing
+                        ? Colors.black87
+                        : AppColors.orange,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          // 6 shortcut.
+          // Shortcut grid (dinamis + mode edit).
           GridView.count(
             crossAxisCount: 3,
             shrinkWrap: true,
@@ -212,38 +272,22 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             crossAxisSpacing: 10,
             childAspectRatio: 1.15,
             children: [
-              _ShortcutTile(
-                icon: Icons.receipt_long_outlined,
-                label: 'Buka Kasir',
-                onTap: () => _open(context, const PosTab()),
-              ),
-              _ShortcutTile(
-                icon: Icons.inbox_outlined,
-                label: 'Cek Inbox',
-                onTap: () => _open(context, const InboxTab()),
-              ),
-              _ShortcutTile(
-                icon: Icons.book_outlined,
-                label: 'Pembukuan',
-                onTap: () => _open(context, const LedgerPage()),
-              ),
-              _ShortcutTile(
-                icon: Icons.shopping_bag_outlined,
-                label: 'Kasir Online',
-                onTap: () =>
-                    _open(context, const OnlineOrdersPage()),
-              ),
-              _ShortcutTile(
-                icon: Icons.chat_bubble_outline,
-                label: 'Chat & Rumpi',
-                onTap: () => _open(context, const ChatPage()),
-              ),
-              _ShortcutTile(
-                icon: Icons.note_outlined,
-                label: 'Catatan Belanja',
-                onTap: () =>
-                    _open(context, const StoreNotesSheet()),
-              ),
+              for (final id in _shortcutIds)
+                _ShortcutTile(
+                  icon: _allShortcuts[id]!['icon'] as IconData,
+                  label: _allShortcuts[id]!['label'] as String,
+                  isEditing: _isEditing,
+                  onRemove: () {
+                    setState(() => _shortcutIds.remove(id));
+                    _saveShortcuts();
+                  },
+                  onTap: () => _openShortcut(context, id),
+                ),
+              // Tile tambah (hanya saat edit).
+              if (_isEditing)
+                _AddShortcutTile(
+                  onTap: () => _showShortcutPicker(context),
+                ),
             ],
           ),
           const SizedBox(height: 14),
@@ -280,6 +324,76 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
 
   void _open(BuildContext context, Widget page) {
     openAdminPage(context, page);
+  }
+
+  /// Buka halaman sesuai ID shortcut.
+  void _openShortcut(BuildContext context, String id) {
+    switch (id) {
+      case 'kasir':
+        _open(context, const PosTab());
+        break;
+      case 'inbox':
+        _open(context, const InboxTab());
+        break;
+      case 'pembukuan':
+        _open(context, const LedgerPage());
+        break;
+      case 'kasir_online':
+        _open(context, const OnlineOrdersPage());
+        break;
+      case 'chat':
+        _open(context, const ChatPage());
+        break;
+      case 'catatan_belanja':
+        _open(context, const StoreNotesSheet());
+        break;
+      case 'produk':
+        _open(context, const ProductsPage());
+        break;
+      case 'laporan':
+        _open(context, const LedgerPage());
+        break;
+    }
+  }
+
+  /// Dialog pilih shortcut untuk ditambah.
+  Future<void> _showShortcutPicker(BuildContext context) async {
+    final available = _allShortcuts.keys
+        .where((id) => !_shortcutIds.contains(id))
+        .toList();
+    if (available.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Semua shortcut sudah ditampilkan')),
+      );
+      return;
+    }
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Tambah shortcut'),
+        children: [
+          for (final id in available)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(ctx).pop(id),
+              child: Row(
+                children: [
+                  Icon(
+                    _allShortcuts[id]!['icon'] as IconData,
+                    color: AppColors.orange,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(_allShortcuts[id]!['label'] as String),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (selected != null && mounted) {
+      setState(() => _shortcutIds.add(selected));
+      _saveShortcuts();
+    }
   }
 }
 
@@ -353,17 +467,88 @@ class _UniformMetricCard extends StatelessWidget {
   }
 }
 
-/// Tile shortcut 3 kolom.
+/// Tile shortcut 3 kolom — dukung mode edit (tombol hapus).
 class _ShortcutTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool isEditing;
+  final VoidCallback? onRemove;
 
   const _ShortcutTile({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.isEditing = false,
+    this.onRemove,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: isEditing ? null : onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        decoration: BoxDecoration(
+          color: context.permukaanKartu,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: context.garis,
+            style: isEditing
+                ? BorderStyle.solid
+                : BorderStyle.solid,
+          ),
+        ),
+        child: Stack(
+          children: [
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: AppColors.orange, size: 26),
+                  const SizedBox(height: 8),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: context.teksUtama, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            if (isEditing && onRemove != null)
+              Positioned(
+                right: 4,
+                top: 4,
+                child: GestureDetector(
+                  onTap: onRemove,
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tile tambah shortcut (mode edit).
+class _AddShortcutTile extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddShortcutTile({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -372,20 +557,21 @@ class _ShortcutTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: Container(
         decoration: BoxDecoration(
-          color: context.permukaanKartu,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: context.garis),
+          border: Border.all(
+            color: AppColors.orange,
+            style: BorderStyle.solid,
+          ),
         ),
-        child: Column(
+        child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AppColors.orange, size: 26),
-            const SizedBox(height: 8),
+            Icon(Icons.add, color: AppColors.orange, size: 28),
+            SizedBox(height: 4),
             Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  color: context.teksUtama, fontSize: 12),
+              'Tambah',
+              style:
+                  TextStyle(color: AppColors.orange, fontSize: 12),
             ),
           ],
         ),
