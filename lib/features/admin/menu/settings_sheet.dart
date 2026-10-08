@@ -15,6 +15,7 @@ import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../../admin/admin_session.dart';
 import '../../auth/biometric_messages.dart';
+import '../../auth/login_cepat_toggle.dart';
 
 /// Pengaturan — 5 grup global (Tampilan, Notifikasi, Developer, Tentang, Akun).
 class SettingsSheet extends ConsumerStatefulWidget {
@@ -315,6 +316,15 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   ),
                   onChanged:
                       _sidikJariDidukung ? _toggleSidikJari : null,
+                ),
+                // Login cepat sidik jari (Alur B/C) — widget reusable.
+                LoginCepatToggle(
+                  accountId: 'admin',
+                  verifySignIn: (email, password) async {
+                    final auth = ref.read(authServiceProvider);
+                    if (auth == null) throw Exception('no auth');
+                    await auth.signInAdmin(email: email, password: password);
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.logout, color: AppColors.danger),

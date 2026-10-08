@@ -17,6 +17,9 @@ import '../../../data/remote/auth_service.dart';
 import '../../../data/repositories/customer_note_repository.dart';
 import '../../../data/repositories/order_repository.dart';
 import '../../../l10n/strings_id.dart';
+import '../../admin/admin_shell.dart';
+import '../../auth/biometric_credential_service.dart';
+import '../../auth/login_cepat_toggle.dart';
 import '../../gateway/gateway_screen.dart';
 import '../session.dart';
 import 'coin_history_page.dart';
@@ -204,6 +207,23 @@ class AccountTab extends ConsumerWidget {
           },
         ),
         const SizedBox(height: 20),
+        // Login cepat sidik jari (Alur B/C).
+        LoginCepatToggle(
+          accountId: 'customer',
+          verifySignIn: (email, password) async {
+            final auth = ref.read(authServiceProvider);
+            if (auth == null) throw Exception('no auth');
+            await auth.signIn(email: email, password: password);
+          },
+        ),
+        const SizedBox(height: 12),
+        // Ganti ke Mode Admin via sidik jari.
+        AppButton(
+          label: Strings.gantiKeModeAdmin,
+          kind: AppButtonKind.secondary,
+          onPressed: () => _gantiKeModeAdmin(context, ref),
+        ),
+        const SizedBox(height: 12),
         AppButton(
           label: Strings.keluar,
           kind: AppButtonKind.danger,
@@ -456,9 +476,48 @@ class AccountTab extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmLogout(
+  /// Ganti ke Mode Admin via sidik jari.
+  /// Alur: biometric → baca kredensial admin → signOut → signInAdmin → AdminShell.
+  Future<void> _gantiKeModeAdmin(
       BuildContext context, WidgetRef ref) async {
-    final ok = await showDialog<bool>(
+    final svc = ref.read(biometricCredentialServiceProvider);
+    final ok = await svc.verifyBiometric(Strings.alasanVerifikasiSidikJari);
+    if (!ok || !context.mounted) return;
+    final cred = await svc.read('admin');
+    if (cred == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Belum ada akun admin tersimpan. '
+                'Masuk sebagai admin dulu lalu aktifkan login cepat.'),
+          ),
+        );
+      }
+      return;
+    }
+    final auth = ref.read(authServiceProvider);
+    if (auth == null) return;
+    try {
+      await auth.signOut();
+      await auth.signInAdmin(email: cred.email, password: cred.password);
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AdminShell()),
+          (_) => false,
+        );
+      }
+    } catch (_) {
+      await svc.delete('admin');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.masukGagal)),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmLogout(
+      BuildContext context, WidgetRef ref) async {    final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text(Strings.keluar),

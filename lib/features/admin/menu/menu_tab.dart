@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../admin_nav.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/remote/auth_service.dart';
 import '../../../l10n/strings_id.dart';
+import '../../auth/biometric_credential_service.dart';
+import '../../customer/customer_shell.dart';
 import '../pos/scanner_sheet.dart';
 import 'ai_admin_sheet.dart';
 import 'calculator_sheet.dart';
@@ -24,11 +28,11 @@ import 'transfer_orders_page.dart';
 /// Tab Menu: laci alat 16 modul admin.
 /// Halaman penuh = ruang kerja; bottom sheet = panel tugas cepat.
 /// Laporan tidak lagi modul sendiri — ada di dalam Data.
-class MenuTab extends StatelessWidget {
+class MenuTab extends ConsumerWidget {
   const MenuTab({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -48,13 +52,13 @@ class MenuTab extends StatelessWidget {
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
           children:
-              _modules(context).map((m) => _ModuleTile(module: m)).toList(),
+              _modules(context, ref).map((m) => _ModuleTile(module: m)).toList(),
         ),
       ],
     );
   }
 
-  List<_Module> _modules(BuildContext context) => [
+  List<_Module> _modules(BuildContext context, WidgetRef ref) => [
         _Module(Strings.modulProduk, Icons.inventory_2_outlined,
             () => _openPage(context, const ProductsPage())),
         _Module(Strings.modulKasirOnline, Icons.shopping_bag_outlined,
@@ -88,6 +92,8 @@ class MenuTab extends StatelessWidget {
             () => _openSheet(context, const CustomerHomeSheet())),
         _Module(Strings.modulPengaturan, Icons.settings_outlined,
             () => _openSheet(context, const SettingsSheet())),
+        _Module(Strings.gantiKeModePelanggan, Icons.swap_horiz,
+            () => _gantiKeModePelanggan(context, ref)),
       ];
 
   void _openPage(BuildContext context, Widget page) {
@@ -101,6 +107,50 @@ class MenuTab extends StatelessWidget {
       // Opsi A: hapus backgroundColor transparent — ikut bottomSheetTheme (solid, adaptif).
       builder: (_) => sheet,
     );
+  }
+
+  /// Ganti ke Mode Pelanggan via sidik jari.
+  /// Alur: biometric → baca kredensial pelanggan → signOut → signIn → CustomerShell.
+  Future<void> _gantiKeModePelanggan(
+      BuildContext context, WidgetRef ref) async {
+    final svc = ref.read(biometricCredentialServiceProvider);
+    // 1. Verifikasi biometric.
+    final ok = await svc.verifyBiometric(Strings.alasanVerifikasiSidikJari);
+    if (!ok || !context.mounted) return;
+    // 2. Baca kredensial pelanggan tersimpan.
+    final cred = await svc.read('customer');
+    if (cred == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Belum ada akun pelanggan tersimpan. '
+                'Masuk sebagai pelanggan dulu lalu aktifkan login cepat.'),
+          ),
+        );
+      }
+      return;
+    }
+    // 3. Sign out admin, sign in sebagai pelanggan.
+    final auth = ref.read(authServiceProvider);
+    if (auth == null) return;
+    try {
+      await auth.signOut();
+      await auth.signIn(email: cred.email, password: cred.password);
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const CustomerShell()),
+          (_) => false,
+        );
+      }
+    } catch (_) {
+      // Kredensial basi → hapus, minta login manual.
+      await svc.delete('customer');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.masukGagal)),
+        );
+      }
+    }
   }
 }
 
