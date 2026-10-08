@@ -312,7 +312,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
       BuildContext context, WidgetRef ref, String code) async {
     await showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: const Text(Strings.pesananBerhasil),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -332,12 +332,12 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogCtx).pop(),
             child: const Text(Strings.tutup),
           ),
           FilledButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              Navigator.of(dialogCtx).pop();
               ref.read(customerTabProvider.notifier).state = 4;
             },
             child: const Text(Strings.lihatPesanan),

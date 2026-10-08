@@ -167,9 +167,13 @@ class _ProductCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Foto (bila ada) — tanpa foto: blok kategori.
+          // Opsi B (anti-ledak): provider null → placeholder, tanpa `!`.
           Expanded(
-            child: product.photoPath == null
-                ? Container(
+            child: Builder(
+              builder: (_) {
+                final provider = photoImageProvider(product.photoPath);
+                if (provider == null) {
+                  return Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: AppColors.orange.withValues(alpha: 0.12),
@@ -180,14 +184,15 @@ class _ProductCard extends ConsumerWidget {
                       size: 40,
                       color: AppColors.orange,
                     ),
-                  )
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image(
-                      image: photoImageProvider(product.photoPath)!,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                  );
+                }
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image(
+                    image: provider,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
                         width: double.infinity,
                         decoration: BoxDecoration(
                           color:
@@ -201,7 +206,9 @@ class _ProductCard extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  ),
+                  );
+              },
+            ),
           ),
           const SizedBox(height: 8),
           Text(
