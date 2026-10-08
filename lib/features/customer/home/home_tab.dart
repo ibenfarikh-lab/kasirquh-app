@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -377,75 +378,97 @@ class HomeTab extends ConsumerWidget {
             title: 'Layanan warga',
           ),
           const SizedBox(height: 8),
-          GridView.count(
-            crossAxisCount: 3,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.05,
-            children: [
-              _serviceCard(
-                context,
-                icon: Icons.inventory_2_outlined,
-                label: 'Titip belanja',
-                hint: 'Dicari saat kulakan',
-                featured: true,
-                onTap: () => _titipSheet(context, ref, uid),
-              ),
-              _serviceCard(
-                context,
-                icon: Icons.wallet_outlined,
-                label: 'Mode anggaran',
-                hint: 'Belanja sesuai uangmu',
-                onTap: () => _modeAnggaranSheet(context, ref),
-              ),
-              _serviceCard(
-                context,
-                icon: Icons.groups_outlined,
-                label: 'Patungan',
-                hint: 'Beli bareng warga',
-                onTap: () => _patunganSheet(context, ref, uid),
-              ),
-              _serviceCard(
-                context,
-                icon: Icons.local_offer_outlined,
-                label: 'Harga grosir',
-                hint: 'Otomatis per dus',
-                onTap: () => _hargaGrosirSheet(context, ref),
-              ),
-              _serviceCard(
-                context,
-                icon: Icons.calendar_view_week_outlined,
-                label: 'Belanja rutin',
-                hint: 'Paket mingguan',
-                onTap: () => _belanjaRutinSheet(context, ref),
-              ),
-              _serviceCard(
-                context,
-                icon: Icons.celebration_outlined,
-                label: 'Paket hajatan',
-                hint: 'Siap untuk acara',
-                onTap: () => _paketHajatanSheet(context, ref),
-              ),
-              _serviceCard(
-                context,
-                icon: Icons.delivery_dining_outlined,
-                label: 'Diantar',
-                hint: 'Pilih jam kirim',
-                onTap: () => _diantarSheet(context, ref),
-              ),
-              _serviceCard(
-                context,
-                icon: Icons.trending_down_outlined,
-                label: 'Pantau harga',
-                hint: 'Naik-turun harga tercatat',
-                onTap: () => _pantauHargaSheet(context, ref),
-              ),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _serviceCardWrap(
+                  _serviceCard(
+                    context,
+                    icon: Icons.inventory_2_outlined,
+                    label: 'Titip belanja',
+                    hint: 'Dicari saat kulakan',
+                    featured: true,
+                    onTap: () => _titipSheet(context, ref, uid),
+                  ),
+                ),
+                _serviceCardWrap(
+                  _serviceCard(
+                    context,
+                    icon: Icons.wallet_outlined,
+                    label: 'Mode anggaran',
+                    hint: 'Belanja sesuai uangmu',
+                    onTap: () => _modeAnggaranSheet(context, ref),
+                  ),
+                ),
+                _serviceCardWrap(
+                  _serviceCard(
+                    context,
+                    icon: Icons.groups_outlined,
+                    label: 'Patungan',
+                    hint: 'Beli bareng warga',
+                    onTap: () => _patunganSheet(context, ref, uid),
+                  ),
+                ),
+                _serviceCardWrap(
+                  _serviceCard(
+                    context,
+                    icon: Icons.local_offer_outlined,
+                    label: 'Harga grosir',
+                    hint: 'Otomatis per dus',
+                    onTap: () => _hargaGrosirSheet(context, ref),
+                  ),
+                ),
+                _serviceCardWrap(
+                  _serviceCard(
+                    context,
+                    icon: Icons.calendar_view_week_outlined,
+                    label: 'Belanja rutin',
+                    hint: 'Paket mingguan',
+                    onTap: () => _belanjaRutinSheet(context, ref),
+                  ),
+                ),
+                _serviceCardWrap(
+                  _serviceCard(
+                    context,
+                    icon: Icons.celebration_outlined,
+                    label: 'Paket hajatan',
+                    hint: 'Siap untuk acara',
+                    onTap: () => _paketHajatanSheet(context, ref),
+                  ),
+                ),
+                _serviceCardWrap(
+                  _serviceCard(
+                    context,
+                    icon: Icons.delivery_dining_outlined,
+                    label: 'Diantar',
+                    hint: 'Pilih jam kirim',
+                    onTap: () => _diantarSheet(context, ref),
+                  ),
+                ),
+                _serviceCardWrap(
+                  _serviceCard(
+                    context,
+                    icon: Icons.trending_down_outlined,
+                    label: 'Pantau harga',
+                    hint: 'Naik-turun harga tercatat',
+                    onTap: () => _pantauHargaSheet(context, ref),
+                  ),
+                  last: true,
+                ),
+              ],
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Bungkus kartu layanan untuk baris horizontal scrollable ala PWA.
+  Widget _serviceCardWrap(Widget card, {bool last = false}) {
+    return Padding(
+      padding: EdgeInsets.only(right: last ? 0 : 8),
+      child: SizedBox(width: 112, child: card),
     );
   }
 
@@ -1940,6 +1963,32 @@ class HomeTab extends ConsumerWidget {
 /// Kartu resep Ide Masak Warga — selaras PWA `recipeCard`.
 /// Foto (bila ada), label "Warga", nama, deskripsi,
 /// tombol "+ Bahan", tombol bagikan, dan info bahan + total.
+/// Foto resep: dukung base64 data URL (format PWA) & URL http biasa.
+Widget _fotoResep(String foto) {
+  const tinggi = 110.0;
+  if (foto.startsWith('data:image')) {
+    try {
+      final b64 = foto.split(',').last;
+      return Image.memory(
+        base64Decode(b64),
+        height: tinggi,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const SizedBox(height: tinggi),
+      );
+    } catch (_) {
+      return const SizedBox(height: tinggi);
+    }
+  }
+  return Image.network(
+    foto,
+    height: tinggi,
+    width: double.infinity,
+    fit: BoxFit.cover,
+    errorBuilder: (_, __, ___) => const SizedBox(height: tinggi),
+  );
+}
+
 class _RecipeCard extends StatelessWidget {
   final Recipe recipe;
   final Map<String, int> hargaProduk;
@@ -1970,13 +2019,7 @@ class _RecipeCard extends StatelessWidget {
               ClipRRect(
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(
-                  recipe.foto,
-                  height: 110,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox(height: 110),
-                ),
+                child: _fotoResep(recipe.foto),
               ),
             Padding(
               padding: const EdgeInsets.all(12),
