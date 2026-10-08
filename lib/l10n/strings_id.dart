@@ -123,6 +123,17 @@ class Strings {
       'Sidik jari tidak tersedia di HP ini';
   static const alasanAktifkanSidikJari =
       'Aktifkan buka sidik jari untuk Mode Admin';
+  // Fingerprint Jalur Tercepat — login cepat sidik jari.
+  static const loginCepatSidikJari = 'Login cepat sidik jari';
+  static const loginCepatSidikJariHint =
+      'Masuk tanpa ketik sandi setelah verifikasi sidik jari';
+  static const masukDenganSidikJari = 'Masuk dengan sidik jari';
+  static const alasanVerifikasiSidikJari =
+      'Verifikasi sidik jari untuk masuk';
+  static const gantiKeModePelanggan = 'Ganti ke Mode Pelanggan';
+  static const gantiKeModeAdmin = 'Ganti ke Mode Admin';
+  static const sidikJariTersimpan = 'Sidik jari tersimpan untuk login cepat';
+  static const sidikJariDihapus = 'Login cepat sidik jari dimatikan';
 
   // Empty state (jujur — tanpa angka/data contoh)
   static const belumAdaPesanan = 'Belum ada pesanan';
@@ -391,7 +402,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.28+42';
+  static const versiApp = 'KasirQuh v3.6.29+43';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';

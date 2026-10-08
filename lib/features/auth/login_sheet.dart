@@ -6,6 +6,9 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/remote/auth_service.dart';
 import '../../l10n/strings_id.dart';
+import 'biometric_credential_service.dart';
+import 'biometric_optin_dialogs.dart';
+import 'fingerprint_login_button.dart';
 
 /// Sheet Login/Daftar: dua panel — Masuk & Daftar (email + kata sandi).
 /// Pendaftar baru → menunggu persetujuan admin.
@@ -61,10 +64,22 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
       return;
     }
     try {
+      final email = _email.text.trim();
+      final password = _password.text;
       await auth.signIn(
-            email: _email.text.trim(),
-            password: _password.text,
+            email: email,
+            password: password,
           );
+      if (!mounted) return;
+      // Alur A: tawarkan opt-in login cepat (sandi masih di memori).
+      await tawarkanOptInSidikJari(
+        context: context,
+        ref: ref,
+        accountId: 'customer',
+        email: email,
+        password: password,
+        mode: 'customer',
+      );
       if (mounted) Navigator.of(context).pop(true);
     } on AuthPendingApproval {
       setState(() => _error = Strings.belumDisetujui);
@@ -228,6 +243,33 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
             isLoading: _busy,
             onPressed: onSubmit,
           ),
+          // Fingerprint Jalur Tercepat — hanya untuk mode Masuk.
+          if (isLogin) const SizedBox(height: 12),
+          if (isLogin)
+            FingerprintLoginButton(
+              accountId: 'customer',
+              onCredential: (cred) async {
+                final auth = ref.read(authServiceProvider);
+                if (auth == null) return;
+                setState(() {
+                  _busy = true;
+                  _error = null;
+                });
+                try {
+                  await auth.signIn(email: cred.email, password: cred.password);
+                  if (mounted) Navigator.of(context).pop(true);
+                } on AuthPendingApproval {
+                  await ref
+                      .read(biometricCredentialServiceProvider)
+                      .delete('customer');
+                  setState(() => _error = Strings.masukGagal);
+                } catch (_) {
+                  setState(() => _error = Strings.masukGagal);
+                } finally {
+                  if (mounted) setState(() => _busy = false);
+                }
+              },
+            ),
         ],
       ),
     );

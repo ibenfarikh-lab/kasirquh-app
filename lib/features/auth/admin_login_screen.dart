@@ -7,6 +7,9 @@ import '../../core/widgets/app_button.dart';
 import '../../data/remote/auth_service.dart';
 import '../../l10n/strings_id.dart';
 import '../admin/admin_shell.dart';
+import 'biometric_credential_service.dart';
+import 'biometric_optin_dialogs.dart';
+import 'fingerprint_login_button.dart';
 
 /// Login KHUSUS admin: email + kata sandi SAJA (tidak ada pendaftaran).
 /// Akun admin dibuat manual di Firebase + custom claim `admin: true`.
@@ -61,9 +64,21 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
       return;
     }
     try {
+      final email = _email.text.trim();
+      final password = _password.text;
       await auth.signInAdmin(
-        email: _email.text.trim(),
-        password: _password.text,
+        email: email,
+        password: password,
+      );
+      if (!mounted) return;
+      // Alur A: tawarkan opt-in login cepat (sandi masih di memori).
+      await tawarkanOptInSidikJari(
+        context: context,
+        ref: ref,
+        accountId: 'admin',
+        email: email,
+        password: password,
+        mode: 'admin',
       );
       if (mounted) _goAdmin();
     } on AdminNotAuthorized {
@@ -162,6 +177,36 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                 label: Strings.masuk,
                 isLoading: _busy,
                 onPressed: _signIn,
+              ),
+              const SizedBox(height: 12),
+              // Fingerprint Jalur Tercepat — tampil bila ada kredensial tersimpan.
+              FingerprintLoginButton(
+                accountId: 'admin',
+                onCredential: (cred) async {
+                  final auth = ref.read(authServiceProvider);
+                  if (auth == null) return;
+                  setState(() {
+                    _busy = true;
+                    _error = null;
+                  });
+                  try {
+                    await auth.signInAdmin(
+                      email: cred.email,
+                      password: cred.password,
+                    );
+                    if (mounted) _goAdmin();
+                  } on AdminNotAuthorized {
+                    // Kredensial basi → hapus, minta login manual.
+                    await ref
+                        .read(biometricCredentialServiceProvider)
+                        .delete('admin');
+                    setState(() => _error = Strings.masukGagal);
+                  } catch (_) {
+                    setState(() => _error = Strings.masukGagal);
+                  } finally {
+                    if (mounted) setState(() => _busy = false);
+                  }
+                },
               ),
             ],
           ),
