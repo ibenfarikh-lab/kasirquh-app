@@ -98,7 +98,7 @@ class MenuTab extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      // Opsi A: hapus backgroundColor transparent — ikut bottomSheetTheme (solid, adaptif).
       builder: (_) => sheet,
     );
   }
