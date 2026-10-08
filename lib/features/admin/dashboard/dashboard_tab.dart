@@ -133,37 +133,38 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
               final omzetValue =
                   s.transaksi == 0 ? null : formatRp(s.masuk);
               return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _UniformMetricCard(
-                      label: 'OMZET HARI INI',
+                      label: 'OMZET',
                       value: omzetValue ?? 'Belum ada data',
                       sub: s.transaksi == 0
-                          ? 'Transaksi & laba · belum ada data'
+                          ? 'Belum ada data'
                           : '${s.transaksi} transaksi',
                       isPrimary: true,
                       onTap: () =>
                           _open(context, const LedgerPage()),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _UniformMetricCard(
-                      label: 'PESANAN MENUNGGU',
+                      label: 'PESANAN',
                       value: waiting == 0 ? '0' : '$waiting',
-                      sub: 'Buka Kasir Online',
+                      sub: 'Kasir Online',
                       onTap: () =>
                           _open(context, const OnlineOrdersPage()),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _UniformMetricCard(
-                      label: 'STOK KRITIS',
+                      label: 'STOK',
                       value: lowStock.isEmpty
                           ? '0'
                           : '${lowStock.length}',
-                      sub: 'Buka Produk',
+                      sub: 'Produk',
                       onTap: () =>
                           _open(context, const ProductsPage()),
                     ),
@@ -306,7 +307,7 @@ class _UniformMetricCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(16),
@@ -320,24 +321,30 @@ class _UniformMetricCard extends StatelessWidget {
           children: [
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   color: muted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: isPrimary ? Colors.black87 : AppColors.orange,
-                fontSize: value.length > 10 ? 14 : 24,
+                fontSize: value.length > 8 ? 13 : 22,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             Text(
               sub,
-              style: TextStyle(color: muted, fontSize: 11),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: muted, fontSize: 10),
             ),
           ],
         ),

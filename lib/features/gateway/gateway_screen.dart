@@ -317,7 +317,7 @@ class _SlideView extends StatelessWidget {
         Positioned(
           left: 24,
           right: 24,
-          bottom: 200,
+          bottom: 280,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
