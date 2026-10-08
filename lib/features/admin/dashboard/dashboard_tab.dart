@@ -206,6 +206,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                   Expanded(
                     flex: 85,
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
                           child: _PwaMetricCard(
@@ -473,8 +474,6 @@ class _PwaMetricCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(12),
-        constraints:
-            tall ? const BoxConstraints(minHeight: 170) : null,
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(16),
