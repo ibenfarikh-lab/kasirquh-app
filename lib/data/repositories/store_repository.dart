@@ -95,6 +95,9 @@ class Promo {
   final int discountValue;
   final bool isActive;
 
+  /// Batas akhir promo (untuk countdown Promo Kilat). Null = akhir hari ini.
+  final DateTime? endsAt;
+
   const Promo({
     required this.id,
     required this.title,
@@ -103,6 +106,7 @@ class Promo {
     this.discountType,
     this.discountValue = 0,
     this.isActive = true,
+    this.endsAt,
   });
 
   factory Promo.fromDoc(String id, Map<String, dynamic> m) {
@@ -120,6 +124,7 @@ class Promo {
       discountType: m['discountType'] as String?,
       discountValue: (m['discountValue'] as num?)?.toInt() ?? 0,
       isActive: active,
+      endsAt: (m['endsAt'] as Timestamp?)?.toDate(),
     );
   }
 

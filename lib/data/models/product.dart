@@ -12,6 +12,12 @@ class Product {
   final String? barcode;
   final String? photoPath;
   final bool active;
+  /// Satuan produk (pcs/dus/kg/liter/dll) — dari PWA.
+  final String unit;
+  /// Harga grosir: min qty, harga/item, dan label — dari PWA.
+  final int wholesaleQty;
+  final int wholesalePrice;
+  final String wholesaleLabel;
 
   const Product({
     required this.id,
@@ -24,7 +30,14 @@ class Product {
     this.barcode,
     this.photoPath,
     this.active = true,
+    this.unit = 'pcs',
+    this.wholesaleQty = 0,
+    this.wholesalePrice = 0,
+    this.wholesaleLabel = '',
   });
+
+  /// Ada harga grosir?
+  bool get adaGrosir => wholesaleQty > 0 && wholesalePrice > 0;
 
   Map<String, dynamic> toMap() => {
         'id': id,
@@ -37,6 +50,10 @@ class Product {
         'barcode': barcode,
         'photoPath': photoPath,
         'active': active ? 1 : 0,
+        'unit': unit,
+        'wholesaleQty': wholesaleQty,
+        'wholesalePrice': wholesalePrice,
+        'wholesaleLabel': wholesaleLabel,
       };
 
   factory Product.fromMap(Map<String, dynamic> m) => Product(
@@ -50,6 +67,10 @@ class Product {
         barcode: m['barcode'] as String?,
         photoPath: m['photoPath'] as String?,
         active: (m['active'] == 1 || m['active'] == true),
+        unit: m['unit'] as String? ?? 'pcs',
+        wholesaleQty: (m['wholesaleQty'] as num?)?.toInt() ?? 0,
+        wholesalePrice: (m['wholesalePrice'] as num?)?.toInt() ?? 0,
+        wholesaleLabel: m['wholesaleLabel'] as String? ?? '',
       );
 
   /// Payload Firestore — NAMA FIELD SELARAS SKEMA
@@ -64,5 +85,9 @@ class Product {
         'barcode': barcode,
         'photoUrl': photoPath,
         'isActive': active,
+        'unit': unit,
+        'wholesaleQty': wholesaleQty,
+        'wholesalePrice': wholesalePrice,
+        'wholesaleLabel': wholesaleLabel,
       };
 }

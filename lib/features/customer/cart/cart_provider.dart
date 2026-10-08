@@ -78,3 +78,8 @@ final cartProvider =
     StateNotifierProvider<CartNotifier, List<CartLine>>((ref) {
   return CartNotifier();
 });
+
+/// Menu belanja tersimpan — sesi ini saja (ala PWA: `S.savedMenu`).
+/// Menyimpan salinan baris keranjang agar bisa dimuat ulang nanti.
+final savedMenuProvider =
+    StateProvider<List<CartLine>>((ref) => const []);

@@ -45,13 +45,32 @@ class InboxTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Kepala: kicker "Pusat notifikasi" + judul (ikut PWA).
         Text(
-          Strings.tabInbox,
+          Strings.inboxPusatNotifikasi,
           style: TextStyle(
-            color: context.teksUtama,
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-          ),
+              color: context.teksRedup, fontSize: 12),
+        ),
+        const SizedBox(height: 2),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                Strings.tabInbox,
+                style: TextStyle(
+                  color: context.teksUtama,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            if (!empty)
+              TextButton(
+                onPressed: () =>
+                    _tandaiSemuaDibaca(context, ref),
+                child: const Text(Strings.tandaiSemuaDibaca),
+              ),
+          ],
         ),
         const SizedBox(height: 12),
         if (empty)
@@ -173,6 +192,37 @@ class InboxTab extends ConsumerWidget {
 
   void _open(BuildContext context, Widget page) {
     openAdminPage(context, page);
+  }
+
+  /// "Tandai semua dibaca" (ikut PWA): nol-kan unread semua thread chat.
+  /// Notifikasi lain (persetujuan/pesanan/stok/titipan) adalah status live,
+  /// bukan arsip yang bisa ditandai — ikut perilaku PWA.
+  Future<void> _tandaiSemuaDibaca(
+      BuildContext context, WidgetRef ref) async {
+    final threads =
+        ref.read(chatThreadsProvider).valueOrNull ?? const [];
+    final unread =
+        threads.where((t) => t.unreadAdmin > 0).toList();
+    if (unread.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(Strings.sudahDibacaSemua)),
+        );
+      }
+      return;
+    }
+    final repo = ref.read(adminRepositoryProvider);
+    for (final t in unread) {
+      await repo.markThreadRead(t.id);
+    }
+    ref.invalidate(chatThreadsProvider);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(Strings.sudahDibacaSemua)),
+      );
+    }
   }
 }
 

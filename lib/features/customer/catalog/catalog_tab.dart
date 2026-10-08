@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
@@ -13,7 +14,9 @@ import '../../../data/repositories/product_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../cart/cart_provider.dart';
+import '../chat/toko_chat_page.dart';
 import '../home/home_tab.dart';
+import '../session.dart';
 
 /// Tab Produk — katalog barang kemasan.
 /// Harga & stok TERBUKA untuk tamu (keputusan dikunci).
@@ -75,6 +78,33 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
             children: [
               _chip(Strings.semua, ''),
               for (final c in kProductCategories) _chip(c, c),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Header: "Semua produk" + tombol Muat ulang (ala PWA).
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Semua produk',
+                style: TextStyle(
+                  color: context.teksUtama,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  ref.invalidate(productsProvider);
+                  ref.invalidate(promosProvider);
+                },
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Muat ulang',
+                    style: TextStyle(fontSize: 13)),
+              ),
             ],
           ),
         ),
@@ -317,6 +347,14 @@ class ProductDetailSheetState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Tombol Tutup (ala PWA).
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Tutup'),
+              ),
+            ),
             // Foto produk (bila ada).
             if (p.photoPath != null)
               Center(
@@ -332,8 +370,12 @@ class ProductDetailSheetState
                 style: const TextStyle(
                     fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            Text(p.category,
-                style: TextStyle(color: context.teksRedup)),
+            // KATEGORI: X (format PWA).
+            Text('KATEGORI: ${p.category.isEmpty ? '-' : p.category}',
+                style: TextStyle(color: context.teksRedup, fontSize: 13)),
+            // SATUAN: X (format PWA).
+            Text('SATUAN: ${p.unit}',
+                style: TextStyle(color: context.teksRedup, fontSize: 13)),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -355,10 +397,11 @@ class ProductDetailSheetState
                   ),
                 ),
                 const Spacer(),
+                // STOK: N pcs (format PWA).
                 Text(
                   out
                       ? Strings.habis
-                      : 'Stok ${formatStok(p.stock)}',
+                      : 'STOK: ${formatStok(p.stock)} ${p.unit}',
                   style: TextStyle(
                     color: out ? AppColors.danger : context.teksRedup,
                     fontWeight: FontWeight.w600,
@@ -366,6 +409,28 @@ class ProductDetailSheetState
                 ),
               ],
             ),
+            // Label GROSIR (ala PWA) — jika ada harga grosir.
+            if (p.adaGrosir) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.orange.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: AppColors.orange.withValues(alpha: 0.4)),
+                ),
+                child: Text(
+                  'GROSIR: ${p.wholesaleLabel.isNotEmpty ? p.wholesaleLabel : 'Beli ${p.wholesaleQty} ${p.unit}'} · ${formatRp(p.wholesalePrice)}/${p.unit}',
+                  style: const TextStyle(
+                    color: AppColors.orange,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
             if ((p.barcode ?? '').isNotEmpty) ...[
               const SizedBox(height: 8),
               Text('Barcode: ${p.barcode}',
@@ -383,6 +448,7 @@ class ProductDetailSheetState
                       ? () => setState(() => _qty--)
                       : null,
                   icon: const Icon(Icons.remove_circle_outline),
+                  tooltip: 'Kurangi',
                 ),
                 Text('$_qty',
                     style: const TextStyle(
@@ -392,13 +458,14 @@ class ProductDetailSheetState
                       ? () => setState(() => _qty++)
                       : null,
                   icon: const Icon(Icons.add_circle_outline),
+                  tooltip: 'Tambah',
                 ),
               ],
             ),
             const SizedBox(height: 8),
             AppButton(
               label:
-                  '${Strings.tambahKeranjang} • ${formatRp(harga * _qty)}',
+                  '+ Keranjang • ${formatRp(harga * _qty)}',
               onPressed: out
                   ? null
                   : () {
@@ -416,9 +483,91 @@ class ProductDetailSheetState
                       );
                     },
             ),
+            const SizedBox(height: 8),
+            // Tanya Toko + Pantau harga (ala PWA).
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      // Tanya Toko butuh login — tamu diarahkan ke gate.
+                      final session = ref
+                          .read(sessionProvider)
+                          .valueOrNull;
+                      final uid = memberUid(
+                          session ?? const Session.guest());
+                      if (uid == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                                'Masuk/Daftar dulu untuk chat dengan toko'),
+                          ),
+                        );
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => TokoChatPage(uid: uid),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.chat_bubble_outline,
+                        size: 18),
+                    label: const Text('Tanya Toko'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () =>
+                        _pantauHarga(context, ref, p),
+                    icon: const Icon(Icons.notifications_outlined,
+                        size: 18),
+                    label: const Text('Pantau harga'),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
+  }
+
+  /// Pantau harga: simpan ke lokal, notifikasi saat harga turun.
+  Future<void> _pantauHarga(
+      BuildContext context, WidgetRef ref, Product p) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list =
+          prefs.getStringList('pantau_harga') ?? <String>[];
+      if (list.contains(p.id)) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Harga produk ini sudah dipantau')),
+          );
+        }
+        return;
+      }
+      // Simpan id + harga saat ini.
+      list.add('${p.id}:${p.price}');
+      await prefs.setStringList('pantau_harga', list);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Harga ${p.name} dipantau — kabari jika turun')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Gagal menyimpan pantauan harga')),
+        );
+      }
+    }
   }
 }

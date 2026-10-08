@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,19 +20,22 @@ import '../../../data/repositories/product_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../account/coin_history_page.dart';
+import '../cart/cart_provider.dart';
 import '../catalog/catalog_tab.dart';
 import '../customer_shell.dart';
 import '../session.dart';
 
-/// Tab Beranda — 8 section ala prototipe v3 (urutan dikunci):
+/// Tab Beranda — 10 section ala PWA (urutan dikunci):
 /// 1. Paket Tanggal Muda (diatur warung)
 /// 2. Koin Warga (kartu saldo)
 /// 3. Belanjaan siap diantar (banner pesanan aktif)
 /// 4. Belanja dapur lebih ringan (promo pilihan toko)
-/// 5. Layanan warga (titip belanja dkk.)
-/// 6. Stok rumah habis? (catatan lokal)
-/// 7. Ide masak warga (empty state jujur bila belum ada)
-/// 8. Sedang laris (agregat pesanan)
+/// 5. Kabar Warung (carousel status warung)
+/// 6. Promo Kilat (flash sale + countdown)
+/// 7. Layanan warga (titip belanja dkk.)
+/// 8. Stok rumah habis? (catatan lokal)
+/// 9. Ide masak warga (empty state jujur bila belum ada)
+/// 10. Sedang laris (agregat pesanan)
 /// Section tanpa data → disembunyikan atau empty state jujur.
 /// Tanpa angka/data siluman.
 class HomeTab extends ConsumerWidget {
@@ -69,6 +74,8 @@ class HomeTab extends ConsumerWidget {
         _koinCard(context, ref, session),
         _pesananAktifSection(context, ref, uid),
         _promoPilihanSection(context, ref, promos, products),
+        _kabarWarungSection(store),
+        _promoKilatSection(context, ref, promos, products),
         _layananSection(context, ref, uid),
         _stokRumahSection(context, ref),
         _ideMasakSection(),
@@ -308,6 +315,47 @@ class HomeTab extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // ---------- Kabar Warung (carousel ala PWA) ----------
+  // Urutan PWA: setelah promo carousel, sebelum layanan warga.
+  // Slide 1: status operasional warung (live dot + buka/tutup).
+  // Slide 2: saran suasana berdasarkan jam.
+  Widget _kabarWarungSection(StoreInfo store) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: _KabarCarousel(store: store),
+    );
+  }
+
+  // ---------- 6. Promo Kilat (flash sale ala PWA) ----------
+  // Urutan PWA: setelah Kabar Warung, sebelum Layanan Warga.
+  // Sumber: Promo discountType 'flash' + productId (koleksi promos).
+  // Tanpa promo kilat aktif → disembunyikan (seperti PWA).
+  Widget _promoKilatSection(BuildContext context, WidgetRef ref,
+      List<Promo> promos, List<Product> products) {
+    Promo? flash;
+    for (final p in promos) {
+      if (p.isActive &&
+          p.discountType == 'flash' &&
+          (p.productId ?? '').isNotEmpty) {
+        flash = p;
+        break;
+      }
+    }
+    if (flash == null) return const SizedBox.shrink();
+    Product? product;
+    for (final p in products) {
+      if (p.id == flash.productId) {
+        product = p;
+        break;
+      }
+    }
+    if (product == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: _PromoKilatCard(promo: flash, product: product),
     );
   }
 
@@ -884,6 +932,175 @@ class _HomeProductCard extends ConsumerWidget {
   }
 }
 
+/// Kartu Promo Kilat ala PWA: countdown live + harga coret + tombol Ambil.
+/// Harga promo dikunci saat masuk keranjang (seperti PWA).
+class _PromoKilatCard extends ConsumerStatefulWidget {
+  final Promo promo;
+  final Product product;
+
+  const _PromoKilatCard({required this.promo, required this.product});
+
+  @override
+  ConsumerState<_PromoKilatCard> createState() => _PromoKilatCardState();
+}
+
+class _PromoKilatCardState extends ConsumerState<_PromoKilatCard> {
+  Timer? _timer;
+  late DateTime _endsAt;
+
+  DateTime _defaultEnd() {
+    final now = DateTime.now();
+    // PWA: default akhir hari bila flashEndsAt tidak diatur.
+    return DateTime(now.year, now.month, now.day, 24);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _endsAt = widget.promo.endsAt ?? _defaultEnd();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _PromoKilatCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.promo.endsAt != oldWidget.promo.endsAt) {
+      _endsAt = widget.promo.endsAt ?? _defaultEnd();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String get _countdown {
+    final s = _endsAt.difference(DateTime.now()).inSeconds.clamp(0, 359999);
+    final h = (s ~/ 3600).toString().padLeft(2, '0');
+    final m = ((s % 3600) ~/ 60).toString().padLeft(2, '0');
+    final sec = (s % 60).toString().padLeft(2, '0');
+    return '$h:$m:$sec';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final product = widget.product;
+    final promo = widget.promo;
+    final hargaPromo = promo.hargaPromo(product.price);
+    final adaDiskon = hargaPromo < product.price;
+    final habis = product.stock <= 0;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.orange.withValues(alpha: 0.12),
+        border: Border.all(color: AppColors.orange.withValues(alpha: 0.55)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'PROMO KILAT · BERAKHIR DALAM',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.04,
+                        color: AppColors.danger,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _countdown,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                        color: AppColors.danger,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${product.name} cuma ${formatRp(hargaPromo)}',
+                  style: TextStyle(
+                    color: context.teksUtama,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    if (adaDiskon)
+                      Text(
+                        formatRp(product.price),
+                        style: TextStyle(
+                          color: context.teksRedup,
+                          fontSize: 12,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    if (adaDiskon) const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        promo.subtitle?.trim().isNotEmpty == true
+                            ? promo.subtitle!.trim()
+                            : 'Selama persediaan masih ada.',
+                        style: TextStyle(
+                            color: context.teksRedup, fontSize: 11),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          ElevatedButton(
+            onPressed: habis
+                ? null
+                : () {
+                    final ok = ref
+                        .read(cartProvider.notifier)
+                        .add(product, harga: hargaPromo);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(ok
+                            ? 'Harga promo kilat aktif di keranjang'
+                            : 'Stok habis'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.orange,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 12),
+            ),
+            child: const Text(
+              '+ Ambil',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Pesanan saya (member) — dipakai banner "Belanjaan siap diantar".
 final _myOrdersProvider =
     StreamProvider.family<List<Order>, String>((ref, uid) {
@@ -940,6 +1157,275 @@ class _ErrorBanner extends StatelessWidget {
             TextButton(onPressed: onRetry, child: const Text('Coba lagi')),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Carousel "Kabar Warung" ala PWA.
+///
+/// Slide 1: status operasional warung (live dot hijau/abu + buka/tutup).
+/// Slide 2: saran suasana berdasarkan jam (pagi/siang/sore/malam).
+/// Auto-rotasi tiap 5,6 detik; jeda 8,5 detik setelah interaksi manual.
+class _KabarCarousel extends StatefulWidget {
+  final StoreInfo store;
+
+  const _KabarCarousel({required this.store});
+
+  @override
+  State<_KabarCarousel> createState() => _KabarCarouselState();
+}
+
+class _KabarCarouselState extends State<_KabarCarousel> {
+  static const _autoMs = 5600;
+  static const _resumeMs = 8500;
+
+  late final PageController _controller;
+  Timer? _autoTimer;
+  Timer? _resumeTimer;
+  int _page = 0;
+  bool _programmatic = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+    _startAuto();
+  }
+
+  @override
+  void dispose() {
+    _autoTimer?.cancel();
+    _resumeTimer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _startAuto() {
+    _autoTimer?.cancel();
+    _autoTimer = Timer.periodic(
+      const Duration(milliseconds: _autoMs),
+      (_) {
+        if (!mounted) return;
+        _programmatic = true;
+        _controller.animateToPage(
+          (_page + 1) % 2,
+          duration: const Duration(milliseconds: 380),
+          curve: Curves.ease,
+        );
+      },
+    );
+  }
+
+  void _pauseAuto() {
+    _autoTimer?.cancel();
+    _resumeTimer?.cancel();
+    _resumeTimer = Timer(
+      const Duration(milliseconds: _resumeMs),
+      () {
+        if (mounted) _startAuto();
+      },
+    );
+  }
+
+  void _goTo(int index) {
+    _programmatic = true;
+    _controller.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.ease,
+    );
+    _pauseAuto();
+  }
+
+  /// Status buka/tutup — PWA default "buka" bila jam tak bisa dihitung.
+  bool get _open => widget.store.isOpenNow ?? true;
+
+  String get _statusTitle =>
+      _open ? 'Buka sekarang' : 'Warung sedang tutup';
+
+  String get _statusDetail => _open
+      ? 'Tutup ${widget.store.closeHour} · Belum ada pesanan disiapkan'
+      : 'Buka lagi pukul ${widget.store.openHour} · '
+          'pesanan bisa disiapkan nanti';
+
+  /// Saran suasana berdasarkan jam — logika persis PWA (renderKabar).
+  (String, String) get _mood {
+    final hour = DateTime.now().hour;
+    if (hour < 10) {
+      return (
+        'Saran untuk pagimu',
+        'Kopi dan mi praktis buat mulai hari. Kalau hujan, pilih diantar.'
+      );
+    } else if (hour < 15) {
+      return (
+        'Saran waktu siang',
+        'Air dingin dan snack siap menemani aktivitas. '
+            'Kalau hujan, pilih diantar.'
+      );
+    } else if (hour < 19) {
+      return (
+        'Saran untuk soremu',
+        'Teh dingin dan camilan cocok untuk waktu santai. '
+            'Kalau hujan, pilih diantar.'
+      );
+    }
+    return (
+      'Saran untuk malammu',
+      'Mi hangat dan kopi cocok untuk stok malam. '
+          'Kalau hujan, pilih diantar.'
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mood = _mood;
+    return Container(
+      decoration: BoxDecoration(
+        color: context.permukaanKartu,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.garis),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: Text(
+              'KABAR WARUNG',
+              style: TextStyle(
+                color: Color(0xFFB5670B),
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 86,
+            child: Stack(
+              children: [
+                PageView(
+                  controller: _controller,
+                  onPageChanged: (i) {
+                    setState(() => _page = i);
+                    if (_programmatic) {
+                      _programmatic = false;
+                    } else {
+                      _pauseAuto();
+                    }
+                  },
+                  children: [
+                    _slide(
+                      context,
+                      leading: Container(
+                        width: 9,
+                        height: 9,
+                        margin:
+                            const EdgeInsets.only(left: 5, top: 4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _open
+                              ? const Color(0xFF4D9B65)
+                              : const Color(0xFF9B8F89),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (_open
+                                      ? const Color(0xFF4D9B65)
+                                      : const Color(0xFF9B8F89))
+                                  .withValues(alpha: 0.25),
+                              blurRadius: 0,
+                              spreadRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                      title: _statusTitle,
+                      detail: _statusDetail,
+                    ),
+                    _slide(
+                      context,
+                      leading: const Icon(
+                        Icons.auto_awesome_outlined,
+                        color: AppColors.orange,
+                        size: 22,
+                      ),
+                      title: mood.$1,
+                      detail: mood.$2,
+                    ),
+                  ],
+                ),
+                // Dots vertikal ala PWA (kanan bawah).
+                Positioned(
+                  right: 11,
+                  bottom: 10,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(2, (i) {
+                      final active = i == _page;
+                      return GestureDetector(
+                        onTap: () => _goTo(i),
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          margin: const EdgeInsets.only(top: 5),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: active
+                                ? AppColors.orange
+                                : context.teksRedup.withValues(alpha: 0.4),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _slide(
+    BuildContext context, {
+    required Widget leading,
+    required String title,
+    required String detail,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 6, 42, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 30, child: leading),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: context.teksUtama,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  detail,
+                  style: TextStyle(
+                    color: context.teksRedup,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

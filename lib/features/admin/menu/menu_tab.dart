@@ -25,9 +25,9 @@ import 'store_notes_sheet.dart';
 import 'store_profile_sheet.dart';
 import 'transfer_orders_page.dart';
 
-/// Tab Menu: laci alat 16 modul admin.
+/// Tab Menu: "Semua alat & pengaturan" — struktur mengikuti PWA persis:
+/// KELOLA WARUNG / LACI ALAT / PENGATURAN, tiap modul berdeskripsi.
 /// Halaman penuh = ruang kerja; bottom sheet = panel tugas cepat.
-/// Laporan tidak lagi modul sendiri — ada di dalam Data.
 class MenuTab extends ConsumerWidget {
   const MenuTab({super.key});
 
@@ -36,6 +36,13 @@ class MenuTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Kepala: kicker + judul (ikut PWA).
+        Text(
+          Strings.menuSemuaAlat,
+          style: TextStyle(
+              color: context.teksRedup, fontSize: 12),
+        ),
+        const SizedBox(height: 2),
         Text(
           Strings.tabMenu,
           style: TextStyle(
@@ -44,56 +51,141 @@ class MenuTab extends ConsumerWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 4,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          children:
-              _modules(context, ref).map((m) => _ModuleTile(module: m)).toList(),
-        ),
+        const SizedBox(height: 16),
+        _SectionHeader(title: Strings.menuKelolaWarung),
+        _ModuleGrid(modules: _kelolaWarung(context)),
+        const SizedBox(height: 8),
+        _SectionHeader(title: Strings.menuLaciAlat),
+        _ModuleGrid(modules: _laciAlat(context)),
+        const SizedBox(height: 8),
+        _SectionHeader(title: Strings.menuPengaturanJudul),
+        _ModuleGrid(
+            modules: _pengaturan(context, ref)),
+        const SizedBox(height: 24),
       ],
     );
   }
 
-  List<_Module> _modules(BuildContext context, WidgetRef ref) => [
-        _Module(Strings.modulProduk, Icons.inventory_2_outlined,
-            () => _openPage(context, const ProductsPage())),
-        _Module(Strings.modulKasirOnline, Icons.shopping_bag_outlined,
-            () => _openPage(context, const OnlineOrdersPage())),
-        _Module(Strings.modulData, Icons.people_outline,
-            () => _openPage(context, const CustomersPage())),
-        _Module(Strings.modulChat, Icons.chat_bubble_outline,
-            () => _openPage(context, const ChatPage())),
-        _Module(Strings.modulPembukuan, Icons.book_outlined,
-            () => _openPage(context, const LedgerPage())),
-        _Module(Strings.modulKalkulator, Icons.calculate_outlined,
-            () => _openSheet(context, const CalculatorSheet())),
-        _Module(Strings.modulBelanjaStok, Icons.shopping_cart_outlined,
-            () => _openSheet(context, const StockShoppingSheet())),
-        _Module(Strings.modulCatatanToko, Icons.note_alt_outlined,
-            () => _openSheet(context, const StoreNotesSheet())),
-        _Module(Strings.modulKoin, Icons.toll_outlined,
-            () => _openSheet(context, const CoinsSheet())),
-        _Module(Strings.modulAiAdmin, Icons.psychology_outlined,
-            () => _openSheet(context, const AiAdminSheet())),
-        _Module(Strings.modulBuktiTransfer,
-            Icons.receipt_long_outlined,
-            () => _openPage(context, const TransferOrdersPage())),
-        _Module(Strings.modulStruk, Icons.print_outlined,
-            () => _openPage(context, const ReceiptPage())),
-        _Module(Strings.modulScanner, Icons.qr_code_scanner,
-            () => _openSheet(context, const ScannerSheet())),
-        _Module(Strings.modulProfilToko, Icons.store_outlined,
-            () => _openSheet(context, const StoreProfileSheet())),
-        _Module(Strings.modulBerandaPelanggan, Icons.home_outlined,
-            () => _openSheet(context, const CustomerHomeSheet())),
-        _Module(Strings.modulPengaturan, Icons.settings_outlined,
-            () => _openSheet(context, const SettingsSheet())),
-        _Module(Strings.gantiKeModePelanggan, Icons.swap_horiz,
-            () => _gantiKeModePelanggan(context, ref)),
+  /// KELOLA WARUNG — 7 modul (urutan PWA).
+  List<_Module> _kelolaWarung(BuildContext context) => [
+        _Module(
+          Strings.menuProduk,
+          Strings.descProduk,
+          Icons.inventory_2_outlined,
+          () => _openPage(context, const ProductsPage()),
+        ),
+        _Module(
+          Strings.modulProfilToko,
+          Strings.descProfilToko,
+          Icons.store_outlined,
+          () => _openSheet(context, const StoreProfileSheet()),
+        ),
+        _Module(
+          Strings.modulBerandaPelanggan,
+          Strings.descBerandaPelanggan,
+          Icons.home_outlined,
+          () => _openSheet(context, const CustomerHomeSheet()),
+        ),
+        _Module(
+          Strings.modulKoin,
+          Strings.descKoinWarga,
+          Icons.toll_outlined,
+          () => _openSheet(context, const CoinsSheet()),
+        ),
+        _Module(
+          Strings.modulKasirOnline,
+          Strings.descKasirOnline,
+          Icons.shopping_bag_outlined,
+          () => _openPage(context, const OnlineOrdersPage()),
+        ),
+        _Module(
+          Strings.modulData,
+          Strings.descData,
+          Icons.people_outline,
+          () => _openPage(context, const CustomersPage()),
+        ),
+        _Module(
+          Strings.modulChat,
+          Strings.descChat,
+          Icons.chat_bubble_outline,
+          () => _openPage(context, const ChatPage()),
+        ),
+      ];
+
+  /// LACI ALAT — 9 modul (urutan PWA).
+  List<_Module> _laciAlat(BuildContext context) => [
+        _Module(
+          Strings.modulKalkulator,
+          Strings.descKalkulator,
+          Icons.calculate_outlined,
+          () => _openSheet(context, const CalculatorSheet()),
+        ),
+        _Module(
+          Strings.menuPemindaiBarcode,
+          Strings.descPemindaiBarcode,
+          Icons.qr_code_scanner,
+          () => _openSheet(context, const ScannerSheet()),
+        ),
+        _Module(
+          Strings.modulCatatanToko,
+          Strings.descCatatanToko,
+          Icons.note_alt_outlined,
+          () => _openSheet(context, const StoreNotesSheet()),
+        ),
+        _Module(
+          Strings.modulBelanjaStok,
+          Strings.descBelanjaStok,
+          Icons.shopping_cart_outlined,
+          () => _openSheet(context, const StockShoppingSheet()),
+        ),
+        _Module(
+          Strings.modulAiAdmin,
+          Strings.descAiAdmin,
+          Icons.psychology_outlined,
+          () => _openSheet(context, const AiAdminSheet()),
+        ),
+        _Module(
+          Strings.modulPembukuan,
+          Strings.descPembukuan,
+          Icons.book_outlined,
+          () => _openPage(context, const LedgerPage()),
+        ),
+        _Module(
+          Strings.menuKonfirmasiTransfer,
+          Strings.descKonfirmasiTransfer,
+          Icons.receipt_long_outlined,
+          () => _openPage(context, const TransferOrdersPage()),
+        ),
+        _Module(
+          Strings.menuPatunganWarga,
+          Strings.descPatunganWarga,
+          Icons.groups_outlined,
+          () => _openSheet(
+              context, const _SegeraHadirSheet()),
+        ),
+        _Module(
+          Strings.modulStruk,
+          Strings.descStruk58mm,
+          Icons.print_outlined,
+          () => _openPage(context, const ReceiptPage()),
+        ),
+      ];
+
+  /// PENGATURAN — 2 modul (urutan PWA).
+  List<_Module> _pengaturan(
+      BuildContext context, WidgetRef ref) => [
+        _Module(
+          Strings.gantiKeModePelanggan,
+          Strings.descGantiModePelanggan,
+          Icons.swap_horiz,
+          () => _gantiKeModePelanggan(context, ref),
+        ),
+        _Module(
+          Strings.menuPengaturanGlobal,
+          Strings.descPengaturanGlobal,
+          Icons.settings_outlined,
+          () => _openSheet(context, const SettingsSheet()),
+        ),
       ];
 
   void _openPage(BuildContext context, Widget page) {
@@ -154,12 +246,57 @@ class MenuTab extends ConsumerWidget {
   }
 }
 
+/// Judul seksi menu (KELOLA WARUNG / LACI ALAT / PENGATURAN).
+class _SectionHeader extends StatelessWidget {
+  final String title;
+
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: context.teksRedup,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+/// Grid 3 kolom ala PWA untuk satu seksi.
+class _ModuleGrid extends StatelessWidget {
+  final List<_Module> modules;
+
+  const _ModuleGrid({required this.modules});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 3,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      childAspectRatio: 0.92,
+      children:
+          modules.map((m) => _ModuleTile(module: m)).toList(),
+    );
+  }
+}
+
 class _Module {
   final String title;
+  final String desc;
   final IconData icon;
   final VoidCallback open;
 
-  _Module(this.title, this.icon, this.open);
+  _Module(this.title, this.desc, this.icon, this.open);
 }
 
 class _ModuleTile extends StatelessWidget {
@@ -177,25 +314,80 @@ class _ModuleTile extends StatelessWidget {
         onTap: module.open,
         child: Padding(
           padding:
-              const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(module.icon, color: AppColors.orange, size: 26),
-              const SizedBox(height: 6),
+              Icon(module.icon,
+                  color: AppColors.orange, size: 24),
+              const SizedBox(height: 8),
               Text(
                 module.title,
-                textAlign: TextAlign.center,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: context.teksUtama,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Expanded(
+                child: Text(
+                  module.desc,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: context.teksRedup,
+                    fontSize: 10,
+                  ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Placeholder jujur: Patungan Warga native belum dibangun.
+/// Tap → info, tanpa ubah data apa pun.
+class _SegeraHadirSheet extends StatelessWidget {
+  const _SegeraHadirSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.groups_outlined,
+                    color: AppColors.orange, size: 28),
+                const SizedBox(width: 12),
+                Text(
+                  Strings.menuPatunganWarga,
+                  style: TextStyle(
+                    color: context.teksUtama,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              Strings.patunganSegeraHadir,
+              style: TextStyle(
+                  color: context.teksRedup, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+          ],
         ),
       ),
     );

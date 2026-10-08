@@ -17,119 +17,222 @@ import 'cart_provider.dart';
 
 /// Tab Keranjang — tamu boleh isi; kunci HANYA di checkout.
 /// Setelah login/daftar, checkout dilanjutkan otomatis.
+/// Layout mengikuti PWA: judul + ringkasan + menu tersimpan + note grosir.
 class CartTab extends ConsumerWidget {
   const CartTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
-    if (cart.isEmpty) {
-      return const EmptyState(
-        icon: Icons.shopping_cart_outlined,
-        title: Strings.keranjangKosong,
-        hint: Strings.keranjangKosongHint,
-      );
-    }
-    final total = ref.read(cartProvider.notifier).total;
-    return Column(
+    return ListView(
+      padding: const EdgeInsets.all(16),
       children: [
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: cart.length,
-            itemBuilder: (_, i) {
-              final line = cart[i];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: AppCard(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              line.product.name,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              formatRp(line.harga),
-                              style: const TextStyle(
-                                  color: AppColors.orange,
-                                  fontWeight: FontWeight.w700),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => ref
-                            .read(cartProvider.notifier)
-                            .setQty(line.product.id, line.qty - 1),
-                        icon: const Icon(Icons.remove_circle_outline),
-                      ),
-                      Text('${line.qty}',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 16)),
-                      IconButton(
-                        onPressed: () => ref
-                            .read(cartProvider.notifier)
-                            .setQty(line.product.id, line.qty + 1),
-                        icon: const Icon(Icons.add_circle_outline),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        formatRp(line.subtotal),
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+        const Text(
+          Strings.keranjangJudul,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
         ),
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          decoration: BoxDecoration(
-            color: context.permukaanKartu,
-            border: Border(top: BorderSide(color: AppColors.line)),
+        const SizedBox(height: 12),
+        if (cart.isEmpty)
+          const EmptyState(
+            icon: Icons.shopping_cart_outlined,
+            title: Strings.keranjangKosong,
+            hint: Strings.keranjangKosongHint,
+          )
+        else ...[
+          for (var i = 0; i < cart.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _cartLineCard(context, ref, cart[i]),
+            ),
+          const SizedBox(height: 4),
+          _summaryCard(context, ref, cart),
+          const SizedBox(height: 12),
+          _savedMenuButtons(context, ref),
+          const SizedBox(height: 12),
+          Text(
+            Strings.noteGrosirOtomatis,
+            style: TextStyle(
+              color: context.teksRedup,
+              fontSize: 12,
+            ),
           ),
-          child: SafeArea(
-            top: false,
-            child: Row(
+          const SizedBox(height: 16),
+          AppButton(
+            label: Strings.pilihAmbilAtauDiantar,
+            onPressed: () => _checkout(context, ref),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ],
+    );
+  }
+
+  Widget _cartLineCard(
+      BuildContext context, WidgetRef ref, CartLine line) {
+    return AppCard(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Total',
-                          style: TextStyle(color: context.teksRedup)),
-                      Text(
-                        formatRp(total),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.orange,
-                        ),
-                      ),
-                    ],
-                  ),
+                Text(
+                  line.product.name,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-                SizedBox(
-                  width: 160,
-                  child: AppButton(
-                    label: Strings.checkout,
-                    onPressed: () => _checkout(context, ref),
-                  ),
+                const SizedBox(height: 2),
+                Text(
+                  formatRp(line.harga),
+                  style: const TextStyle(
+                      color: AppColors.orange,
+                      fontWeight: FontWeight.w700),
                 ),
               ],
             ),
           ),
+          IconButton(
+            onPressed: () => ref
+                .read(cartProvider.notifier)
+                .setQty(line.product.id, line.qty - 1),
+            icon: const Icon(Icons.remove_circle_outline),
+          ),
+          Text('${line.qty}',
+              style: const TextStyle(
+                  fontWeight: FontWeight.w700, fontSize: 16)),
+          IconButton(
+            onPressed: () => ref
+                .read(cartProvider.notifier)
+                .setQty(line.product.id, line.qty + 1),
+            icon: const Icon(Icons.add_circle_outline),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            formatRp(line.subtotal),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Kartu ringkasan ala PWA: Harga barang / Subtotal / Total pesanan.
+  Widget _summaryCard(
+      BuildContext context, WidgetRef ref, List<CartLine> cart) {
+    final total = ref.read(cartProvider.notifier).total;
+    final qty = ref.read(cartProvider.notifier).totalQty;
+    return AppCard(
+      child: Column(
+        children: [
+          _summaryRow(
+              context, Strings.hargaBarang, formatRp(total)),
+          const SizedBox(height: 6),
+          _summaryRow(context, Strings.subtotal,
+              '$qty barang • ${formatRp(total)}'),
+          const Divider(height: 20),
+          _summaryRow(
+            context,
+            Strings.totalPesanan,
+            formatRp(total),
+            bold: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow(
+      BuildContext context, String label, String value,
+      {bool bold = false}) {
+    final style = TextStyle(
+      fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+      fontSize: bold ? 16 : 14,
+      color: bold ? AppColors.orange : context.teksUtama,
+    );
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: TextStyle(
+                color: context.teksRedup,
+                fontWeight:
+                    bold ? FontWeight.w700 : FontWeight.w400)),
+        Text(value, style: style),
+      ],
+    );
+  }
+
+  /// Tombol "Simpan jadi menu" & "Isi menu tersimpan" ala PWA.
+  Widget _savedMenuButtons(BuildContext context, WidgetRef ref) {
+    final saved = ref.watch(savedMenuProvider);
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () => _simpanMenu(context, ref),
+            icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+            label: const Text(Strings.simpanJadiMenu),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.orange,
+              side: const BorderSide(color: AppColors.orange),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed:
+                saved.isEmpty ? null : () => _isiMenuTersimpan(context, ref),
+            icon: const Icon(Icons.bookmark_outlined, size: 18),
+            label: Text(
+              saved.isEmpty
+                  ? Strings.isiMenuTersimpan
+                  : '${Strings.isiMenuTersimpan} (${saved.length})',
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.orange,
+              side: const BorderSide(color: AppColors.orange),
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  void _simpanMenu(BuildContext context, WidgetRef ref) {
+    final cart = ref.read(cartProvider);
+    if (cart.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(Strings.isiKeranjangDulu)),
+      );
+      return;
+    }
+    ref.read(savedMenuProvider.notifier).state = List.of(cart);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(Strings.menuTersimpanBerhasil)),
+    );
+  }
+
+  void _isiMenuTersimpan(BuildContext context, WidgetRef ref) {
+    final saved = ref.read(savedMenuProvider);
+    if (saved.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(Strings.menuTersimpanKosong)),
+      );
+      return;
+    }
+    final notifier = ref.read(cartProvider.notifier);
+    notifier.clear();
+    for (final line in saved) {
+      // Tambah ulang per qty agar batas stok tetap dihormati.
+      for (var i = 0; i < line.qty; i++) {
+        if (!notifier.add(line.product,
+            harga: line.hargaSatuan)) {
+          break;
+        }
+      }
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(Strings.menuTersimpanDimuat)),
     );
   }
 
@@ -184,7 +287,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              Strings.checkout,
+              Strings.pilihAmbilAtauDiantar,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),

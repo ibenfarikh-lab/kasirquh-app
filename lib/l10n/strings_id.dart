@@ -29,8 +29,11 @@ class Strings {
   static const taglineToko = 'Belanja dekat, terasa hangat';
 
   // Tamu
-  static const guestLockTitle = 'Mau lanjut?';
-  static const guestLockBody = 'Login atau daftar dulu ya...';
+  static const guestLockTitle = 'Fitur khusus pelanggan';
+  static const guestLockBody =
+      'Mau lanjut? Login atau daftar dulu ya…\n'
+      'Masuk dengan email yang sudah disetujui warung. '
+      'Pendaftar baru menunggu persetujuan admin.';
   static const guestLockPending =
       'Akunmu masih menunggu persetujuan admin.';
 
@@ -43,8 +46,22 @@ class Strings {
   static const stokMenipis = 'Stok menipis';
 
   // Keranjang & checkout
-  static const keranjangKosong = 'Keranjang masih kosong';
-  static const keranjangKosongHint = 'Yuk isi dengan barang kebutuhanmu.';
+  static const keranjangJudul = 'Keranjang';
+  static const keranjangKosong = 'Keranjangmu masih kosong.';
+  static const keranjangKosongHint =
+      'Tambahkan barang dari Beranda atau Produk.';
+  static const hargaBarang = 'Harga barang';
+  static const subtotal = 'Subtotal';
+  static const totalPesanan = 'Total pesanan';
+  static const simpanJadiMenu = 'Simpan jadi menu';
+  static const isiMenuTersimpan = 'Isi menu tersimpan';
+  static const menuTersimpanBerhasil = 'Menu belanja berhasil disimpan';
+  static const menuTersimpanDimuat = 'Menu tersimpan dimasukkan';
+  static const menuTersimpanKosong = 'Belum ada menu tersimpan';
+  static const isiKeranjangDulu = 'Isi keranjang dulu, ya';
+  static const noteGrosirOtomatis =
+      'Harga grosir aktif otomatis saat jumlah mencapai satu dus.';
+  static const pilihAmbilAtauDiantar = 'Pilih ambil atau diantar';
   static const checkout = 'Checkout';
   static const buatPesanan = 'Buat Pesanan';
   static const metodePembayaran = 'Metode pembayaran';
@@ -200,8 +217,14 @@ class Strings {
   // Admin — Kasir
   static const kasirKosong = 'Belum ada barang di kasir';
   static const kasirKosongHint = 'Cari barang atau pindai barcode.';
-  static const cariAtauPindai = 'Cari nama / barcode...';
+  static const cariAtauPindai = 'Cari produk kasir';
   static const pindaiBarcode = 'Pindai Barcode';
+  static const pindai = 'Pindai';
+  static const alatKasirCepat = 'Alat kasir cepat';
+  static const semuaKategori = 'Semua Kategori';
+  static const muatUlangProduk = 'Muat ulang produk';
+  static const transaksiAktif = 'Transaksi Aktif';
+  static const belumAdaBarang = 'Belum ada barang.';
   static const ketikBarcode = 'Ketik barcode manual';
   static const barcodeTidakDikenal = 'Barcode tidak dikenal.';
   static const bayar = 'Bayar';
@@ -214,8 +237,12 @@ class Strings {
   static const penjualanTersimpan = 'Penjualan tersimpan.';
 
   // Admin — Inbox
-  static const inboxKosong = 'Inbox kosong';
-  static const inboxKosongHint = 'Belum ada yang perlu perhatianmu.';
+  static const inboxKosong = 'Belum ada notifikasi';
+  static const inboxKosongHint =
+      'Pendaftaran, pesanan, dan kabar baru akan tampil di sini.';
+  static const inboxPusatNotifikasi = 'Pusat notifikasi';
+  static const tandaiSemuaDibaca = 'Tandai semua dibaca';
+  static const sudahDibacaSemua = 'Semua sudah dibaca.';
   static const titipan = 'Titipan';
   static const titipanKosong = 'Belum ada titipan';
   static const persetujuanPendaftar = 'Persetujuan pendaftar';
@@ -273,6 +300,37 @@ class Strings {
       '$n catatan · total $totalRp';
 
   // Admin — Menu & modul
+  // Struktur menu mengikuti PWA: KELOLA WARUNG / LACI ALAT / PENGATURAN.
+  static const menuKelolaWarung = 'KELOLA WARUNG';
+  static const menuLaciAlat = 'LACI ALAT';
+  static const menuPengaturanJudul = 'PENGATURAN';
+  static const menuSemuaAlat = 'Semua alat & pengaturan';
+  static const menuProduk = 'Produk';
+  static const descProduk = 'Stok, foto, modal & harga jual';
+  static const descProfilToko = 'Identitas, jam, alamat & telepon';
+  static const descBerandaPelanggan = 'Konten, tampilan & urutan bagian';
+  static const descKoinWarga = 'Nilai, event & batas penukaran';
+  static const descKasirOnline = 'Pesanan berlangsung & selesai';
+  static const descData = 'Pelanggan, persetujuan & Laporan';
+  static const descChat = 'Pelanggan & moderasi Rumpi';
+  static const descKalkulator = 'Hitung cepat';
+  static const menuPemindaiBarcode = 'Pemindai Barcode';
+  static const descPemindaiBarcode = 'Masuk transaksi';
+  static const descCatatanToko = 'Pengingat internal';
+  static const descBelanjaStok = 'Daftar kulakan';
+  static const descAiAdmin = 'Ringkasan & saran';
+  static const descPembukuan = 'Ringkasan kas & jurnal transaksi';
+  static const menuKonfirmasiTransfer = 'Konfirmasi Transfer';
+  static const descKonfirmasiTransfer = 'Verifikasi pembayaran';
+  static const menuPatunganWarga = 'Patungan Warga';
+  static const descPatunganWarga = 'Buat & kelola patungan';
+  static const descStruk58mm = 'Transaksi terakhir';
+  static const descGantiModePelanggan = 'Lihat tampilan pelanggan';
+  static const menuPengaturanGlobal = 'Pengaturan Global';
+  static const descPengaturanGlobal =
+      'Tampilan, notifikasi, developer, tentang & akun';
+  static const patunganSegeraHadir =
+      'Fitur Patungan Warga segera hadir di aplikasi native.';
   static const modulProduk = 'Data Barang';
   static const modulKasirOnline = 'Kasir Online';
   static const modulLaporan = 'Laporan';
@@ -402,7 +460,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.35+49';
+  static const versiApp = 'KasirQuh v3.6.36+50';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';
