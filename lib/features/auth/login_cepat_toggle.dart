@@ -48,6 +48,8 @@ class _LoginCepatToggleState extends ConsumerState<LoginCepatToggle> {
 
   Future<void> _toggle(bool v) async {
     final svc = ref.read(biometricCredentialServiceProvider);
+    // Tangkap messenger di awal untuk hindari info use_build_context_synchronously.
+    final messenger = ScaffoldMessenger.of(context);
     if (v) {
       final password = await mintaKataSandiOptIn(context);
       if (password == null || password.isEmpty || !mounted) return;
@@ -65,12 +67,12 @@ class _LoginCepatToggleState extends ConsumerState<LoginCepatToggle> {
         );
         if (!mounted) return;
         setState(() => _aktif = true);
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text(Strings.sidikJariTersimpan)),
         );
       } catch (_) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Kata sandi salah')),
         );
       }
@@ -78,8 +80,9 @@ class _LoginCepatToggleState extends ConsumerState<LoginCepatToggle> {
       final ya = await konfirmasiNonaktifkanSidikJari(context);
       if (!ya || !mounted) return;
       await svc.delete(widget.accountId);
+      if (!mounted) return;
       setState(() => _aktif = false);
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text(Strings.sidikJariDihapus)),
       );
     }
