@@ -182,41 +182,49 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             data: (s) {
               final omzetValue =
                   s.transaksi == 0 ? null : formatRp(s.masuk);
+              // Layout ala PWA: OMZET besar kiri (span 2 baris),
+              // PESANAN + STOK kecil numpuk kanan.
               return Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: _UniformMetricCard(
-                      label: 'OMZET',
+                    flex: 115,
+                    child: _PwaMetricCard(
+                      label: 'OMZET HARI INI',
                       value: omzetValue ?? 'Belum ada data',
                       sub: s.transaksi == 0
-                          ? 'Belum ada data'
+                          ? 'Transaksi & laba · belum ada data'
                           : '${s.transaksi} transaksi',
                       isPrimary: true,
+                      tall: true,
                       onTap: () =>
                           _open(context, const LedgerPage()),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: _UniformMetricCard(
-                      label: 'PESANAN',
-                      value: waiting == 0 ? '0' : '$waiting',
-                      sub: 'Kasir Online',
-                      onTap: () =>
-                          _open(context, const OnlineOrdersPage()),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _UniformMetricCard(
-                      label: 'STOK',
-                      value: lowStock.isEmpty
-                          ? '0'
-                          : '${lowStock.length}',
-                      sub: 'Produk',
-                      onTap: () =>
-                          _open(context, const ProductsPage()),
+                    flex: 85,
+                    child: Column(
+                      children: [
+                        _PwaMetricCard(
+                          label: 'PESANAN MENUNGGU',
+                          value:
+                              waiting == 0 ? '0' : '$waiting',
+                          sub: 'Buka Kasir Online',
+                          onTap: () => _open(
+                              context, const OnlineOrdersPage()),
+                        ),
+                        const SizedBox(height: 8),
+                        _PwaMetricCard(
+                          label: 'STOK KRITIS',
+                          value: lowStock.isEmpty
+                              ? '0'
+                              : '${lowStock.length}',
+                          sub: 'Buka Produk',
+                          onTap: () => _open(
+                              context, const ProductsPage()),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -397,19 +405,21 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
   }
 }
 
-/// Kartu metrik seragam — 3 kolom sejajar.
-class _UniformMetricCard extends StatelessWidget {
+/// Kartu metrik ala PWA — OMZET besar (tall), lainnya kecil.
+class _PwaMetricCard extends StatelessWidget {
   final String label;
   final String value;
   final String sub;
   final bool isPrimary;
+  final bool tall;
   final VoidCallback onTap;
 
-  const _UniformMetricCard({
+  const _PwaMetricCard({
     required this.label,
     required this.value,
     required this.sub,
     this.isPrimary = false,
+    this.tall = false,
     required this.onTap,
   });
 
@@ -417,51 +427,55 @@ class _UniformMetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = isPrimary ? AppColors.orange : context.permukaanKartu;
     final muted = isPrimary ? Colors.black54 : context.teksRedup;
+    // Kartu tall (OMZET) punya min-height agar span 2 baris.
+    final cardContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: tall ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisAlignment:
+          tall ? MainAxisAlignment.spaceBetween : MainAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+              color: muted, fontSize: 9, fontWeight: FontWeight.w700),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: tall ? 16 : 6),
+          child: Text(
+            value,
+            maxLines: tall ? 3 : 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isPrimary ? Colors.black87 : AppColors.orange,
+              fontSize: isPrimary ? 20 : 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        Text(
+          sub,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: muted, fontSize: 10),
+        ),
+      ],
+    );
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
+        constraints:
+            tall ? const BoxConstraints(minHeight: 170) : null,
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(16),
-          border: isPrimary
-              ? null
-              : Border.all(color: context.garis),
+          border:
+              isPrimary ? null : Border.all(color: context.garis),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  color: muted,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: isPrimary ? Colors.black87 : AppColors.orange,
-                fontSize: value.length > 8 ? 13 : 22,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              sub,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: muted, fontSize: 10),
-            ),
-          ],
-        ),
+        child: cardContent,
       ),
     );
   }
