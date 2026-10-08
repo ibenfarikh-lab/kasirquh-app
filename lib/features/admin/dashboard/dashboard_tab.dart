@@ -183,10 +183,11 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
               final omzetValue =
                   s.transaksi == 0 ? null : formatRp(s.masuk);
               // Layout ala PWA: OMZET besar kiri (span 2 baris),
-              // PESANAN + STOK kecil numpuk kanan.
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              // PESANAN + STOK kecil numpuk kanan (sama tinggi).
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   Expanded(
                     flex: 115,
                     child: _PwaMetricCard(
@@ -206,28 +207,33 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                     flex: 85,
                     child: Column(
                       children: [
-                        _PwaMetricCard(
-                          label: 'PESANAN MENUNGGU',
-                          value:
-                              waiting == 0 ? '0' : '$waiting',
-                          sub: 'Buka Kasir Online',
-                          onTap: () => _open(
-                              context, const OnlineOrdersPage()),
+                        Expanded(
+                          child: _PwaMetricCard(
+                            label: 'PESANAN MENUNGGU',
+                            value:
+                                waiting == 0 ? '0' : '$waiting',
+                            sub: 'Buka Kasir Online',
+                            onTap: () => _open(
+                                context, const OnlineOrdersPage()),
+                          ),
                         ),
                         const SizedBox(height: 8),
-                        _PwaMetricCard(
-                          label: 'STOK KRITIS',
-                          value: lowStock.isEmpty
-                              ? '0'
-                              : '${lowStock.length}',
-                          sub: 'Buka Produk',
-                          onTap: () => _open(
-                              context, const ProductsPage()),
+                        Expanded(
+                          child: _PwaMetricCard(
+                            label: 'STOK KRITIS',
+                            value: lowStock.isEmpty
+                                ? '0'
+                                : '${lowStock.length}',
+                            sub: 'Buka Produk',
+                            onTap: () => _open(
+                                context, const ProductsPage()),
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ],
+                ),
               );
             },
           ),
