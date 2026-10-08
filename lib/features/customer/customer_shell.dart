@@ -16,6 +16,7 @@ import 'chat/chat_tab.dart';
 import 'home/home_tab.dart';
 import 'push_bootstrap.dart';
 import 'session.dart';
+import 'teman_belanja/teman_belanja_sheet.dart';
 
 /// Tab aktif Mode Pelanggan — bisa diubah dari tab lain (mis. Beranda → Produk).
 final customerTabProvider = StateProvider<int>((ref) => 0);
@@ -82,6 +83,22 @@ class CustomerShell extends ConsumerWidget {
           ],
         ],
       ),
+      // Teman Belanja ala PWA: FAB kotak hitam + ikon sparkle,
+      // hanya di tab Beranda.
+      floatingActionButton: index == 0
+          ? FloatingActionButton(
+              tooltip: 'Buka Teman Belanja',
+              backgroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              onPressed: () => showTemanBelanjaSheet(context, ref),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: Colors.white,
+              ),
+            )
+          : null,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: index,
         type: BottomNavigationBarType.fixed,

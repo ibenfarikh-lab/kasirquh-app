@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
@@ -21,6 +22,7 @@ import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../account/coin_history_page.dart';
 import '../cart/cart_provider.dart';
+import '../chat/toko_chat_page.dart';
 import '../patungan/patungan_customer_page.dart';
 import '../catalog/catalog_tab.dart';
 import '../customer_shell.dart';
@@ -391,6 +393,20 @@ class HomeTab extends ConsumerWidget {
               ),
               _serviceCard(
                 context,
+                icon: Icons.wallet_outlined,
+                label: 'Mode anggaran',
+                hint: 'Belanja sesuai uangmu',
+                onTap: () => _layananSegeraHadir(
+                  context,
+                  ref,
+                  uid,
+                  'Mode anggaran',
+                  'Atur batas belanja harianmu. Warung akan mengingatkan '
+                  'saat total keranjang mendekati batas yang kamu tentukan.',
+                ),
+              ),
+              _serviceCard(
+                context,
                 icon: Icons.groups_outlined,
                 label: 'Patungan',
                 hint: 'Beli bareng warga',
@@ -401,10 +417,277 @@ class HomeTab extends ConsumerWidget {
                   ),
                 ),
               ),
+              _serviceCard(
+                context,
+                icon: Icons.local_offer_outlined,
+                label: 'Harga grosir',
+                hint: 'Otomatis per dus',
+                onTap: () => _hargaGrosirSheet(context),
+              ),
+              _serviceCard(
+                context,
+                icon: Icons.calendar_view_week_outlined,
+                label: 'Belanja rutin',
+                hint: 'Paket mingguan',
+                onTap: () => _layananSegeraHadir(
+                  context,
+                  ref,
+                  uid,
+                  'Belanja rutin',
+                  'Daftar belanja mingguan yang otomatis diingatkan warung. '
+                  'Ceritakan kebutuhan rutinmu lewat Chat Toko.',
+                ),
+              ),
+              _serviceCard(
+                context,
+                icon: Icons.celebration_outlined,
+                label: 'Paket hajatan',
+                hint: 'Siap untuk acara',
+                onTap: () => _layananSegeraHadir(
+                  context,
+                  ref,
+                  uid,
+                  'Paket hajatan',
+                  'Paket sembako siap untuk acara hajatan. Konsultasikan '
+                  'kebutuhan acaramu lewat Chat Toko.',
+                ),
+              ),
+              _serviceCard(
+                context,
+                icon: Icons.delivery_dining_outlined,
+                label: 'Diantar',
+                hint: 'Pilih jam kirim',
+                onTap: () => _diantarSheet(context),
+              ),
+              _serviceCard(
+                context,
+                icon: Icons.trending_down_outlined,
+                label: 'Pantau harga',
+                hint: 'Naik-turun harga tercatat',
+                onTap: () => _pantauHargaSheet(context, ref),
+              ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  /// Layanan yang masih disiapkan: info jujur + pintu Chat Toko.
+  Future<void> _layananSegeraHadir(
+    BuildContext context,
+    WidgetRef ref,
+    String? uid,
+    String title,
+    String description,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetCtx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w800, fontSize: 18)),
+            const SizedBox(height: 8),
+            Text(description,
+                style: TextStyle(color: sheetCtx.teksRedup, fontSize: 13)),
+            const SizedBox(height: 12),
+            const AppCard(
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Fitur ini masih disiapkan warung. '
+                      'Tanya dulu lewat Chat Toko ya.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                label: const Text('Chat Toko'),
+                onPressed: () {
+                  Navigator.of(sheetCtx).pop();
+                  _bukaChatToko(context, ref, uid);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _bukaChatToko(BuildContext context, WidgetRef ref, String? uid) {
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Masuk/Daftar dulu untuk chat dengan toko')),
+      );
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => TokoChatPage(uid: uid)),
+    );
+  }
+
+  /// Info harga grosir otomatis ala PWA.
+  Future<void> _hargaGrosirSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetCtx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Harga grosir',
+                style:
+                    TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+            const SizedBox(height: 8),
+            Text(
+              'Harga grosir aktif otomatis saat jumlah mencapai satu dus. '
+              'Lihat label GROSIR di detail produk untuk tahu syarat '
+              'jumlah dan harga per unitnya.',
+              style: TextStyle(color: sheetCtx.teksRedup, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(sheetCtx).pop(),
+                child: const Text('Mengerti'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Info opsi antar ala PWA.
+  Future<void> _diantarSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetCtx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Diantar',
+                style:
+                    TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+            const SizedBox(height: 8),
+            Text(
+              'Belanjaan bisa diantar ke rumah. Pilih jam kirim saat '
+              'checkout — ambil sendiri juga tetap bisa.',
+              style: TextStyle(color: sheetCtx.teksRedup, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(sheetCtx).pop(),
+                child: const Text('Mengerti'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Daftar pantau harga dari SharedPreferences ala PWA.
+  Future<void> _pantauHargaSheet(BuildContext context, WidgetRef ref) async {
+    final prefs = await SharedPreferences.getInstance();
+    final watched = prefs.getStringList('pantau_harga') ?? <String>[];
+    final products = ref.read(productsProvider).valueOrNull ?? const <Product>[];
+    final byId = {for (final p in products) p.id: p};
+    if (!context.mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetCtx) {
+        final items = <Widget>[];
+        for (final entry in watched) {
+          final sep = entry.indexOf(':');
+          if (sep < 0) continue;
+          final id = entry.substring(0, sep);
+          final oldPrice = int.tryParse(entry.substring(sep + 1)) ?? 0;
+          final p = byId[id];
+          if (p == null) continue;
+          final turun = p.price < oldPrice;
+          final naik = p.price > oldPrice;
+          items.add(
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(p.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(
+                'Saat dipantau: ${formatRp(oldPrice)} · '
+                'Sekarang: ${formatRp(p.price)}',
+                style: const TextStyle(fontSize: 12),
+              ),
+              trailing: turun
+                  ? const Icon(Icons.trending_down,
+                      color: AppColors.ok)
+                  : naik
+                      ? const Icon(Icons.trending_up,
+                          color: AppColors.danger)
+                      : const Icon(Icons.remove),
+            ),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Pantau harga',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800, fontSize: 18)),
+              const SizedBox(height: 8),
+              Text(
+                'Naik-turun harga tercatat di sini. Tambahkan produk '
+                'lewat tombol "Pantau harga" di detail produk.',
+                style:
+                    TextStyle(color: sheetCtx.teksRedup, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              if (items.isEmpty)
+                const AppCard(
+                  child: Text(
+                    'Belum ada produk yang dipantau.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: items,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -610,8 +893,6 @@ class HomeTab extends ConsumerWidget {
     noteCtrl.dispose();
   }
 
-
-  /// Layanan yang masih disiapkan: info jujur + pintu Chat Toko.
   // ---------- 6. Stok rumah habis? ----------
   Widget _stokRumahSection(BuildContext context, WidgetRef ref) {
     final stockAsync = ref.watch(homeStockProvider);
