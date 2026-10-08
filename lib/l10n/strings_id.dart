@@ -460,7 +460,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.36+50';
+  static const versiApp = 'KasirQuh v3.6.37+51';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';

@@ -17,6 +17,7 @@ import 'customer_home_sheet.dart';
 import 'customers_page.dart';
 import 'ledger_page.dart';
 import 'online_orders_page.dart';
+import 'patungan_page.dart';
 import 'products_page.dart';
 import 'receipt_page.dart';
 import 'settings_sheet.dart';
@@ -160,8 +161,7 @@ class MenuTab extends ConsumerWidget {
           Strings.menuPatunganWarga,
           Strings.descPatunganWarga,
           Icons.groups_outlined,
-          () => _openSheet(
-              context, const _SegeraHadirSheet()),
+          () => _openPage(context, const PatunganPage()),
         ),
         _Module(
           Strings.modulStruk,
@@ -345,49 +345,6 @@ class _ModuleTile extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Placeholder jujur: Patungan Warga native belum dibangun.
-/// Tap → info, tanpa ubah data apa pun.
-class _SegeraHadirSheet extends StatelessWidget {
-  const _SegeraHadirSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.groups_outlined,
-                    color: AppColors.orange, size: 28),
-                const SizedBox(width: 12),
-                Text(
-                  Strings.menuPatunganWarga,
-                  style: TextStyle(
-                    color: context.teksUtama,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              Strings.patunganSegeraHadir,
-              style: TextStyle(
-                  color: context.teksRedup, fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-          ],
         ),
       ),
     );

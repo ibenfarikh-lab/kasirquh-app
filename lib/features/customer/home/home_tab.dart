@@ -21,6 +21,7 @@ import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../account/coin_history_page.dart';
 import '../cart/cart_provider.dart';
+import '../patungan/patungan_customer_page.dart';
 import '../catalog/catalog_tab.dart';
 import '../customer_shell.dart';
 import '../session.dart';
@@ -387,6 +388,18 @@ class HomeTab extends ConsumerWidget {
                 hint: 'Dicari saat kulakan',
                 featured: true,
                 onTap: () => _titipSheet(context, ref, uid),
+              ),
+              _serviceCard(
+                context,
+                icon: Icons.groups_outlined,
+                label: 'Patungan',
+                hint: 'Beli bareng warga',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        const PatunganCustomerPage(),
+                  ),
+                ),
               ),
             ],
           ),

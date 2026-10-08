@@ -13,6 +13,7 @@ import '../../data/models/customer_note.dart';
 import '../../data/models/journal_entry.dart';
 import '../../data/models/order.dart';
 import '../../data/models/titip_request.dart';
+import '../../data/models/patungan.dart';
 import '../../data/models/product.dart';
 import '../../data/models/stock_note.dart';
 import '../../data/models/store_note.dart';
@@ -143,6 +144,108 @@ class AdminRepository {
         .map((snap) => snap.docs
             .map((d) => TitipRequest.fromDoc(d.id, d.data()))
             .toList());
+  }
+
+  // ============ PATUNGAN WARGA ============
+
+  /// Daftar patungan aktif live dari `patungan` (status aktif/penuh, limit 20).
+  /// Skema SAMA PERSIS dengan PWA. Hemat kuota.
+  Stream<List<Patungan>> watchPatungan({int limit = 20}) async* {
+    final db = _db;
+    if (db == null) {
+      yield const [];
+      return;
+    }
+    yield* db
+        .collection('patungan')
+        .where('status', whereIn: ['aktif', 'penuh'])
+        .limit(limit)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => Patungan.fromDoc(d.id, d.data()))
+            .toList());
+  }
+
+  /// Buat patungan baru (admin). Skema SAMA PERSIS dengan PWA.
+  Future<void> createPatungan({
+    required String title,
+    required String productName,
+    required int pricePerSlot,
+    required int totalSlots,
+    required String deadline,
+    required String note,
+  }) async {
+    final db = _db;
+    if (db == null) throw StateError('Firestore belum siap');
+    await db.collection('patungan').add({
+      'title': title.trim(),
+      'productName': productName.trim(),
+      'pricePerSlot': pricePerSlot.clamp(0, 999999999),
+      'totalSlots': totalSlots.clamp(2, 100),
+      'filledSlots': 0,
+      'participants': [],
+      'deadline': deadline.trim(),
+      'note': note.trim(),
+      'status': 'aktif',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Ikut patungan (pelanggan) — transaksi aman ala PWA.
+  /// Melempar StateError dengan pesan yang bisa ditampilkan ke user.
+  Future<void> joinPatungan({
+    required String patunganId,
+    required String customerId,
+    required String customerName,
+    required int slots,
+  }) async {
+    final db = _db;
+    if (db == null) throw StateError('Firestore belum siap');
+    final ref = db.collection('patungan').doc(patunganId);
+    await db.runTransaction((t) async {
+      final snap = await t.get(ref);
+      if (!snap.exists) throw StateError('Patungan tidak ditemukan');
+      final d = snap.data() ?? {};
+      if ((d['status'] as String?) != 'aktif') {
+        throw StateError('Patungan sudah ${(d['status'] as String?) ?? 'ditutup'}');
+      }
+      final want = slots.clamp(1, 10);
+      final filled = (d['filledSlots'] as num?)?.toInt() ?? 0;
+      final total = (d['totalSlots'] as num?)?.toInt() ?? 0;
+      if (filled + want > total) {
+        throw StateError('Slot tersisa ${total - filled}');
+      }
+      final parts = d['participants'] is List
+          ? List<Map<String, dynamic>>.from(
+              (d['participants'] as List).whereType<Map<String, dynamic>>())
+          : <Map<String, dynamic>>[];
+      if (parts.any((p) => p['customerId'] == customerId)) {
+        throw StateError('Kamu sudah ikut patungan ini');
+      }
+      parts.add({
+        'customerId': customerId,
+        'name': customerName.isEmpty ? 'Warga' : customerName,
+        'slots': want,
+        'joinedAt': DateTime.now().toIso8601String(),
+      });
+      t.update(ref, {
+        'participants': parts,
+        'filledSlots': filled + want,
+        'status': (filled + want >= total) ? 'penuh' : 'aktif',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  /// Ubah status patungan (admin): 'selesai' | 'batal'.
+  Future<void> setPatunganStatus(String id, String status) async {
+    final db = _db;
+    if (db == null) throw StateError('Firestore belum siap');
+    await db.collection('patungan').doc(id).update({
+      'status': status,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   // ============ PRODUK ============
@@ -1253,6 +1356,12 @@ final adminProductsProvider = StreamProvider<List<Product>>((ref) {
 final titipRequestsProvider =
     StreamProvider<List<TitipRequest>>((ref) {
   return ref.watch(adminRepositoryProvider).watchTitipRequests();
+});
+
+/// Daftar patungan aktif — live dari `patungan` (limit 20, hemat kuota).
+/// Skema SAMA PERSIS dengan PWA.
+final patunganListProvider = StreamProvider<List<Patungan>>((ref) {
+  return ref.watch(adminRepositoryProvider).watchPatungan();
 });
 
 final adminOrdersProvider = StreamProvider<List<Order>>((ref) {
