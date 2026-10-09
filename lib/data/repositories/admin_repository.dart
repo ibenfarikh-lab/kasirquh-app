@@ -1311,6 +1311,42 @@ class AdminRepository {
     await db.collection('promos').doc(id).delete();
   }
 
+  // ============ IDE MASAK (resep) — selaras PWA saveRecipe/deleteRecipe ============
+
+  /// Simpan resep Ide Masak Warga (maksimal 5, dicek di UI).
+  /// [items]: list {productId, qty}.
+  Future<String> saveRecipe(Map<String, dynamic> data, {String? id}) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet untuk menyimpan resep.');
+    final nama = (data['nama'] as String? ?? '').trim();
+    if (nama.isEmpty) throw StateError('Isi nama resep dulu.');
+    final items = ((data['items'] as List?) ?? [])
+        .whereType<Map<String, dynamic>>()
+        .where((it) => (it['productId'] as String? ?? '').isNotEmpty)
+        .toList();
+    if (items.isEmpty) throw StateError('Isi bahan resep dulu.');
+    final payload = {
+      'nama': nama,
+      'desc': (data['desc'] as String? ?? '').trim(),
+      'foto': (data['foto'] as String? ?? '').trim(),
+      'items': items,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (id != null && id.isNotEmpty) {
+      await db.collection('recipes').doc(id).update(payload);
+      return id;
+    }
+    payload['createdAt'] = FieldValue.serverTimestamp();
+    final doc = await db.collection('recipes').add(payload);
+    return doc.id;
+  }
+
+  Future<void> deleteRecipe(String id) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet untuk menghapus resep.');
+    await db.collection('recipes').doc(id).delete();
+  }
+
   // ============ KASIR (POS) ============
 
   /// Catat penjualan tunai: jurnal + kurangi stok.

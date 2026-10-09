@@ -4,6 +4,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/remote/firestore_service.dart';
 import '../models/recipe.dart';
 
+/// Konfigurasi visibilitas & urutan satu section Beranda — mirror
+/// `store_settings/main.homeSections.{restock,popular,recipe}` (PWA).
+class HomeSectionConfig {
+  final bool show;
+  final int order;
+
+  const HomeSectionConfig({this.show = true, this.order = 1});
+
+  factory HomeSectionConfig.fromMap(Map<String, dynamic>? m) =>
+      HomeSectionConfig(
+        show: m?['show'] != false,
+        order: (m?['order'] as num?)?.toInt() ?? 1,
+      );
+
+  Map<String, dynamic> toMap() => {'show': show, 'order': order};
+}
+
 /// Info toko — mirror doc `store_settings/main`.
 /// Nilai default jujur bila dokumen belum ada (bukan data siluman).
 class StoreInfo {
@@ -25,6 +42,28 @@ class StoreInfo {
   final String? paketSubtitle;
   // Agregat produk laris (dihitung admin dari pesanan, bukan data siluman).
   final List<String> topProductIds;
+  // --- Pusat Kendali Beranda (mirror PWA homeControlModal) ---
+  // Slide gateway (headline max 64, subheadline max 110).
+  final String gatewayTitle1;
+  final String gatewayCopy1;
+  final String gatewayTitle2;
+  final String gatewayCopy2;
+  final String gatewayTitle3;
+  final String gatewayCopy3;
+  // Promo pilihan.
+  final String? promoTitle;
+  final String? promoProductId;
+  final String? promoCopy;
+  // Promo kilat.
+  final String? flashProductId;
+  final int flashPrice;
+  final String? flashRule;
+  final DateTime? flashEndsAt;
+  // Kabar warung (override; kosong = otomatis).
+  final String? kabarStatus;
+  final String? kabarMood;
+  // Visibilitas & urutan section Beranda (restock/popular/recipe).
+  final Map<String, HomeSectionConfig> homeSections;
 
   const StoreInfo({
     this.storeName = 'Warunge Mimi',
@@ -42,6 +81,25 @@ class StoreInfo {
     this.paketTitle,
     this.paketSubtitle,
     this.topProductIds = const [],
+    this.gatewayTitle1 = 'Hemat belanja, senang di rumah',
+    this.gatewayCopy1 =
+        'Promo pilihan Warunge Mimi untuk kebutuhan harian keluarga.',
+    this.gatewayTitle2 = 'Sembako lengkap, tinggal pilih',
+    this.gatewayCopy2 =
+        'Minyak, gula, mi, dan kebutuhan dapur siap untuk stok rumah.',
+    this.gatewayTitle3 = 'Jajan dan minuman favoritmu',
+    this.gatewayCopy3 =
+        'Camilan renyah dan minuman segar untuk teman santai kapan saja.',
+    this.promoTitle,
+    this.promoProductId,
+    this.promoCopy,
+    this.flashProductId,
+    this.flashPrice = 0,
+    this.flashRule,
+    this.flashEndsAt,
+    this.kabarStatus,
+    this.kabarMood,
+    this.homeSections = const {},
   });
 
   /// Buka/tutup berdasar jam — hanya bila format jam valid.
@@ -82,6 +140,34 @@ class StoreInfo {
                 ?.whereType<String>()
                 .toList() ??
             const [],
+        gatewayTitle1: (m['gatewayTitle1'] as String?) ??
+            'Hemat belanja, senang di rumah',
+        gatewayCopy1: (m['gatewayCopy1'] as String?) ??
+            'Promo pilihan Warunge Mimi untuk kebutuhan harian keluarga.',
+        gatewayTitle2: (m['gatewayTitle2'] as String?) ??
+            'Sembako lengkap, tinggal pilih',
+        gatewayCopy2: (m['gatewayCopy2'] as String?) ??
+            'Minyak, gula, mi, dan kebutuhan dapur siap untuk stok rumah.',
+        gatewayTitle3: (m['gatewayTitle3'] as String?) ??
+            'Jajan dan minuman favoritmu',
+        gatewayCopy3: (m['gatewayCopy3'] as String?) ??
+            'Camilan renyah dan minuman segar untuk teman santai kapan saja.',
+        promoTitle: m['promoTitle'] as String?,
+        promoProductId: m['promoProductId'] as String?,
+        promoCopy: m['promoCopy'] as String?,
+        flashProductId: m['flashProductId'] as String?,
+        flashPrice: (m['flashPrice'] as num?)?.toInt() ?? 0,
+        flashRule: m['flashRule'] as String?,
+        flashEndsAt: (m['flashEndsAt'] as Timestamp?)?.toDate(),
+        kabarStatus: m['kabarStatus'] as String?,
+        kabarMood: m['kabarMood'] as String?,
+        homeSections: ((m['homeSections'] as Map?) ?? {}).map(
+          (k, v) => MapEntry(
+            k.toString(),
+            HomeSectionConfig.fromMap(
+                v is Map<String, dynamic> ? v : null),
+          ),
+        ),
       );
 }
 

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/startup_report.dart';
 import '../../data/remote/auth_service.dart';
+import '../../data/repositories/store_repository.dart';
 import '../../l10n/strings_id.dart';
 import '../auth/pin_screen.dart';
 import '../customer/customer_shell.dart';
@@ -29,26 +30,30 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
   Timer? _timer;
   bool _navigated = false;
 
-  static const _slides = [
-    _Slide(
-      image: 'assets/images/gateway/slide1.webp',
-      kicker: Strings.slide1Kicker,
-      title: Strings.slide1Title,
-      subtitle: Strings.slide1Sub,
-    ),
-    _Slide(
-      image: 'assets/images/gateway/slide2.webp',
-      kicker: Strings.slide2Kicker,
-      title: Strings.slide2Title,
-      subtitle: Strings.slide2Sub,
-    ),
-    _Slide(
-      image: 'assets/images/gateway/slide3.webp',
-      kicker: Strings.slide3Kicker,
-      title: Strings.slide3Title,
-      subtitle: Strings.slide3Sub,
-    ),
-  ];
+  /// Slide gateway — teks dari Pusat Kendali Beranda (store_settings/main),
+  /// selaras PWA. Kicker (label slide) tetap statis seperti PWA.
+  List<_Slide> _buildSlides(StoreInfo? store) {
+    return [
+      _Slide(
+        image: 'assets/images/gateway/slide1.webp',
+        kicker: Strings.slide1Kicker,
+        title: store?.gatewayTitle1 ?? Strings.slide1Title,
+        subtitle: store?.gatewayCopy1 ?? Strings.slide1Sub,
+      ),
+      _Slide(
+        image: 'assets/images/gateway/slide2.webp',
+        kicker: Strings.slide2Kicker,
+        title: store?.gatewayTitle2 ?? Strings.slide2Title,
+        subtitle: store?.gatewayCopy2 ?? Strings.slide2Sub,
+      ),
+      _Slide(
+        image: 'assets/images/gateway/slide3.webp',
+        kicker: Strings.slide3Kicker,
+        title: store?.gatewayTitle3 ?? Strings.slide3Title,
+        subtitle: store?.gatewayCopy3 ?? Strings.slide3Sub,
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -57,7 +62,7 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
   }
 
   void _next() {
-    if (_index < _slides.length - 1) {
+    if (_index < 2) {
       _page.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -95,6 +100,9 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
   Widget build(BuildContext context) {
     // Auth bisa null (mode lokal) → anggap belum login.
     final auth = ref.read(authServiceProvider);
+    // Teks slide dari Pusat Kendali Beranda (live).
+    final store = ref.watch(storeInfoProvider).valueOrNull;
+    final slides = _buildSlides(store);
     return StreamBuilder(
       stream: auth?.authState() ?? Stream<User?>.value(null),
       builder: (context, snap) {
@@ -108,9 +116,9 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
             children: [
               PageView.builder(
                 controller: _page,
-                itemCount: _slides.length,
+                itemCount: slides.length,
                 onPageChanged: (i) => setState(() => _index = i),
-                itemBuilder: (context, i) => _SlideView(slide: _slides[i]),
+                itemBuilder: (context, i) => _SlideView(slide: slides[i]),
               ),
               // Header: logo toko + nama warung + tagline (kiri atas,
               // ala prototipe). Hotspot admin tetap di kanan atas.
@@ -164,7 +172,7 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
-                        _slides.length,
+                        slides.length,
                         (i) => Container(
                           margin: const EdgeInsets.symmetric(horizontal: 4),
                           width: _index == i ? 24 : 8,

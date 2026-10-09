@@ -67,6 +67,38 @@ class HomeTab extends ConsumerWidget {
     final products = productsAsync.valueOrNull ?? const <Product>[];
     final uid = memberUid(session ?? const Session.guest());
 
+    // Section yang bisa diatur via Pusat Kendali Beranda (selaras PWA):
+    // restock = Stok Rumah Habis, recipe = Ide Masak, popular = Sedang Laris.
+    // Default PWA: restock=1, recipe=2, popular=3, semua tampil.
+    Widget sectionOrEmpty(String key, Widget w, int defaultOrder) {
+      final cfg = store.homeSections[key];
+      if (cfg != null && !cfg.show) return const SizedBox.shrink();
+      return w;
+    }
+
+    int sectionOrder(String key, int defaultOrder) {
+      final cfg = store.homeSections[key];
+      return cfg?.order ?? defaultOrder;
+    }
+
+    final orderedSections = [
+      (
+        sectionOrder('restock', 1),
+        sectionOrEmpty(
+            'restock', _stokRumahSection(context, ref), 1),
+      ),
+      (
+        sectionOrder('recipe', 2),
+        sectionOrEmpty(
+            'recipe', _ideMasakSection(context, ref, products, uid), 2),
+      ),
+      (
+        sectionOrder('popular', 3),
+        sectionOrEmpty(
+            'popular', _larisSection(context, ref, store, products), 3),
+      ),
+    ]..sort((a, b) => a.$1.compareTo(b.$1));
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -81,11 +113,9 @@ class HomeTab extends ConsumerWidget {
         _pesananAktifSection(context, ref, uid),
         _promoPilihanSection(context, ref, promos, products),
         _kabarWarungSection(store),
-        _promoKilatSection(context, ref, promos, products),
+        _promoKilatSection(context, ref, products),
         _layananSection(context, ref, uid),
-        _stokRumahSection(context, ref),
-        _ideMasakSection(context, ref, products, uid),
-        _larisSection(context, ref, store, products),
+        for (final s in orderedSections) s.$2,
         const SizedBox(height: 24),
         Center(
           child: Text(
@@ -337,31 +367,33 @@ class HomeTab extends ConsumerWidget {
 
   // ---------- 6. Promo Kilat (flash sale ala PWA) ----------
   // Urutan PWA: setelah Kabar Warung, sebelum Layanan Warga.
-  // Sumber: Promo discountType 'flash' + productId (koleksi promos).
-  // Tanpa promo kilat aktif → disembunyikan (seperti PWA).
-  Widget _promoKilatSection(BuildContext context, WidgetRef ref,
-      List<Promo> promos, List<Product> products) {
-    Promo? flash;
-    for (final p in promos) {
-      if (p.isActive &&
-          p.discountType == 'flash' &&
-          (p.productId ?? '').isNotEmpty) {
-        flash = p;
-        break;
-      }
+  // Sumber: store_settings/main (flashProductId, flashPrice, flashRule,
+  // flashEndsAt) — selaras PWA. Tanpa flash aktif → disembunyikan.
+  Widget _promoKilatSection(
+      BuildContext context, WidgetRef ref, List<Product> products) {
+    final store = ref.watch(storeInfoProvider).valueOrNull;
+    final flashId = store?.flashProductId;
+    if (flashId == null || flashId.isEmpty) {
+      return const SizedBox.shrink();
     }
-    if (flash == null) return const SizedBox.shrink();
     Product? product;
     for (final p in products) {
-      if (p.id == flash.productId) {
+      if (p.id == flashId) {
         product = p;
         break;
       }
     }
     if (product == null) return const SizedBox.shrink();
+    final flashPrice = store!.flashPrice;
+    final hargaPromo = flashPrice > 0 ? flashPrice : product.price;
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: _PromoKilatCard(promo: flash, product: product),
+      child: _PromoKilatCard(
+        product: product,
+        hargaPromo: hargaPromo,
+        rule: store.flashRule,
+        endsAt: store.flashEndsAt,
+      ),
     );
   }
 
@@ -2188,10 +2220,17 @@ class _HomeProductCard extends ConsumerWidget {
 /// Kartu Promo Kilat ala PWA: countdown live + harga coret + tombol Ambil.
 /// Harga promo dikunci saat masuk keranjang (seperti PWA).
 class _PromoKilatCard extends ConsumerStatefulWidget {
-  final Promo promo;
   final Product product;
+  final int hargaPromo;
+  final String? rule;
+  final DateTime? endsAt;
 
-  const _PromoKilatCard({required this.promo, required this.product});
+  const _PromoKilatCard({
+    required this.product,
+    required this.hargaPromo,
+    this.rule,
+    this.endsAt,
+  });
 
   @override
   ConsumerState<_PromoKilatCard> createState() => _PromoKilatCardState();
@@ -2210,7 +2249,7 @@ class _PromoKilatCardState extends ConsumerState<_PromoKilatCard> {
   @override
   void initState() {
     super.initState();
-    _endsAt = widget.promo.endsAt ?? _defaultEnd();
+    _endsAt = widget.endsAt ?? _defaultEnd();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -2219,8 +2258,8 @@ class _PromoKilatCardState extends ConsumerState<_PromoKilatCard> {
   @override
   void didUpdateWidget(covariant _PromoKilatCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.promo.endsAt != oldWidget.promo.endsAt) {
-      _endsAt = widget.promo.endsAt ?? _defaultEnd();
+    if (widget.endsAt != oldWidget.endsAt) {
+      _endsAt = widget.endsAt ?? _defaultEnd();
     }
   }
 
@@ -2241,8 +2280,7 @@ class _PromoKilatCardState extends ConsumerState<_PromoKilatCard> {
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
-    final promo = widget.promo;
-    final hargaPromo = promo.hargaPromo(product.price);
+    final hargaPromo = widget.hargaPromo;
     final adaDiskon = hargaPromo < product.price;
     final habis = product.stock <= 0;
     return Container(
@@ -2305,8 +2343,8 @@ class _PromoKilatCardState extends ConsumerState<_PromoKilatCard> {
                     if (adaDiskon) const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        promo.subtitle?.trim().isNotEmpty == true
-                            ? promo.subtitle!.trim()
+                        widget.rule?.trim().isNotEmpty == true
+                            ? widget.rule!.trim()
                             : 'Selama persediaan masih ada.',
                         style: TextStyle(
                             color: context.teksRedup, fontSize: 11),
@@ -2492,10 +2530,14 @@ class _KabarCarouselState extends State<_KabarCarousel> {
   }
 
   /// Status buka/tutup — PWA default "buka" bila jam tak bisa dihitung.
+  /// Override via Pusat Kendali (kabarStatus) bila diisi.
   bool get _open => widget.store.isOpenNow ?? true;
 
-  String get _statusTitle =>
-      _open ? 'Buka sekarang' : 'Warung sedang tutup';
+  String get _statusTitle {
+    final override = widget.store.kabarStatus?.trim();
+    if (override != null && override.isNotEmpty) return override;
+    return _open ? 'Buka sekarang' : 'Warung sedang tutup';
+  }
 
   String get _statusDetail => _open
       ? 'Tutup ${widget.store.closeHour} · Belum ada pesanan disiapkan'
@@ -2528,6 +2570,14 @@ class _KabarCarouselState extends State<_KabarCarousel> {
       'Mi hangat dan kopi cocok untuk stok malam. '
           'Kalau hujan, pilih diantar.'
     );
+  }
+
+  /// Copy suasana — override via Pusat Kendali (kabarMood) bila diisi.
+  /// PWA: override mengganti copy, judul tetap berdasar jam.
+  String get _moodCopy {
+    final override = widget.store.kabarMood?.trim();
+    if (override != null && override.isNotEmpty) return override;
+    return _mood.$2;
   }
 
   @override
@@ -2604,7 +2654,7 @@ class _KabarCarouselState extends State<_KabarCarousel> {
                         size: 22,
                       ),
                       title: mood.$1,
-                      detail: mood.$2,
+                      detail: _moodCopy,
                     ),
                   ],
                 ),
