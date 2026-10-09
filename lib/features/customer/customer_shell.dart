@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../core/theme/theme_settings.dart';
 import '../../core/widgets/guest_lock_sheet.dart';
 import '../../data/repositories/social_repository.dart';
+import '../../data/repositories/store_repository.dart';
 import '../../l10n/strings_id.dart';
 import '../gateway/hidden_hotspot.dart';
 import 'account/account_tab.dart';
@@ -43,25 +44,115 @@ class CustomerShell extends ConsumerWidget {
     final tema = ref.watch(temaPelangganProvider);
     final sistem =
         MediaQuery.platformBrightnessOf(context);
+    // Header harmonisasi PWA (keputusan user 2026-10-09): background PUTIH,
+    // sapaan waktu + status BUKA/TUTUP + badge keranjang.
+    final store = ref.watch(storeInfoProvider).valueOrNull;
+    final isGuest = session == null || session.isGuest;
+    final jam = DateTime.now().hour;
+    final sapaan = isGuest
+        ? 'Mode tamu'
+        : jam < 11
+            ? 'Selamat pagi'
+            : jam < 15
+                ? 'Selamat siang'
+                : jam < 19
+                    ? 'Selamat sore'
+                    : 'Selamat malam';
+    final buka = store?.isOpenNow;
 
     return Theme(
       data: temaPelangganAktif(tema, sistem),
       child: Scaffold(
         appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
         title: LogoTapGate(
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.storefront, color: AppColors.orange),
-              SizedBox(width: 8),
-              Text(
-                Strings.appName,
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+              const Icon(Icons.storefront, color: AppColors.orange),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      sapaan,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    Text(
+                      (store?.storeName.isNotEmpty ?? false)
+                          ? store!.storeName
+                          : Strings.appName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 20,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
         centerTitle: false,
+        actions: [
+          if (buka != null)
+            Container(
+              margin: const EdgeInsets.only(right: 4),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: buka
+                    ? Colors.green.withValues(alpha: 0.12)
+                    : Colors.grey.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: buka ? Colors.green[700] : Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    buka ? 'BUKA' : 'TUTUP',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: buka ? Colors.green[800] : Colors.grey[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          IconButton(
+            tooltip: Strings.tabKeranjang,
+            onPressed: () =>
+                ref.read(customerTabProvider.notifier).state = 2,
+            icon: Badge(
+              isLabelVisible: cartCount > 0,
+              label: Text('$cartCount'),
+              backgroundColor: AppColors.danger,
+              child: const Icon(Icons.shopping_cart_outlined),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: Stack(
         children: [
