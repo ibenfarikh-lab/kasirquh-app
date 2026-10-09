@@ -31,17 +31,17 @@ import '../catalog/catalog_tab.dart';
 import '../customer_shell.dart';
 import '../session.dart';
 
-/// Tab Beranda — 10 section ala PWA (urutan dikunci):
-/// 1. Paket Tanggal Muda (diatur warung)
+/// Tab Beranda — 9 section ala PWA (urutan dikunci):
+/// 1. Paket Tanggal Muda = SLIDE TERAKHIR carousel promo (keputusan user 2026-10-09)
 /// 2. Koin Warga (kartu saldo)
 /// 3. Belanjaan siap diantar (banner pesanan aktif)
-/// 4. Belanja dapur lebih ringan (promo pilihan toko)
+/// 4. Belanja dapur lebih ringan (promo carousel, slide 1 = Paket Tgl Muda)
 /// 5. Kabar Warung (carousel status warung)
-/// 6. Promo Kilat (flash sale + countdown)
-/// 7. Layanan warga (titip belanja dkk.)
-/// 8. Stok rumah habis? (catatan lokal)
-/// 9. Ide masak warga (empty state jujur bila belum ada)
-/// 10. Sedang laris (agregat pesanan)
+/// 5. Promo Kilat (flash sale + countdown)
+/// 6. Layanan warga (titip belanja dkk.)
+/// 7. Stok rumah habis? (catatan lokal)
+/// 8. Ide masak warga (empty state jujur bila belum ada)
+/// 9. Sedang laris (agregat pesanan)
 /// Section tanpa data → disembunyikan atau empty state jujur.
 /// Tanpa angka/data siluman.
 class HomeTab extends ConsumerWidget {
@@ -108,10 +108,9 @@ class HomeTab extends ConsumerWidget {
             hint: Strings.periksaKoneksi,
             onRetry: () => ref.invalidate(productsProvider),
           ),
-        _paketSection(store),
         _koinCard(context, ref, session),
         _pesananAktifSection(context, ref, uid),
-        _promoPilihanSection(context, ref, promos, products),
+        _promoPilihanSection(context, ref, store, promos, products),
         _kabarWarungSection(store),
         _promoKilatSection(context, ref, products),
         _layananSection(context, ref, uid),
@@ -127,38 +126,53 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  // ---------- 1. Paket Tanggal Muda (diatur warung) ----------
-  Widget _paketSection(StoreInfo store) {
+  // ---------- Paket Tanggal Muda — SLIDE TERAKHIR carousel promo ----------
+  // Keputusan user 2026-10-09: Paket Tanggal Muda BUKAN banner statis terpisah,
+  // melainkan salah satu slide di dalam Promo Carousel (PILIHAN TOKO).
+  // Selaras PWA: posisi terakhir, hijau, badge "PAKET", tap → Belanja Rutin.
+  Widget _paketSlide(
+      BuildContext context, WidgetRef ref, StoreInfo store) {
     if (!store.paketEnabled || (store.paketTitle ?? '').trim().isEmpty) {
       return const SizedBox.shrink();
     }
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+    return SizedBox(
+      width: 260,
       child: AppCard(
         padding: EdgeInsets.zero,
+        onTap: () => _belanjaRutinSheet(context, ref),
         child: Container(
-          width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            // Aturan 2: oranye tunggal solid, bukan gradient.
-            color: AppColors.orange,
+            // Hijau ala PWA (#2e7d4f), solid mengikuti Aturan 2 (tanpa gradient).
+            color: const Color(0xFF2E7D4F),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'DIATUR WARUNG',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'PAKET',
+                  style: TextStyle(
+                    color: Color(0xFF2E7D4F),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 store.paketTitle!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -169,10 +183,29 @@ class HomeTab extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   store.paketSubtitle!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       color: Colors.white, fontSize: 13),
                 ),
               ],
+              const SizedBox(height: 8),
+              const Row(
+                children: [
+                  Text(
+                    'Lihat paket',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.white,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(Icons.arrow_forward, color: Colors.white, size: 16),
+                ],
+              ),
             ],
           ),
         ),
@@ -317,16 +350,19 @@ class HomeTab extends ConsumerWidget {
 
   // ---------- 4. Belanja dapur lebih ringan ----------
   Widget _promoPilihanSection(BuildContext context, WidgetRef ref,
-      List<Promo> promos, List<Product> products) {
+      StoreInfo store, List<Promo> promos, List<Product> products) {
     // Promo yang menunjuk ke produk tertentu = pilihan toko.
     final pilihan = promos.where((p) => p.productId != null).toList();
-    if (pilihan.isEmpty) return const SizedBox.shrink();
     final byId = {for (final p in products) p.id: p};
     final cards = <Widget>[];
     for (final promo in pilihan.take(6)) {
       final prod = byId[promo.productId];
       if (prod == null) continue;
       cards.add(_HomeProductCard(product: prod));
+    }
+    // Slide terakhir = Paket Tanggal Muda (selaras PWA; keputusan user 2026-10-09).
+    if (store.paketEnabled && (store.paketTitle ?? '').trim().isNotEmpty) {
+      cards.add(_paketSlide(context, ref, store));
     }
     if (cards.isEmpty) return const SizedBox.shrink();
     return Padding(
