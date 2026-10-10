@@ -8,6 +8,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/guest_lock_sheet.dart';
+import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/order.dart';
 import '../../../data/repositories/order_repository.dart';
 import '../../../l10n/strings_id.dart';
@@ -27,11 +28,49 @@ class CartTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text(
-          Strings.keranjangJudul,
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+        // Header ala PWA: "Belanjaanmu" / "Keranjang" + tombol Kosongkan.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Belanjaanmu',
+                  style: TextStyle(
+                    color: context.teksRedup,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const Text(
+                  'Keranjang',
+                  style: TextStyle(
+                      fontSize: 25, fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+            if (cart.isNotEmpty)
+              OutlinedButton(
+                onPressed: () => _kosongkan(context, ref),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF6B4A3A)),
+                  foregroundColor: const Color(0xFFFF9D6B),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 8),
+                  textStyle: const TextStyle(
+                      fontSize: 11, fontWeight: FontWeight.w800),
+                ),
+                child: const Text('Kosongkan'),
+              ),
+          ],
         ),
         const SizedBox(height: 12),
+        // Area menu tersimpan ala PWA.
+        _savedMenuArea(context, ref),
         if (cart.isEmpty)
           const EmptyState(
             icon: Icons.shopping_cart_outlined,
@@ -67,26 +106,151 @@ class CartTab extends ConsumerWidget {
     );
   }
 
+  /// Konfirmasi kosongkan keranjang ala PWA.
+  Future<void> _kosongkan(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Kosongkan keranjang?'),
+        content:
+            const Text('Kosongkan semua isi keranjang?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(d).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(d).pop(true),
+            child: const Text('Ya, kosongkan'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      ref.read(cartProvider.notifier).clear();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Keranjang dikosongkan')),
+        );
+      }
+    }
+  }
+
+  /// Area "Menu belanja rumah" ala PWA (tampil bila ada menu tersimpan).
+  Widget _savedMenuArea(BuildContext context, WidgetRef ref) {
+    final saved = ref.watch(savedMenuProvider);
+    if (saved.isEmpty) return const SizedBox.shrink();
+    final count = saved.fold(0.0, (s, e) => s + e.qty);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: AppCard(
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Menu belanja rumah',
+                      style: TextStyle(fontWeight: FontWeight.w800)),
+                  Text(
+                    '${formatStok(count)} barang · tersimpan selama sesi ini',
+                    style: TextStyle(
+                        color: context.teksRedup, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            OutlinedButton(
+              onPressed: () => _isiMenuTersimpan(context, ref),
+              child: const Text('Gunakan'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Baris item ala PWA: foto + nama + "harga × qty unit" + note + stepper.
   Widget _cartLineCard(
       BuildContext context, WidgetRef ref, CartLine line) {
+    final p = line.product;
+    final qtyText = isWeightUnit(p.unit)
+        ? '${formatStok(line.qty)} ${p.unit}'
+        : '${formatStok(line.qty)} ${p.unit}';
     return AppCard(
+      padding: const EdgeInsets.all(10),
       child: Row(
         children: [
+          // Foto 60px.
+          SizedBox(
+            width: 60,
+            height: 60,
+            child: Builder(
+              builder: (_) {
+                final provider = photoImageProvider(p.photoPath);
+                if (provider == null) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color:
+                          AppColors.orange.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.shopping_basket_outlined,
+                      size: 28,
+                      color: AppColors.orange,
+                    ),
+                  );
+                }
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image(
+                    image: provider,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.orange
+                            .withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.shopping_basket_outlined,
+                        size: 28,
+                        color: AppColors.orange,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  line.product.name,
+                  p.name,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  formatRp(line.harga),
-                  style: const TextStyle(
-                      color: AppColors.orange,
-                      fontWeight: FontWeight.w700),
+                  '${formatRp(line.harga)} × $qtyText',
+                  style: TextStyle(
+                      color: context.teksRedup, fontSize: 12),
                 ),
+                if (p.adaGrosir &&
+                    line.qty >= p.wholesaleQty &&
+                    p.wholesaleQty > 0)
+                  Text(
+                    'Harga ${p.wholesaleLabel.isNotEmpty ? p.wholesaleLabel : 'grosir'} aktif',
+                    style: const TextStyle(
+                      color: AppColors.orange,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -95,60 +259,66 @@ class CartTab extends ConsumerWidget {
           IconButton(
             onPressed: () {
               final notifier = ref.read(cartProvider.notifier);
-              if (isWeightUnit(line.product.unit)) {
+              if (isWeightUnit(p.unit)) {
                 final nq =
                     ((line.qty - 0.1) * 10).roundToDouble() / 10;
-                notifier.setQty(
-                    line.product.id, nq < 0.1 ? 0 : nq);
+                notifier.setQty(p.id, nq < 0.1 ? 0 : nq);
               } else {
-                notifier.setQty(line.product.id, line.qty - 1);
+                notifier.setQty(p.id, line.qty - 1);
               }
             },
             icon: const Icon(Icons.remove_circle_outline),
           ),
           Text(
-            isWeightUnit(line.product.unit)
-                ? '${formatStok(line.qty)} ${line.product.unit}'
-                : formatStok(line.qty),
+            formatStok(line.qty),
             style: const TextStyle(
                 fontWeight: FontWeight.w700, fontSize: 16),
           ),
           IconButton(
             onPressed: () {
               final notifier = ref.read(cartProvider.notifier);
-              if (isWeightUnit(line.product.unit)) {
+              if (isWeightUnit(p.unit)) {
                 final nq =
                     ((line.qty + 0.1) * 10).roundToDouble() / 10;
-                notifier.setQty(line.product.id, nq);
+                notifier.setQty(p.id, nq);
               } else {
-                notifier.setQty(line.product.id, line.qty + 1);
+                notifier.setQty(p.id, line.qty + 1);
               }
             },
             icon: const Icon(Icons.add_circle_outline),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            formatRp(line.subtotal),
-            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ],
       ),
     );
   }
 
-  /// Kartu ringkasan ala PWA: Harga barang / Subtotal / Total pesanan.
+  /// Kartu ringkasan ala PWA: Harga barang / Hemat / Subtotal / Total pesanan.
   Widget _summaryCard(
       BuildContext context, WidgetRef ref, List<CartLine> cart) {
-    final total = ref.read(cartProvider.notifier).total;
-    final qty = ref.read(cartProvider.notifier).totalQty;
+    final notifier = ref.read(cartProvider.notifier);
+    final total = notifier.total;
+    final qty = notifier.totalQty;
+    // Hemat: selisih harga normal vs harga aktual (grosir/promo).
+    final gross = cart.fold<int>(
+        0, (s, e) => s + (e.product.price * e.qty).round());
+    final hemat = gross - total;
     return AppCard(
       child: Column(
         children: [
           _summaryRow(
               context, Strings.hargaBarang, formatRp(total)),
+          if (hemat > 0) ...[
+            const SizedBox(height: 6),
+            _summaryRow(
+              context,
+              'Hemat',
+              '−${formatRp(hemat)}',
+              highlight: true,
+            ),
+          ],
           const SizedBox(height: 6),
           _summaryRow(context, Strings.subtotal,
-              '$qty barang • ${formatRp(total)}'),
+              '${formatStok(qty)} barang • ${formatRp(total)}'),
           const Divider(height: 20),
           _summaryRow(
             context,
@@ -163,11 +333,15 @@ class CartTab extends ConsumerWidget {
 
   Widget _summaryRow(
       BuildContext context, String label, String value,
-      {bool bold = false}) {
+      {bool bold = false, bool highlight = false}) {
     final style = TextStyle(
       fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
       fontSize: bold ? 16 : 14,
-      color: bold ? AppColors.orange : context.teksUtama,
+      color: bold
+          ? AppColors.orange
+          : highlight
+              ? const Color(0xFF2E7D32)
+              : context.teksUtama,
     );
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -276,21 +450,30 @@ class _CheckoutSheet extends ConsumerStatefulWidget {
 }
 
 class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
+  String _fulfillment = 'pickup'; // pickup | delivery
   String _payment = 'cod';
+  final _address = TextEditingController();
+  String _slot = 'Secepatnya · 15–30 menit';
+  final _transferRef = TextEditingController();
   final _note = TextEditingController();
   bool _busy = false;
   String? _error;
 
+  static const _ongkir = 5000;
+
   @override
   void dispose() {
+    _address.dispose();
+    _transferRef.dispose();
     _note.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final cart = ref.watch(cartProvider);
-    final total = ref.read(cartProvider.notifier).total;
+    final belanja = ref.read(cartProvider.notifier).total;
+    final ongkir = _fulfillment == 'delivery' ? _ongkir : 0;
+    final grand = belanja + ongkir;
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
@@ -299,69 +482,229 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
           top: 16,
           bottom: MediaQuery.of(context).viewInsets.bottom + 24,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              Strings.pilihAmbilAtauDiantar,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '${cart.length} jenis barang • Total ${formatRp(total)}',
-              style: TextStyle(color: context.teksRedup),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              Strings.metodePembayaran,
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            RadioGroup<String>(
-              groupValue: _payment,
-              onChanged: (v) => setState(() => _payment = v!),
-              child: Column(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header ala PWA: kicker + judul + ×.
+              Row(
                 children: [
-                  RadioListTile<String>(
-                    value: 'cod',
-                    title: const Text(Strings.bayarDiTempat),
-                    contentPadding: EdgeInsets.zero,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Selesaikan pesanan',
+                          style: TextStyle(
+                            color: context.teksRedup,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const Text(
+                          'Ambil atau Diantar',
+                          style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800),
+                        ),
+                      ],
+                    ),
                   ),
-                  RadioListTile<String>(
-                    value: 'transfer',
-                    title: const Text(Strings.transferBank),
-                    contentPadding: EdgeInsets.zero,
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
                   ),
                 ],
               ),
-            ),
-            TextField(
-              controller: _note,
-              decoration: const InputDecoration(
-                labelText: Strings.catatanOpsional,
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              // Metode ambil/diantar.
+              _segmented(
+                context,
+                options: const [
+                  ('pickup', 'Ambil di warung'),
+                  ('delivery', 'Diantar · Rp5.000'),
+                ],
+                value: _fulfillment,
+                onChanged: (v) =>
+                    setState(() => _fulfillment = v),
               ),
-            ),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  _error!,
-                  style: const TextStyle(color: AppColors.danger),
+              const SizedBox(height: 8),
+              // Metode pembayaran.
+              _segmented(
+                context,
+                options: const [
+                  ('cod', 'Tunai / COD'),
+                  ('transfer', 'Transfer'),
+                ],
+                value: _payment,
+                onChanged: (v) => setState(() => _payment = v),
+              ),
+              // Referensi transfer (kondisional).
+              if (_payment == 'transfer') ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _transferRef,
+                  decoration: const InputDecoration(
+                    labelText: 'Referensi / no. transfer',
+                    hintText: 'Contoh: TRF-987654 (dari m-banking)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Tulis nomor referensi setelah transfer · tanpa foto bukti.',
+                  style: TextStyle(
+                      color: context.teksRedup, fontSize: 12),
+                ),
+              ],
+              // Field antar (kondisional).
+              if (_fulfillment == 'delivery') ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _address,
+                  decoration: const InputDecoration(
+                    labelText: 'Patokan rumah',
+                    hintText:
+                        'Contoh: rumah pagar hijau dekat pos',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _slot,
+                  decoration: const InputDecoration(
+                    labelText: 'Waktu antar',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    'Secepatnya · 15–30 menit',
+                    '12.00–13.00',
+                    '16.00–17.00',
+                    '19.00–20.00',
+                  ]
+                      .map((s) => DropdownMenuItem(
+                          value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (v) =>
+                      setState(() => _slot = v ?? _slot),
+                ),
+              ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: _note,
+                decoration: const InputDecoration(
+                  labelText: 'Catatan (opsional)',
+                  border: OutlineInputBorder(),
                 ),
               ),
-            const SizedBox(height: 16),
-            AppButton(
-              label: '${Strings.buatPesanan} • ${formatRp(total)}',
-              onPressed: _busy ? null : () => _submit(context, ref),
-            ),
-          ],
+              // Ringkasan ala PWA.
+              const SizedBox(height: 16),
+              _ringkasRow('Belanja', formatRp(belanja)),
+              const SizedBox(height: 6),
+              _ringkasRow('Ongkir', formatRp(ongkir)),
+              const Divider(height: 20),
+              _ringkasRow(
+                'Total dibayar',
+                formatRp(grand),
+                bold: true,
+              ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    _error!,
+                    style:
+                        const TextStyle(color: AppColors.danger),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              AppButton(
+                label: _fulfillment == 'delivery'
+                    ? 'Pesan & minta diantar'
+                    : 'Pesan & ambil di warung',
+                onPressed: _busy ? null : () => _submit(context, ref),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  /// Segmented control ala PWA.
+  Widget _segmented(
+    BuildContext context, {
+    required List<(String, String)> options,
+    required String value,
+    required ValueChanged<String> onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.teksRedup.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          for (final (v, label) in options)
+            Expanded(
+              child: GestureDetector(
+                onTap: () => onChanged(v),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: v == value
+                        ? Theme.of(context).cardColor
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(9),
+                    border: v == value
+                        ? Border.all(color: AppColors.orange)
+                        : null,
+                  ),
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: v == value
+                          ? AppColors.orange
+                          : context.teksUtama,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ringkasRow(String label, String value, {bool bold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: TextStyle(
+                color: context.teksRedup,
+                fontWeight:
+                    bold ? FontWeight.w700 : FontWeight.w400)),
+        Text(value,
+            style: TextStyle(
+                fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+                fontSize: bold ? 16 : 14,
+                color: bold ? AppColors.orange : null)),
+      ],
+    );
+  }
+
   Future<void> _submit(BuildContext context, WidgetRef ref) async {
+    // Validasi: diantar wajib isi patokan rumah.
+    if (_fulfillment == 'delivery' && _address.text.trim().isEmpty) {
+      setState(() => _error = 'Isi patokan rumah untuk diantar.');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -382,13 +725,26 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                 price: e.harga,
               ))
           .toList();
+      // Info fulfillment digabung ke catatan (skema order belum ada field khusus).
+      final info = <String>[];
+      info.add(_fulfillment == 'delivery' ? 'Diantar' : 'Ambil di warung');
+      if (_fulfillment == 'delivery') {
+        info.add('Patokan: ${_address.text.trim()}');
+        info.add('Waktu: $_slot');
+      }
+      if (_payment == 'transfer' && _transferRef.text.trim().isNotEmpty) {
+        info.add('Ref: ${_transferRef.text.trim()}');
+      }
+      final noteUser = _note.text.trim();
+      final note =
+          ([...info, if (noteUser.isNotEmpty) noteUser]).join(' · ');
       final code =
           await ref.read(orderRepositoryProvider).checkout(
                 customerId: uid,
                 customerName: displayName(session!),
                 items: items,
                 paymentMethod: _payment,
-                note: _note.text.trim().isEmpty ? null : _note.text.trim(),
+                note: note.isEmpty ? null : note,
               );
       ref.read(cartProvider.notifier).clear();
       if (!context.mounted) return;
