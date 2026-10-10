@@ -62,6 +62,9 @@ class StoreInfo {
   // Kabar warung (override; kosong = otomatis).
   final String? kabarStatus;
   final String? kabarMood;
+  // Slot carousel promo (5 slot tetap ala PWA: flash/coin/recipe/budget/hajatan).
+  // Key: `{slot}Title`, `{slot}Copy`, `{slot}Badge` — kosong = pakai default PWA.
+  final Map<String, String> carouselSlots;
   // Visibilitas & urutan section Beranda (restock/popular/recipe).
   final Map<String, HomeSectionConfig> homeSections;
 
@@ -99,8 +102,16 @@ class StoreInfo {
     this.flashEndsAt,
     this.kabarStatus,
     this.kabarMood,
+    this.carouselSlots = const {},
     this.homeSections = const {},
   });
+
+  /// Teks slot carousel promo ala PWA: `{slot}Title/Copy/Badge`.
+  /// Kosong → pakai [def].
+  String slotText(String slot, String field, String def) {
+    final v = (carouselSlots['$slot$field'] ?? '').trim();
+    return v.isEmpty ? def : v;
+  }
 
   /// Buka/tutup berdasar jam — hanya bila format jam valid.
   /// Bila tak bisa dihitung, kembalikan null (jangan tampilkan status palsu).
@@ -161,6 +172,9 @@ class StoreInfo {
         flashEndsAt: (m['flashEndsAt'] as Timestamp?)?.toDate(),
         kabarStatus: m['kabarStatus'] as String?,
         kabarMood: m['kabarMood'] as String?,
+        carouselSlots: ((m['carouselSlots'] as Map?) ?? {}).map(
+          (k, v) => MapEntry(k.toString(), (v ?? '').toString()),
+        ),
         homeSections: ((m['homeSections'] as Map?) ?? {}).map(
           (k, v) => MapEntry(
             k.toString(),

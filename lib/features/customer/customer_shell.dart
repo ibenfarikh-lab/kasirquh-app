@@ -6,9 +6,11 @@ import '../../../core/theme/app_theme.dart';
 import '../../core/theme/theme_settings.dart';
 import '../../core/widgets/guest_lock_sheet.dart';
 import '../../data/repositories/social_repository.dart';
+import '../../data/repositories/store_repository.dart';
 import '../../l10n/strings_id.dart';
 import '../gateway/hidden_hotspot.dart';
 import 'account/account_tab.dart';
+import 'account/coin_history_page.dart';
 import 'cart/cart_provider.dart';
 import 'cart/cart_tab.dart';
 import 'catalog/catalog_tab.dart';
@@ -47,22 +49,25 @@ class CustomerShell extends ConsumerWidget {
     return Theme(
       data: temaPelangganAktif(tema, sistem),
       child: Scaffold(
-        appBar: AppBar(
-        title: LogoTapGate(
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.storefront, color: AppColors.orange),
-              SizedBox(width: 8),
-              Text(
-                Strings.appName,
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+        appBar: index == 0
+            ? _berandaHeader(context, ref, session)
+            : AppBar(
+                title: LogoTapGate(
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.storefront, color: AppColors.orange),
+                      SizedBox(width: 8),
+                      Text(
+                        Strings.appName,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 20),
+                      ),
+                    ],
+                  ),
+                ),
+                centerTitle: false,
               ),
-            ],
-          ),
-        ),
-        centerTitle: false,
-      ),
       body: Stack(
         children: [
           IndexedStack(
@@ -154,6 +159,151 @@ class CustomerShell extends ConsumerWidget {
         ],
       ),
       ),
+    );
+  }
+
+  /// Header Beranda ala PWA (2026-10-10): gradient oranye, sapaan waktu,
+  /// badge BUKA/TUTUP, chip Koin Warga. Tanpa ikon keranjang (selaras PWA).
+  PreferredSizeWidget _berandaHeader(
+      BuildContext context, WidgetRef ref, Session? session) {
+    final store = ref.watch(storeInfoProvider).valueOrNull;
+    final isGuest = session == null || session.isGuest;
+    final jam = DateTime.now().hour;
+    final sapaan = isGuest
+        ? 'Mode tamu · harga & stok terbuka'
+        : jam < 11
+            ? 'Selamat pagi'
+            : jam < 15
+                ? 'Selamat siang'
+                : jam < 19
+                    ? 'Selamat sore'
+                    : 'Selamat malam';
+    final buka = store?.isOpenNow;
+    final koin = (session != null && !session.isGuest) ? session.coins : 0;
+
+    void bukaKoin() {
+      if (session == null || session.isGuest) {
+        requireLogin(context, ref, () async {});
+        return;
+      }
+      final uid = memberUid(session);
+      if (uid == null) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => CoinHistoryPage(uid: uid)),
+      );
+    }
+
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFF9B3E), Color(0xFFF49A24)],
+          ),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
+        ),
+      ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
+      ),
+      title: LogoTapGate(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.storefront, color: Colors.white, size: 30),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    sapaan,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.85),
+                    ),
+                  ),
+                  Text(
+                    (store != null && store.storeName.isNotEmpty)
+                        ? store.storeName
+                        : 'Warunge Mimi',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 22,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      centerTitle: false,
+      actions: [
+        if (buka != null)
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              buka ? '● BUKA' : '● TUTUP',
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: InkWell(
+            onTap: bukaKoin,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.monetization_on,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$koin',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

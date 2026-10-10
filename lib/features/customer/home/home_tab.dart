@@ -31,21 +31,25 @@ import '../catalog/catalog_tab.dart';
 import '../customer_shell.dart';
 import '../session.dart';
 
-/// Tab Beranda — 9 section ala PWA (urutan dikunci):
-/// 1. Paket Tanggal Muda = SLIDE TERAKHIR carousel promo (keputusan user 2026-10-09)
-/// 2. Koin Warga (kartu saldo)
-/// 3. Belanjaan siap diantar (banner pesanan aktif)
-/// 4. Belanja dapur lebih ringan (promo carousel, slide 1 = Paket Tgl Muda)
-/// 5. Kabar Warung (carousel status warung)
+/// Tab Beranda — plek-plek PWA live (2026-10-10), urutan dikunci:
+/// 0. Teks berjalan (running-info, di bawah header)
+/// 1. Carousel promo 5 slot tetap (KILAT/KOIN/RESEP/HEMAT/PAKET)
+/// 2. Ide masak warga (+ tombol Buat Ide Masakku)
+/// 3. Kabar Warung (carousel status warung)
+/// 4. Belanjaan siap diantar (banner pesanan aktif, hidden bila kosong)
 /// 5. Promo Kilat (flash sale + countdown)
-/// 6. Layanan warga (titip belanja dkk.)
-/// 7. Stok rumah habis? (catatan lokal)
-/// 8. Ide masak warga (empty state jujur bila belum ada)
-/// 9. Sedang laris (agregat pesanan)
+/// 6. Layanan warga (grid 3 kolom, 7 kartu)
+/// 7. Sedang laris (agregat pesanan)
+/// 8. Stok rumah habis? (catatan lokal)
+/// Header: gradient oranye + sapaan + badge BUKA/TUTUP + chip koin (di shell).
 /// Section tanpa data → disembunyikan atau empty state jujur.
 /// Tanpa angka/data siluman.
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
+
+  /// Kunci scroll target carousel promo (ala PWA: scroll-flash/scroll-recipe).
+  static final _flashKey = GlobalKey();
+  static final _recipeKey = GlobalKey();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,12 +60,6 @@ class HomeTab extends ConsumerWidget {
     }
     final store = storeAsync.valueOrNull ?? const StoreInfo();
     final session = ref.watch(sessionProvider).valueOrNull;
-    final promosAsync = ref.watch(promosProvider);
-    if (promosAsync.hasError) {
-      // ignore: avoid_print
-      print('[home_tab] Gagal muat promos: ${promosAsync.error}');
-    }
-    final promos = promosAsync.valueOrNull ?? const <Promo>[];
     // Anti-gagal-diam-diam: error produk ditampilkan eksplisit (bukan kosong).
     final productsAsync = ref.watch(productsProvider);
     final products = productsAsync.valueOrNull ?? const <Product>[];
@@ -81,21 +79,25 @@ class HomeTab extends ConsumerWidget {
       return cfg?.order ?? defaultOrder;
     }
 
+    // Default urutan PWA live: recipe=1, popular=2, restock=3.
     final orderedSections = [
       (
-        sectionOrder('restock', 1),
+        sectionOrder('restock', 3),
         sectionOrEmpty(
-            'restock', _stokRumahSection(context, ref), 1),
+            'restock', _stokRumahSection(context, ref), 3),
+        'restock',
       ),
       (
-        sectionOrder('recipe', 2),
+        sectionOrder('recipe', 1),
         sectionOrEmpty(
-            'recipe', _ideMasakSection(context, ref, products, uid), 2),
+            'recipe', _ideMasakSection(context, ref, products, uid), 1),
+        'recipe',
       ),
       (
-        sectionOrder('popular', 3),
+        sectionOrder('popular', 2),
         sectionOrEmpty(
-            'popular', _larisSection(context, ref, store, products), 3),
+            'popular', _larisSection(context, ref, store, products), 2),
+        'popular',
       ),
     ]..sort((a, b) => a.$1.compareTo(b.$1));
 
@@ -108,13 +110,17 @@ class HomeTab extends ConsumerWidget {
             hint: Strings.periksaKoneksi,
             onRetry: () => ref.invalidate(productsProvider),
           ),
-        _koinCard(context, ref, session),
-        _pesananAktifSection(context, ref, uid),
-        _promoPilihanSection(context, ref, store, promos, products),
+        // Teks berjalan ala PWA (di bawah header).
+        _runningBar(store),
+        // Urutan PWA live (2026-10-10): carousel → Ide Masak → Kabar →
+        // pesanan aktif → Promo Kilat → Layanan → Sedang Laris → Stok Habis.
+        _promoCarousel(context, ref, store),
+        for (final s in orderedSections.where((e) => e.$3 == 'recipe')) s.$2,
         _kabarWarungSection(store),
+        _pesananAktifSection(context, ref, uid),
         _promoKilatSection(context, ref, products),
         _layananSection(context, ref, uid),
-        for (final s in orderedSections) s.$2,
+        for (final s in orderedSections.where((e) => e.$3 != 'recipe')) s.$2,
         const SizedBox(height: 24),
         Center(
           child: Text(
@@ -126,154 +132,36 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  // ---------- Paket Tanggal Muda — SLIDE TERAKHIR carousel promo ----------
-  // Keputusan user 2026-10-09: Paket Tanggal Muda BUKAN banner statis terpisah,
-  // melainkan salah satu slide di dalam Promo Carousel (PILIHAN TOKO).
-  // Selaras PWA: posisi terakhir, hijau, badge "PAKET", tap → Belanja Rutin.
-  Widget _paketSlide(
-      BuildContext context, WidgetRef ref, StoreInfo store) {
-    if (!store.paketEnabled || (store.paketTitle ?? '').trim().isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return SizedBox(
-      width: 260,
-      child: AppCard(
-        padding: EdgeInsets.zero,
-        onTap: () => _belanjaRutinSheet(context, ref),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            // Hijau ala PWA (#2e7d4f), solid mengikuti Aturan 2 (tanpa gradient).
-            color: const Color(0xFF2E7D4F),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'PAKET',
-                  style: TextStyle(
-                    color: Color(0xFF2E7D4F),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                store.paketTitle!,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              if ((store.paketSubtitle ?? '').isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  store.paketSubtitle!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      color: Colors.white, fontSize: 13),
-                ),
-              ],
-              const SizedBox(height: 8),
-              const Row(
-                children: [
-                  Text(
-                    'Lihat paket',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      decoration: TextDecoration.underline,
-                      decorationColor: Colors.white,
-                    ),
-                  ),
-                  SizedBox(width: 4),
-                  Icon(Icons.arrow_forward, color: Colors.white, size: 16),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ---------- 2. Kartu Koin Warga ----------
-  Widget _koinCard(
-      BuildContext context, WidgetRef ref, Session? session) {
-    final member = (session != null && !session.isGuest) ? session : null;
+  // ---------- Teks berjalan (running-info ala PWA) ----------
+  Widget _runningBar(StoreInfo store) {
+    final teks = (store.runningText ?? '').trim();
+    if (teks.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: AppCard(
-        onTap: () {
-          if (member == null) {
-            requireLogin(context, ref, () async {});
-            return;
-          }
-          final uid = memberUid(member);
-          if (uid == null) return;
-          Navigator.of(context).push(
-            MaterialPageRoute(
-                builder: (_) => CoinHistoryPage(uid: uid)),
-          );
-        },
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF49A24).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(14),
+        ),
         child: Row(
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.orange.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.monetization_on_outlined,
-                color: AppColors.orange,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 12),
+            const Icon(Icons.volume_up_outlined,
+                size: 20, color: Color(0xFF8A5A1A)),
+            const SizedBox(width: 8),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Koin Warga',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w800, fontSize: 16),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    member == null
-                        ? 'Masuk untuk kumpulkan koin.'
-                        : '${member.coins} koin · tukarkan saat checkout',
-                    style: TextStyle(
-                        color: context.teksRedup, fontSize: 13),
-                  ),
-                ],
+              child: Text(
+                teks,
+                style: const TextStyle(
+                    fontSize: 12, color: Color(0xFF8A5A1A)),
               ),
             ),
-            Icon(Icons.chevron_right, color: context.teksRedup),
           ],
         ),
       ),
     );
   }
+
 
   // ---------- 3. Belanjaan siap diantar ----------
   Widget _pesananAktifSection(
@@ -348,46 +236,99 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  // ---------- 4. Belanja dapur lebih ringan ----------
-  Widget _promoPilihanSection(BuildContext context, WidgetRef ref,
-      StoreInfo store, List<Promo> promos, List<Product> products) {
-    // Promo yang menunjuk ke produk tertentu = pilihan toko.
-    final pilihan = promos.where((p) => p.productId != null).toList();
-    final byId = {for (final p in products) p.id: p};
-    final cards = <Widget>[];
-    for (final promo in pilihan.take(6)) {
-      final prod = byId[promo.productId];
-      if (prod == null) continue;
-      cards.add(_HomeProductCard(product: prod));
-    }
-    // Slide terakhir = Paket Tanggal Muda (selaras PWA; keputusan user 2026-10-09).
-    if (store.paketEnabled && (store.paketTitle ?? '').trim().isNotEmpty) {
-      cards.add(_paketSlide(context, ref, store));
-    }
-    if (cards.isEmpty) return const SizedBox.shrink();
+  // ---------- Carousel promo 5 slot tetap (ala PWA live 2026-10-10) ----------
+  // Slot: flash/coin/recipe/budget/hajatan — teks dari store.carouselSlots,
+  // kosong = default PWA. Auto-rotate + dots + swipe (PageView).
+  Widget _promoCarousel(
+      BuildContext context, WidgetRef ref, StoreInfo store) {
+    final slots = _carouselSlots(store);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _SectionTitle(
-            kicker: 'PILIHAN TOKO',
-            title: 'Belanja dapur lebih ringan',
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 210,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: cards.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(width: 12),
-              itemBuilder: (_, i) => cards[i],
-            ),
-          ),
-        ],
+      child: _PromoCarouselView(
+        slots: slots,
+        onAction: (action) =>
+            _jalankanAksiCarousel(context, ref, action),
       ),
     );
+  }
+
+  List<_CarouselSlot> _carouselSlots(StoreInfo store) => [
+        _CarouselSlot(
+          key: 'flash',
+          badge: store.slotText('flash', 'Badge', 'KILAT'),
+          title: store.slotText('flash', 'Title', 'Promo Kilat'),
+          copy: store.slotText('flash', 'Copy',
+              'Diskon spesial tiap hari, stok terbatas!'),
+          action: 'scroll-flash',
+        ),
+        _CarouselSlot(
+          key: 'coin',
+          badge: store.slotText('coin', 'Badge', 'KOIN'),
+          title: store.slotText('coin', 'Title', 'Koin Warga'),
+          copy: store.slotText('coin', 'Copy',
+              'Kumpulkan koin tiap belanja, tukarkan dengan potongan harga!'),
+          action: 'coinModal',
+        ),
+        _CarouselSlot(
+          key: 'recipe',
+          badge: store.slotText('recipe', 'Badge', 'RESEP'),
+          title: store.slotText('recipe', 'Title', 'Ide Masak Warga'),
+          copy: store.slotText('recipe', 'Copy',
+              'Inspirasi masak dari warga, langsung masukkan bahan ke keranjang!'),
+          action: 'scroll-recipe',
+        ),
+        _CarouselSlot(
+          key: 'budget',
+          badge: store.slotText('budget', 'Badge', 'HEMAT'),
+          title: store.slotText('budget', 'Title', 'Mode Anggaran'),
+          copy: store.slotText('budget', 'Copy',
+              'Belanja hemat sesuai budget harianmu!'),
+          action: 'budgetModal',
+        ),
+        _CarouselSlot(
+          key: 'hajatan',
+          badge: store.slotText('hajatan', 'Badge', 'PAKET'),
+          title: store.slotText('hajatan', 'Title', 'Paket Hajatan'),
+          copy: store.slotText('hajatan', 'Copy',
+              'Paket lengkap untuk acara dan hajatan!'),
+          action: 'hajatanModal',
+        ),
+      ];
+
+  /// Aksi tombol "Lihat →" tiap slide carousel (selaras PWA).
+  void _jalankanAksiCarousel(
+      BuildContext context, WidgetRef ref, String action) {
+    switch (action) {
+      case 'scroll-flash':
+        _scrollKe(_flashKey);
+        break;
+      case 'scroll-recipe':
+        _scrollKe(_recipeKey);
+        break;
+      case 'coinModal':
+        final session = ref.read(sessionProvider).valueOrNull;
+        if (session == null || session.isGuest) {
+          requireLogin(context, ref, () async {});
+          return;
+        }
+        final uid = memberUid(session);
+        if (uid == null) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => CoinHistoryPage(uid: uid)),
+        );
+        break;
+      case 'budgetModal':
+        _modeAnggaranSheet(context, ref);
+        break;
+      case 'hajatanModal':
+        _paketHajatanSheet(context, ref);
+        break;
+    }
+  }
+
+  void _scrollKe(GlobalKey key) {
+    final ctx = key.currentContext;
+    if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 500));
   }
 
   // ---------- Kabar Warung (carousel ala PWA) ----------
@@ -423,6 +364,7 @@ class HomeTab extends ConsumerWidget {
     final flashPrice = store!.flashPrice;
     final hargaPromo = flashPrice > 0 ? flashPrice : product.price;
     return Padding(
+      key: _flashKey,
       padding: const EdgeInsets.only(bottom: 16),
       child: _PromoKilatCard(
         product: product,
@@ -433,110 +375,85 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  // ---------- 5. Layanan warga ----------
+  // ---------- Layanan warga (grid 3 kolom ala PWA live 2026-10-10) ----------
+  // 7 kartu: Titip belanja (featured) · Mode anggaran · Patungan ·
+  // Harga grosir · Belanja rutin · Paket hajatan · Pantau harga.
+  // "Diantar" sudah dihapus di PWA live.
   Widget _layananSection(
       BuildContext context, WidgetRef ref, String? uid) {
+    final cards = [
+      _serviceCard(
+        context,
+        icon: Icons.inventory_2_outlined,
+        label: 'Titip belanja',
+        hint: 'Dicari saat kulakan',
+        featured: true,
+        onTap: () => _titipSheet(context, ref, uid),
+      ),
+      _serviceCard(
+        context,
+        icon: Icons.wallet_outlined,
+        label: 'Mode anggaran',
+        hint: 'Belanja sesuai uangmu',
+        onTap: () => _modeAnggaranSheet(context, ref),
+      ),
+      _serviceCard(
+        context,
+        icon: Icons.groups_outlined,
+        label: 'Patungan',
+        hint: 'Grosir bareng warga',
+        onTap: () => _patunganSheet(context, ref, uid),
+      ),
+      _serviceCard(
+        context,
+        icon: Icons.local_offer_outlined,
+        label: 'Harga grosir',
+        hint: 'Otomatis per dus',
+        onTap: () => _hargaGrosirSheet(context, ref),
+      ),
+      _serviceCard(
+        context,
+        icon: Icons.calendar_view_week_outlined,
+        label: 'Belanja rutin',
+        hint: 'Paket mingguan',
+        onTap: () => _belanjaRutinSheet(context, ref),
+      ),
+      _serviceCard(
+        context,
+        icon: Icons.celebration_outlined,
+        label: 'Paket hajatan',
+        hint: 'Siap untuk acara',
+        onTap: () => _paketHajatanSheet(context, ref),
+      ),
+      _serviceCard(
+        context,
+        icon: Icons.trending_down_outlined,
+        label: 'Pantau harga',
+        hint: 'Naik-turun harga tercatat',
+        onTap: () => _pantauHargaSheet(context, ref),
+      ),
+    ];
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SectionTitle(
-            kicker: 'FITUR BELANJA KHAS WARUNG',
+            kicker: 'Cara belanja baru',
             title: 'Layanan warga',
           ),
           const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _serviceCardWrap(
-                  _serviceCard(
-                    context,
-                    icon: Icons.inventory_2_outlined,
-                    label: 'Titip belanja',
-                    hint: 'Dicari saat kulakan',
-                    featured: true,
-                    onTap: () => _titipSheet(context, ref, uid),
-                  ),
-                ),
-                _serviceCardWrap(
-                  _serviceCard(
-                    context,
-                    icon: Icons.wallet_outlined,
-                    label: 'Mode anggaran',
-                    hint: 'Belanja sesuai uangmu',
-                    onTap: () => _modeAnggaranSheet(context, ref),
-                  ),
-                ),
-                _serviceCardWrap(
-                  _serviceCard(
-                    context,
-                    icon: Icons.groups_outlined,
-                    label: 'Patungan',
-                    hint: 'Beli bareng warga',
-                    onTap: () => _patunganSheet(context, ref, uid),
-                  ),
-                ),
-                _serviceCardWrap(
-                  _serviceCard(
-                    context,
-                    icon: Icons.local_offer_outlined,
-                    label: 'Harga grosir',
-                    hint: 'Otomatis per dus',
-                    onTap: () => _hargaGrosirSheet(context, ref),
-                  ),
-                ),
-                _serviceCardWrap(
-                  _serviceCard(
-                    context,
-                    icon: Icons.calendar_view_week_outlined,
-                    label: 'Belanja rutin',
-                    hint: 'Paket mingguan',
-                    onTap: () => _belanjaRutinSheet(context, ref),
-                  ),
-                ),
-                _serviceCardWrap(
-                  _serviceCard(
-                    context,
-                    icon: Icons.celebration_outlined,
-                    label: 'Paket hajatan',
-                    hint: 'Siap untuk acara',
-                    onTap: () => _paketHajatanSheet(context, ref),
-                  ),
-                ),
-                _serviceCardWrap(
-                  _serviceCard(
-                    context,
-                    icon: Icons.delivery_dining_outlined,
-                    label: 'Diantar',
-                    hint: 'Pilih jam kirim',
-                    onTap: () => _diantarSheet(context, ref),
-                  ),
-                ),
-                _serviceCardWrap(
-                  _serviceCard(
-                    context,
-                    icon: Icons.trending_down_outlined,
-                    label: 'Pantau harga',
-                    hint: 'Naik-turun harga tercatat',
-                    onTap: () => _pantauHargaSheet(context, ref),
-                  ),
-                  last: true,
-                ),
-              ],
-            ),
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 0.92,
+            children: cards,
           ),
         ],
       ),
-    );
-  }
-
-  /// Bungkus kartu layanan untuk baris horizontal scrollable ala PWA.
-  Widget _serviceCardWrap(Widget card, {bool last = false}) {
-    return Padding(
-      padding: EdgeInsets.only(right: last ? 0 : 8),
-      child: SizedBox(width: 112, child: card),
     );
   }
 
@@ -627,147 +544,6 @@ class HomeTab extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  /// Opsi ambil/diantar ala PWA dengan ringkasan + checkout.
-  Future<void> _diantarSheet(
-      BuildContext context, WidgetRef ref) async {
-    final cart = ref.read(cartProvider);
-    const ongkir = 5000;
-    var caraTerima = 'Ambil di warung';
-    var caraBayar = 'Tunai / COD';
-    if (!context.mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetCtx) => StatefulBuilder(
-        builder: (sheetCtx2, setSheet) {
-          final subtotal =
-              cart.fold(0, (s, e) => s + e.subtotal);
-          final isDiantar = caraTerima != 'Ambil di warung';
-          final total = subtotal + (isDiantar ? ongkir : 0);
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _sheetHeader(
-                    sheetCtx2, 'Selesaikan pesanan', 'Ambil atau Diantar'),
-                const SizedBox(height: 8),
-                if (cart.isEmpty) ...[
-                  Text(
-                    'Keranjangmu masih kosong. Tambahkan barang dulu dari '
-                    'katalog sebelum memilih cara terima.',
-                    style: TextStyle(
-                        color: sheetCtx2.teksRedup, fontSize: 13),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () {
-                        Navigator.of(sheetCtx2).pop();
-                        ref.read(customerTabProvider.notifier).state = 1;
-                      },
-                      child: const Text('Lihat katalog'),
-                    ),
-                  ),
-                ] else ...[
-                  const Text('Cara terima',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 13)),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      ChoiceChip(
-                        label: const Text('Ambil di warung'),
-                        selected: !isDiantar,
-                        onSelected: (_) => setSheet(
-                            () => caraTerima = 'Ambil di warung'),
-                      ),
-                      ChoiceChip(
-                        label:
-                            Text('Diantar · ${formatRp(ongkir)}'),
-                        selected: isDiantar,
-                        onSelected: (_) => setSheet(
-                            () => caraTerima = 'Diantar'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('Cara bayar',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 13)),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      ChoiceChip(
-                        label: const Text('Tunai / COD'),
-                        selected: caraBayar == 'Tunai / COD',
-                        onSelected: (_) => setSheet(
-                            () => caraBayar = 'Tunai / COD'),
-                      ),
-                      ChoiceChip(
-                        label: const Text('Transfer'),
-                        selected: caraBayar == 'Transfer',
-                        onSelected: (_) =>
-                            setSheet(() => caraBayar = 'Transfer'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  AppCard(
-                    child: Column(
-                      children: [
-                        _ringkasRow('Belanja', formatRp(subtotal)),
-                        _ringkasRow('Ongkir',
-                            isDiantar ? formatRp(ongkir) : 'Gratis'),
-                        const Divider(height: 16),
-                        _ringkasRow('Total dibayar', formatRp(total),
-                            bold: true),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () async {
-                        Navigator.of(sheetCtx2).pop();
-                        final uid = ref.read(sessionProvider).valueOrNull !=
-                                null
-                            ? memberUid(
-                                ref.read(sessionProvider).valueOrNull!)
-                            : null;
-                        if (uid == null) {
-                          await requireLogin(context, ref, () async {});
-                          return;
-                        }
-                        ref.read(customerTabProvider.notifier).state = 2;
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    'Lanjut ke keranjang — $caraTerima · $caraBayar')),
-                          );
-                        }
-                      },
-                      child: Text(isDiantar
-                          ? 'Pesan & minta diantar'
-                          : 'Pesan & ambil di warung'),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          );
-        },
       ),
     );
   }
@@ -1387,26 +1163,6 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  Widget _ringkasRow(String label, String value, {bool bold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Expanded(
-              child: Text(label,
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight:
-                          bold ? FontWeight.w700 : FontWeight.w400))),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-                  color: bold ? AppColors.orange : null)),
-        ],
-      ),
-    );
-  }
 
   /// Daftar pantau harga dari SharedPreferences ala PWA.
   Future<void> _pantauHargaSheet(BuildContext context, WidgetRef ref) async {
@@ -1506,38 +1262,59 @@ class HomeTab extends ConsumerWidget {
     required VoidCallback onTap,
     bool featured = false,
   }) {
+    // Featured ala PWA: background gelap #2f241f, teks putih.
+    Widget isi = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          color: featured
+              ? AppColors.orange
+              : (Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.warmText
+                  : AppColors.ink),
+          size: 26,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
+            color: featured ? Colors.white : null,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          hint,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: featured ? Colors.white70 : context.teksRedup,
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+    if (featured) {
+      return InkWell(
+        borderRadius: BorderRadius.circular(15),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2F241F),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: const Color(0xFF49362D)),
+          ),
+          child: isi,
+        ),
+      );
+    }
     return AppCard(
       onTap: onTap,
       padding: const EdgeInsets.all(10),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            // warmText (putih) hilang di kartu terang — ngikutin tema.
-            color: featured
-                ? AppColors.orange
-                : (Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.warmText
-                    : AppColors.ink),
-            size: 26,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                fontWeight: FontWeight.w700, fontSize: 12),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            hint,
-            textAlign: TextAlign.center,
-            style:
-                TextStyle(color: context.teksRedup, fontSize: 10),
-          ),
-        ],
-      ),
+      child: isi,
     );
   }
 
@@ -1709,7 +1486,7 @@ class HomeTab extends ConsumerWidget {
             children: [
               const Expanded(
                 child: _SectionTitle(
-                  kicker: 'DARI RIWAYAT BELANJAMU',
+                  kicker: 'Dari riwayat belanjamu',
                   title: 'Stok rumah habis?',
                 ),
               ),
@@ -1891,12 +1668,13 @@ class HomeTab extends ConsumerWidget {
     final nama = {for (final p in products) p.id: p.name};
 
     return Padding(
+      key: _recipeKey,
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionTitle(
-            kicker: 'DARI DAPUR TETANGGA',
+            kicker: 'Dari dapur tetangga',
             title: recipes.isEmpty
                 ? 'Ide masak warga'
                 : 'Ide masak warga · ${recipes.length} ide',
@@ -1932,6 +1710,28 @@ class HomeTab extends ConsumerWidget {
                 ),
               ),
             ),
+          // Tombol "+ Buat Ide Masakku" ala PWA.
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => _buatIdeMasakSheet(context, ref),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(42),
+                side: const BorderSide(
+                    color: Color(0xFF9C765E), style: BorderStyle.solid),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                foregroundColor: const Color(0xFFFFC171),
+                textStyle: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              child: const Text('+ Buat Ide Masakku'),
+            ),
+          ),
         ],
       ),
     );
@@ -1954,6 +1754,143 @@ class HomeTab extends ConsumerWidget {
               ? 'Semua bahan masuk keranjang'
               : 'Bahan tidak tersedia')),
     );
+  }
+
+  /// "Buat Ide Masakku" ala PWA: form resep sederhana (nama + bahan).
+  Future<void> _buatIdeMasakSheet(
+      BuildContext context, WidgetRef ref) async {
+    final products =
+        ref.read(productsProvider).valueOrNull ?? const <Product>[];
+    if (products.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Belum ada produk untuk bahan')),
+      );
+      return;
+    }
+    final namaCtrl = TextEditingController();
+    final bahan = <Map<String, dynamic>>[
+      {'productId': products.first.id, 'qty': 1}
+    ];
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setSt) => Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 8,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Buat Ide Masakku',
+                  style:
+                      TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: namaCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama masakan',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text('Bahan',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+                for (var i = 0; i < bahan.length; i++)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButton<String>(
+                          value: bahan[i]['productId'] as String,
+                          isExpanded: true,
+                          items: [
+                            for (final p in products)
+                              DropdownMenuItem(
+                                  value: p.id, child: Text(p.name)),
+                          ],
+                          onChanged: (v) => setSt(
+                              () => bahan[i]['productId'] = v ?? ''),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline),
+                        onPressed: () => setSt(() {
+                          if (bahan[i]['qty'] > 1) bahan[i]['qty']--;
+                        }),
+                      ),
+                      Text('${bahan[i]['qty']}'),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline),
+                        onPressed: () =>
+                            setSt(() => bahan[i]['qty']++),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => setSt(() => bahan.removeAt(i)),
+                      ),
+                    ],
+                  ),
+                TextButton.icon(
+                  onPressed: () => setSt(() => bahan.add(
+                      {'productId': products.first.id, 'qty': 1})),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Tambah bahan'),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: const Text('Simpan'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    final n = namaCtrl.text.trim();
+    final items = bahan
+        .where((b) => (b['productId'] as String).isNotEmpty)
+        .map((b) => {
+              'productId': b['productId'],
+              'qty': (b['qty'] as int).clamp(1, 999),
+            })
+        .toList();
+    if (n.isEmpty || items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lengkapi nama dan bahan')),
+      );
+      return;
+    }
+    try {
+      await ref.read(adminRepositoryProvider).saveRecipe({
+        'nama': n,
+        'desc': '',
+        'foto': '',
+        'items': items,
+      });
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Resep ditambahkan ke Beranda pelanggan')),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Simpan resep gagal')),
+      );
+    }
   }
 
   /// "Bagikan": kirim resep ke Rumpi (selaras PWA `sendRumpi`).
@@ -2008,7 +1945,7 @@ class HomeTab extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SectionTitle(
-            kicker: 'DARI TRANSAKSI SELURUH PELANGGAN',
+            kicker: 'Dari transaksi seluruh pelanggan',
             title: 'Sedang laris',
           ),
           const SizedBox(height: 8),
@@ -2253,6 +2190,187 @@ class _HomeProductCard extends ConsumerWidget {
   }
 }
 
+/// Slot carousel promo 5 tetap ala PWA.
+class _CarouselSlot {
+  final String key;
+  final String badge;
+  final String title;
+  final String copy;
+  final String action;
+
+  const _CarouselSlot({
+    required this.key,
+    required this.badge,
+    required this.title,
+    required this.copy,
+    required this.action,
+  });
+}
+
+/// Carousel promo ala PWA: PageView auto-rotate + dots + swipe.
+/// Style light: bg #fff7ed, border #f0d9b5, rounded 18px.
+class _PromoCarouselView extends StatefulWidget {
+  final List<_CarouselSlot> slots;
+  final void Function(String action) onAction;
+
+  const _PromoCarouselView({required this.slots, required this.onAction});
+
+  @override
+  State<_PromoCarouselView> createState() => _PromoCarouselViewState();
+}
+
+class _PromoCarouselViewState extends State<_PromoCarouselView> {
+  late final PageController _ctrl;
+  int _idx = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = PageController();
+    _mulaiOtomatis();
+  }
+
+  void _mulaiOtomatis() {
+    Future.delayed(const Duration(seconds: 5), () {
+      if (!mounted || widget.slots.length < 2) return;
+      final next = (_idx + 1) % widget.slots.length;
+      _ctrl.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.ease,
+      );
+      _mulaiOtomatis();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        border: Border.all(color: const Color(0xFFF0D9B5)),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Stack(
+        children: [
+          SizedBox(
+            height: 150,
+            child: PageView.builder(
+              controller: _ctrl,
+              itemCount: widget.slots.length,
+              onPageChanged: (i) => setState(() => _idx = i),
+              itemBuilder: (_, i) {
+                final s = widget.slots[i];
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDF624F),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          s.badge,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        s.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF7C4A12),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Expanded(
+                        child: Text(
+                          s.copy,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFA0805A),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: ElevatedButton(
+                          onPressed: () => widget.onAction(s.action),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF34231C),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            textStyle: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text('Lihat →'),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          Positioned(
+            left: 15,
+            bottom: 8,
+            child: Row(
+              children: List.generate(
+                widget.slots.length,
+                (i) => GestureDetector(
+                  onTap: () => _ctrl.animateToPage(
+                    i,
+                    duration: const Duration(milliseconds: 450),
+                    curve: Curves.ease,
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 5),
+                    width: _idx == i ? 18 : 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: _idx == i
+                          ? const Color(0xFFFFC16C)
+                          : const Color(0xFF80695D),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Kartu Promo Kilat ala PWA: countdown live + harga coret + tombol Ambil.
 /// Harga promo dikunci saat masuk keranjang (seperti PWA).
 class _PromoKilatCard extends ConsumerStatefulWidget {
@@ -2322,8 +2440,9 @@ class _PromoKilatCardState extends ConsumerState<_PromoKilatCard> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.orange.withValues(alpha: 0.12),
-        border: Border.all(color: AppColors.orange.withValues(alpha: 0.55)),
+        // Warna PWA light: bg #fff0df, border #f0cc9f, teks #623615.
+        color: const Color(0xFFFFF0DF),
+        border: Border.all(color: const Color(0xFFF0CC9F)),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
