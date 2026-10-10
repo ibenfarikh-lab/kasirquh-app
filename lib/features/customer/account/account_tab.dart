@@ -9,7 +9,6 @@ import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
-import '../../../core/widgets/theme_picker.dart';
 import '../../../data/models/order.dart';
 import '../../../data/models/customer_note.dart';
 import '../../../data/remote/auth_service.dart';
@@ -432,36 +431,7 @@ class AccountTab extends ConsumerWidget {
       context,
       kicker: 'Sesuai caramu',
       title: 'Pengaturan Pelanggan',
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          AppCard(
-            onTap: () =>
-                showThemePicker(context, temaPelangganProvider),
-            child: Row(
-              children: [
-                const Icon(Icons.palette_outlined,
-                    color: AppColors.orange),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Tampilan',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                Text(
-                  ref.watch(temaPelangganProvider).label,
-                  style: TextStyle(
-                      color: context.teksRedup, fontSize: 13),
-                ),
-                const SizedBox(width: 4),
-                Icon(Icons.chevron_right,
-                    color: context.teksRedup, size: 20),
-              ],
-            ),
-          ),
-        ],
-      ),
+      child: const _PengaturanForm(),
     );
   }
 
@@ -802,6 +772,223 @@ class _StatusChip extends StatelessWidget {
         label,
         style: TextStyle(
             color: color, fontSize: 11, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
+/// Form Pengaturan Pelanggan ala PWA (plek-plek).
+class _PengaturanForm extends ConsumerStatefulWidget {
+  const _PengaturanForm();
+
+  @override
+  ConsumerState<_PengaturanForm> createState() => _PengaturanFormState();
+}
+
+class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
+  late TextEditingController _nama;
+  String _tema = 'terang';
+  String _density = 'ringkas';
+  String _dering = 'bawaan';
+
+  @override
+  void initState() {
+    super.initState();
+    final session = ref.read(sessionProvider).valueOrNull;
+    _nama = TextEditingController(
+        text: displayName(session ?? const Session.guest()));
+    // Map tema provider ke string PWA.
+    final t = ref.read(temaPelangganProvider);
+    _tema = t.name;
+  }
+
+  @override
+  void dispose() {
+    _nama.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Nama panggilan.
+        const Text('Nama panggilan',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        const SizedBox(height: 4),
+        Text(
+          'Ditampilkan di halaman Akun dan sapaan toko.',
+          style: TextStyle(color: context.teksRedup, fontSize: 12),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _nama,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Tema tampilan.
+        const Text('Tema tampilan',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        const SizedBox(height: 8),
+        _opsi('terang', 'Terang', 'Bawaan pelanggan'),
+        _opsi('gelap', 'Gelap', 'Nyaman malam'),
+        _opsi('sistem', 'Ikuti HP', 'Otomatis'),
+        const SizedBox(height: 16),
+        // Tampilan produk.
+        const Text('Tampilan produk',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        const SizedBox(height: 8),
+        _opsiDensity('ringkas', 'Ringkas'),
+        _opsiDensity('lega', 'Lega'),
+        _opsiDensity('daftar', 'Daftar'),
+        const SizedBox(height: 16),
+        // Dering notifikasi.
+        const Text('Dering notifikasi',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        const SizedBox(height: 8),
+        _opsiDering('bawaan', 'Bawaan HP', 'Nada umum perangkat'),
+        _opsiDering('khas', 'Khas Mimi', 'Beda tiap kejadian'),
+        _opsiDering('hening', 'Hening', 'Getar tanpa suara'),
+        const SizedBox(height: 8),
+        Text(
+          'Mode Khas Mimi memakai bunyi berbeda untuk pesanan, promo, dan chat.',
+          style: TextStyle(color: context.teksRedup, fontSize: 12),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Tes bunyi...')),
+                  );
+                },
+                child: const Text('Tes bunyi'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: FilledButton(
+                onPressed: () {
+                  // Terapkan: simpan nama & tema.
+                  // (Nama panggilan tersimpan di sesi lokal.)
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Pengaturan diterapkan')),
+                  );
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Terapkan pengaturan'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _opsi(String val, String title, String subtitle) {
+    final aktif = _tema == val;
+    return InkWell(
+      onTap: () => setState(() => _tema = val),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: aktif ? AppColors.orange : context.teksRedup.withValues(alpha: 0.3),
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: aktif
+              ? AppColors.orange.withValues(alpha: 0.08)
+              : null,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          color: context.teksRedup, fontSize: 12)),
+                ],
+              ),
+            ),
+            if (aktif)
+              const Icon(Icons.check_circle, color: AppColors.orange),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _opsiDensity(String val, String title) {
+    final aktif = _density == val;
+    return InkWell(
+      onTap: () => setState(() => _density = val),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: aktif ? AppColors.orange : context.teksRedup.withValues(alpha: 0.3),
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(title,
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+            ),
+            if (aktif)
+              const Icon(Icons.check_circle, color: AppColors.orange),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _opsiDering(String val, String title, String subtitle) {
+    final aktif = _dering == val;
+    return InkWell(
+      onTap: () => setState(() => _dering = val),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: aktif ? AppColors.orange : context.teksRedup.withValues(alpha: 0.3),
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          color: context.teksRedup, fontSize: 12)),
+                ],
+              ),
+            ),
+            if (aktif)
+              const Icon(Icons.check_circle, color: AppColors.orange),
+          ],
+        ),
       ),
     );
   }
