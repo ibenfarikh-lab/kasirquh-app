@@ -13,7 +13,19 @@ import 'chat_widgets.dart';
 /// Thread dibuat admin saat menyetujui pendaftaran (1 thread per pelanggan).
 class TokoChatPage extends ConsumerStatefulWidget {
   final String uid;
-  const TokoChatPage({super.key, required this.uid});
+
+  /// true bila di dalam sheet modal ala PWA.
+  final bool modeSheet;
+
+  /// ScrollController dari DraggableScrollableSheet (opsional).
+  final ScrollController? scrollController;
+
+  const TokoChatPage({
+    super.key,
+    required this.uid,
+    this.modeSheet = false,
+    this.scrollController,
+  });
 
   @override
   ConsumerState<TokoChatPage> createState() => _TokoChatPageState();

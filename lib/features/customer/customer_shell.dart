@@ -51,8 +51,8 @@ class CustomerShell extends ConsumerWidget {
       child: Scaffold(
         appBar: index == 0
             ? _berandaHeader(context, ref, session)
-            : index == 1 || index == 2
-                // Tab Produk & Keranjang: header ala PWA di dalam tab.
+            : index >= 1 && index <= 4
+                // Tab Produk–Akun: header ala PWA di dalam tab.
                 ? null
                 : AppBar(
                 title: LogoTapGate(

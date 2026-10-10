@@ -15,71 +15,176 @@ import 'compose_post_sheet.dart';
 /// Feed kabar Rumpi + tombol tulis. Dipakai Mode Pelanggan dan
 /// (modeAdmin) Tab Rumpi admin — admin bisa posting sebagai admin dan
 /// menghapus postingan (moderasi).
-class RumpiFeed extends ConsumerWidget {
+/// [modeSheet]: true bila di dalam sheet modal ala PWA (composer inline,
+/// tanpa FAB); false = tampilan tab biasa dengan FAB.
+class RumpiFeed extends ConsumerStatefulWidget {
   final String uid;
   final String nama;
 
   /// true bila dipakai admin: tulis sebagai admin + tombol hapus tiap post.
   final bool modeAdmin;
+
+  /// true bila di dalam sheet modal (ala PWA).
+  final bool modeSheet;
+
+  /// ScrollController dari DraggableScrollableSheet (opsional).
+  final ScrollController? scrollController;
+
   const RumpiFeed({
     super.key,
     required this.uid,
     required this.nama,
     this.modeAdmin = false,
+    this.modeSheet = false,
+    this.scrollController,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final postsAsync = ref.watch(rumpiPostsProvider);
-    final likesAsync = ref.watch(myLikesProvider(uid));
+  ConsumerState<RumpiFeed> createState() => _RumpiFeedState();
+}
 
-    return Scaffold(
-      // Background ngikutin tema (jangan dipaksa terang).
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _tulis(context, ref),
-        backgroundColor: AppColors.orange,
-        icon: const Icon(Icons.edit, color: Colors.white),
-        label: const Text(
-          Strings.tulisKabar,
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-        ),
+class _RumpiFeedState extends ConsumerState<RumpiFeed> {
+  final _composer = TextEditingController();
+
+  @override
+  void dispose() {
+    _composer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final postsAsync = ref.watch(rumpiPostsProvider);
+    final likesAsync = ref.watch(myLikesProvider(widget.uid));
+
+    final feed = postsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const EmptyState(
+        icon: Icons.forum_outlined,
+        title: Strings.rumpiKosong,
+        hint: Strings.butuhInternetUmum,
       ),
-      body: postsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => const EmptyState(
-          icon: Icons.forum_outlined,
-          title: Strings.rumpiKosong,
-          hint: Strings.butuhInternetUmum,
-        ),
-        data: (posts) {
-          if (posts.isEmpty) {
-            return const EmptyState(
-              icon: Icons.forum_outlined,
-              title: Strings.rumpiKosong,
-              hint: Strings.rumpiKosongHint,
-            );
-          }
-          final disukai = likesAsync.valueOrNull ?? const <String>{};
-          return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(rumpiPostsProvider),
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-              itemCount: posts.length,
-              itemBuilder: (context, i) {
-                final p = posts[i];
-                return _PostCard(
-                  post: p,
-                  disukai: disukai.contains(p.id),
-                  onLike: () => _like(context, ref, p.id),
-                  tampilkanHapus: modeAdmin,
-                  onHapus: () => _hapus(context, ref, p.id),
-                );
-              },
-            ),
+      data: (posts) {
+        if (posts.isEmpty) {
+          return const EmptyState(
+            icon: Icons.forum_outlined,
+            // Teks PWA persis.
+            title: 'Belum ada obrolan di Rumpi Warga.',
+            hint: Strings.rumpiKosongHint,
           );
-        },
-      ),
+        }
+        final disukai = likesAsync.valueOrNull ?? const <String>{};
+        return RefreshIndicator(
+          onRefresh: () async => ref.invalidate(rumpiPostsProvider),
+          child: ListView.builder(
+            controller: widget.scrollController,
+            padding: EdgeInsets.fromLTRB(
+                16, 12, 16, widget.modeSheet ? 12 : 90),
+            itemCount: posts.length,
+            itemBuilder: (context, i) {
+              final p = posts[i];
+              return _PostCard(
+                post: p,
+                disukai: disukai.contains(p.id),
+                onLike: () => _like(context, ref, p.id),
+                tampilkanHapus: widget.modeAdmin,
+                onHapus: () => _hapus(context, ref, p.id),
+              );
+            },
+          ),
+        );
+      },
     );
+
+    if (!widget.modeSheet) {
+      return Scaffold(
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _tulis(context, ref),
+          backgroundColor: AppColors.orange,
+          icon: const Icon(Icons.edit, color: Colors.white),
+          label: const Text(
+            Strings.tulisKabar,
+            style:
+                TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+          ),
+        ),
+        body: feed,
+      );
+    }
+
+    // Mode sheet ala PWA: feed + composer inline di bawah.
+    return Column(
+      children: [
+        Expanded(child: feed),
+        const Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _composer,
+                  maxLength: 180,
+                  decoration: const InputDecoration(
+                    hintText: 'Tulis kabar untuk warga…',
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.all(Radius.circular(20)),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    counterText: '',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                onPressed: () => _kirim(context, ref),
+                icon: const Icon(Icons.send),
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.orange,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Kirim postingan langsung (composer inline ala PWA).
+  Future<void> _kirim(BuildContext context, WidgetRef ref) async {
+    final teks = _composer.text.trim();
+    if (teks.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Tulis kabar atau tambah foto dulu')),
+      );
+      return;
+    }
+    try {
+      await ref.read(socialRepositoryProvider).createPost(
+            uid: widget.uid,
+            authorName: widget.nama,
+            text: teks,
+            authorRole: widget.modeAdmin ? 'admin' : 'customer',
+          );
+      _composer.clear();
+      ref.invalidate(rumpiPostsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Postingan tampil di Rumpi Warga')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.butuhInternetUmum)),
+        );
+      }
+    }
   }
 
   Future<void> _tulis(BuildContext context, WidgetRef ref) async {
@@ -90,9 +195,9 @@ class RumpiFeed extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (_) => ComposePostSheet(
-        uid: uid,
-        nama: nama,
-        authorRole: modeAdmin ? 'admin' : 'customer',
+        uid: widget.uid,
+        nama: widget.nama,
+        authorRole: widget.modeAdmin ? 'admin' : 'customer',
       ),
     );
   }
@@ -141,7 +246,7 @@ class RumpiFeed extends ConsumerWidget {
     try {
       await ref
           .read(socialRepositoryProvider)
-          .toggleLike(postId: postId, uid: uid);
+          .toggleLike(postId: postId, uid: widget.uid);
     } catch (_) {
       // Gagal (mis. rules belum dipublish / offline) → beri tahu user,
       // jangan diam-diam: like tidak tercatat.
