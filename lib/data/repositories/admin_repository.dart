@@ -482,7 +482,7 @@ class AdminRepository {
         .map((e) => OrderItem(
               productId: (e['productId'] as String?) ?? '',
               name: (e['name'] as String?) ?? '',
-              qty: (e['qty'] as num?)?.toInt() ?? 0,
+              qty: (e['qty'] as num?)?.toDouble() ?? 0,
               price: (e['price'] as num?)?.toInt() ?? 0,
             ))
         .toList();

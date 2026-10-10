@@ -121,4 +121,48 @@ void main() {
       expect(orderStatusFrom('ngawur'), OrderStatus.menunggu);
     });
   });
+
+  group('Cart desimal (satuan berat, selaras PWA ?v=20261012v)', () {
+    const beras = Product(
+      id: 'p9',
+      name: 'Beras 1kg',
+      category: 'Sembako',
+      price: 16000,
+      cost: 14000,
+      stock: 10,
+      unit: 'kg',
+    );
+
+    test('tambah 0,5 kg → qty 0,5', () {
+      final c = CartNotifier();
+      expect(c.add(beras, qty: 0.5), isTrue);
+      expect(c.state.single.qty, 0.5);
+    });
+
+    test('subtotal proporsional: Rp16.000 × 0,2 = Rp3.200', () {
+      final c = CartNotifier();
+      c.add(beras, qty: 0.2);
+      expect(c.state.single.subtotal, 3200);
+    });
+
+    test('setQty 0 → baris dihapus', () {
+      final c = CartNotifier();
+      c.add(beras, qty: 0.5);
+      c.setQty('p9', 0);
+      expect(c.state, isEmpty);
+    });
+
+    test('qty tidak melebihi stok', () {
+      final c = CartNotifier();
+      expect(c.add(beras, qty: 11), isFalse);
+      expect(c.state, isEmpty);
+    });
+
+    test('isWeightUnit: kg/ons/gram true, pcs false', () {
+      expect(isWeightUnit('kg'), isTrue);
+      expect(isWeightUnit('ons'), isTrue);
+      expect(isWeightUnit('gram'), isTrue);
+      expect(isWeightUnit('pcs'), isFalse);
+    });
+  });
 }

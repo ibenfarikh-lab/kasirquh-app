@@ -34,8 +34,8 @@ class CustomerShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final index = ref.watch(customerTabProvider);
-    final cartCount =
-        ref.watch(cartProvider.select((c) => c.fold(0, (s, e) => s + e.qty)));
+    final cartCount = ref.watch(cartProvider
+        .select((c) => c.fold(0.0, (s, e) => s + e.qty).round()));
     final session = ref.watch(sessionProvider).valueOrNull;
     final uid = memberUid(session ?? const Session.guest());
     final unreadChat = uid == null

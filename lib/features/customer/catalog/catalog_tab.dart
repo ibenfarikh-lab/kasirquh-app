@@ -553,7 +553,14 @@ class ProductDetailSheet extends ConsumerStatefulWidget {
 
 class ProductDetailSheetState
     extends ConsumerState<ProductDetailSheet> {
-  int _qty = 1;
+  late double _qty;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default ala PWA: timbangan 0,5 · lainnya 1.
+    _qty = isWeightUnit(widget.product.unit) ? 0.5 : 1;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -690,20 +697,45 @@ class ProductDetailSheetState
                 const Text(Strings.jumlah,
                     style: TextStyle(fontWeight: FontWeight.w700)),
                 const Spacer(),
+                // Stepper ala PWA ?v=20261012v: timbangan step 0,1.
                 IconButton(
-                  onPressed: _qty > 1
-                      ? () => setState(() => _qty--)
-                      : null,
+                  onPressed: () {
+                    final timbang = isWeightUnit(p.unit);
+                    final nq = timbang
+                        ? ((_qty - 0.1) * 10).roundToDouble() / 10
+                        : _qty - 1;
+                    final min = timbang ? 0.1 : 1.0;
+                    if (_qty > min) setState(() => _qty = nq);
+                  },
                   icon: const Icon(Icons.remove_circle_outline),
                   tooltip: 'Kurangi',
                 ),
-                Text('$_qty',
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w700)),
+                Text(
+                  isWeightUnit(p.unit)
+                      ? '${formatStok(_qty)} ${p.unit}'
+                      : formatStok(_qty),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w700),
+                ),
                 IconButton(
-                  onPressed: _qty < p.stock
-                      ? () => setState(() => _qty++)
-                      : null,
+                  onPressed: () {
+                    final timbang = isWeightUnit(p.unit);
+                    final step = timbang ? 0.1 : 1.0;
+                    final nq =
+                        ((_qty + step) * 10).roundToDouble() / 10;
+                    final max = timbang
+                        ? p.stock.toDouble()
+                        : p.stock.floorToDouble();
+                    if (nq <= max) {
+                      setState(() => _qty = nq);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text(
+                                'Stok tersisa ${formatStok(p.stock)} ${p.unit}')),
+                      );
+                    }
+                  },
                   icon: const Icon(Icons.add_circle_outline),
                   tooltip: 'Tambah',
                 ),
@@ -712,19 +744,19 @@ class ProductDetailSheetState
             const SizedBox(height: 8),
             AppButton(
               label:
-                  '+ Keranjang • ${formatRp(harga * _qty)}',
+                  '+ Keranjang • ${formatRp((harga * _qty).round())}',
               onPressed: out
                   ? null
                   : () {
-                      final cart = ref.read(cartProvider.notifier);
-                      for (var i = 0; i < _qty; i++) {
-                        if (!cart.add(p, harga: harga)) break;
-                      }
+                      final ok = ref
+                          .read(cartProvider.notifier)
+                          .add(p, harga: harga, qty: _qty);
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content:
-                              Text('${p.name} masuk keranjang'),
+                          content: Text(ok
+                              ? '${p.name} masuk keranjang'
+                              : 'Stok tidak mencukupi'),
                           duration: const Duration(seconds: 1),
                         ),
                       );

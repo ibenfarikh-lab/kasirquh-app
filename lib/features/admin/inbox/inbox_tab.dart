@@ -370,7 +370,7 @@ class _OrderTile extends StatelessWidget {
           style: TextStyle(
               color: context.teksUtama, fontWeight: FontWeight.w700)),
       subtitle: Text(
-        '${order.items.fold(0, (s, e) => s + e.qty)} barang · ${formatRp(order.total)}',
+        '${formatStok(order.items.fold(0.0, (s, e) => s + e.qty))} barang · ${formatRp(order.total)}',
         style: TextStyle(color: context.teksRedup),
       ),
       trailing: Icon(Icons.chevron_right,

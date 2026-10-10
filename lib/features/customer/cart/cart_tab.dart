@@ -90,19 +90,40 @@ class CartTab extends ConsumerWidget {
               ],
             ),
           ),
+          // Stepper ala PWA ?v=20261012v: timbangan step 0,1,
+          // di 0,1 klik "-" → item langsung hilang.
           IconButton(
-            onPressed: () => ref
-                .read(cartProvider.notifier)
-                .setQty(line.product.id, line.qty - 1),
+            onPressed: () {
+              final notifier = ref.read(cartProvider.notifier);
+              if (isWeightUnit(line.product.unit)) {
+                final nq =
+                    ((line.qty - 0.1) * 10).roundToDouble() / 10;
+                notifier.setQty(
+                    line.product.id, nq < 0.1 ? 0 : nq);
+              } else {
+                notifier.setQty(line.product.id, line.qty - 1);
+              }
+            },
             icon: const Icon(Icons.remove_circle_outline),
           ),
-          Text('${line.qty}',
-              style: const TextStyle(
-                  fontWeight: FontWeight.w700, fontSize: 16)),
+          Text(
+            isWeightUnit(line.product.unit)
+                ? '${formatStok(line.qty)} ${line.product.unit}'
+                : formatStok(line.qty),
+            style: const TextStyle(
+                fontWeight: FontWeight.w700, fontSize: 16),
+          ),
           IconButton(
-            onPressed: () => ref
-                .read(cartProvider.notifier)
-                .setQty(line.product.id, line.qty + 1),
+            onPressed: () {
+              final notifier = ref.read(cartProvider.notifier);
+              if (isWeightUnit(line.product.unit)) {
+                final nq =
+                    ((line.qty + 0.1) * 10).roundToDouble() / 10;
+                notifier.setQty(line.product.id, nq);
+              } else {
+                notifier.setQty(line.product.id, line.qty + 1);
+              }
+            },
             icon: const Icon(Icons.add_circle_outline),
           ),
           const SizedBox(width: 4),
@@ -223,13 +244,9 @@ class CartTab extends ConsumerWidget {
     final notifier = ref.read(cartProvider.notifier);
     notifier.clear();
     for (final line in saved) {
-      // Tambah ulang per qty agar batas stok tetap dihormati.
-      for (var i = 0; i < line.qty; i++) {
-        if (!notifier.add(line.product,
-            harga: line.hargaSatuan)) {
-          break;
-        }
-      }
+      // Tambah ulang sekaligus agar batas stok tetap dihormati.
+      notifier.add(line.product,
+          harga: line.hargaSatuan, qty: line.qty);
     }
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text(Strings.menuTersimpanDimuat)),

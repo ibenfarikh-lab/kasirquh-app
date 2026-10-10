@@ -1744,8 +1744,10 @@ class HomeTab extends ConsumerWidget {
     for (final item in recipe.items) {
       final prod = byId[item.productId];
       if (prod == null) continue;
-      for (var k = 0; k < item.qty; k++) {
-        if (ref.read(cartProvider.notifier).add(prod)) masuk++;
+      if (ref
+          .read(cartProvider.notifier)
+          .add(prod, qty: item.qty.toDouble())) {
+        masuk++;
       }
     }
     ScaffoldMessenger.of(context).showSnackBar(

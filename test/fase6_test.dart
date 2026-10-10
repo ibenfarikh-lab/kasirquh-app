@@ -69,7 +69,7 @@ void main() {
             OrderItem(
                 productId: 'p$i',
                 name: 'X',
-                qty: 10 - i,
+                qty: (10 - i).toDouble(),
                 price: 1000),
         ]),
       ];

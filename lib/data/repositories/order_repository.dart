@@ -35,7 +35,8 @@ class OrderRepository {
   }) async {
     final db = _db;
     if (db == null) throw const OfflineCheckout();
-    final total = items.fold<int>(0, (s, e) => s + e.price * e.qty);
+    final total =
+        items.fold<int>(0, (s, e) => s + (e.price * e.qty).round());
 
     return db.runTransaction((tx) async {
       // 1. Nomor urut pesanan dari counters/orders (atomik).
@@ -80,7 +81,7 @@ class OrderRepository {
                   'name': e.name,
                   'price': e.price,
                   'qty': e.qty,
-                  'subtotal': e.price * e.qty,
+                  'subtotal': (e.price * e.qty).round(),
                 })
             .toList(),
         'total': total,
@@ -115,7 +116,7 @@ class OrderRepository {
               .map((e) => OrderItem(
                     productId: (e['productId'] as String?) ?? '',
                     name: (e['name'] as String?) ?? '',
-                    qty: (e['qty'] as num?)?.toInt() ?? 0,
+                    qty: (e['qty'] as num?)?.toDouble() ?? 0,
                     price: (e['price'] as num?)?.toInt() ?? 0,
                   ))
               .toList();

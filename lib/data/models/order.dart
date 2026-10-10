@@ -65,7 +65,7 @@ class Order {
 class OrderItem {
   final String productId;
   final String name;
-  final int qty;
+  final double qty;
   final int price;
 
   const OrderItem({
@@ -89,7 +89,7 @@ class OrderItem {
 /// Dipakai section "Sedang laris" (Beranda pelanggan) via topProductIds
 /// yang dihitung admin dan disimpan di store_settings.
 List<String> topProductsByQty(List<Order> orders, {int limit = 8}) {
-  final qtyById = <String, int>{};
+  final qtyById = <String, double>{};
   for (final o in orders) {
     if (o.status == OrderStatus.dibatalkan) continue;
     for (final item in o.items) {

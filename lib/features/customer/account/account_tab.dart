@@ -373,7 +373,7 @@ class AccountTab extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${order.items.fold(0, (s, e) => s + e.qty)} barang • ${formatRp(order.total)}',
+                    '${formatStok(order.items.fold(0.0, (s, e) => s + e.qty))} barang • ${formatRp(order.total)}',
                     style: TextStyle(
                         color: context.teksRedup, fontSize: 13),
                   ),
