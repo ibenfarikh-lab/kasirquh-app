@@ -54,42 +54,82 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
     final asyncProducts = ref.watch(productsProvider);
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: TextField(
-            controller: _search,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              hintText: Strings.cariBarang,
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
+        // Header ala PWA: kicker + judul + search.
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Katalog lengkap',
+                style: TextStyle(
+                  color: context.teksRedup,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              const Text(
+                'Cari kebutuhan rumah',
+                style: TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _search,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Cari sembako, minuman, snack...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 13, vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Judul "Kategori" ala PWA.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Kategori',
+              style: TextStyle(
+                color: context.teksUtama,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
+        const SizedBox(height: 6),
         SizedBox(
           height: 44,
           child: ListView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             children: [
-              _chip(Strings.semua, ''),
+              _chip('Semua', ''),
               for (final c in kProductCategories) _chip(c, c),
             ],
           ),
         ),
         const SizedBox(height: 4),
-        // Header: "Semua produk" + tombol Muat ulang (ala PWA).
+        // Header: "{Kategori}" + tombol Muat ulang (ala PWA).
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Semua produk',
+                _category.isEmpty ? 'Semua produk' : _category,
                 style: TextStyle(
                   color: context.teksUtama,
                   fontSize: 15,
@@ -101,7 +141,8 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
                   ref.invalidate(productsProvider);
                   ref.invalidate(promosProvider);
                 },
-                icon: const Icon(Icons.refresh, size: 16),
+                icon: const Text('⟳',
+                    style: TextStyle(fontSize: 16)),
                 label: const Text('Muat ulang',
                     style: TextStyle(fontSize: 13)),
               ),
@@ -109,6 +150,8 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
           ),
         ),
         const SizedBox(height: 4),
+        // Hero promo kilat ala PWA (kondisional: hanya bila flash aktif).
+        _flashHero(ref),
         Expanded(
           child: asyncProducts.when(
             loading: () =>
@@ -129,7 +172,8 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
               if (filtered.isEmpty) {
                 return const EmptyState(
                   icon: Icons.inventory_2_outlined,
-                  title: Strings.belumAdaProduk,
+                  // Teks PWA persis.
+                  title: 'Produk tidak ditemukan.',
                 );
               }
               return GridView.builder(
@@ -152,15 +196,147 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
     );
   }
 
+  /// Hero promo kilat ala PWA: gradient oranye, hanya bila flash aktif.
+  Widget _flashHero(WidgetRef ref) {
+    final store = ref.watch(storeInfoProvider).valueOrNull;
+    final flashId = store?.flashProductId;
+    if (flashId == null || flashId.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final products =
+        ref.watch(productsProvider).valueOrNull ?? const <Product>[];
+    Product? product;
+    for (final p in products) {
+      if (p.id == flashId) {
+        product = p;
+        break;
+      }
+    }
+    if (product == null) return const SizedBox.shrink();
+    final flashPrice = store!.flashPrice;
+    final hargaPromo = flashPrice > 0 ? flashPrice : product.price;
+    final prod = product;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFF9B3E), Color(0xFFE07F0A)],
+          ),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'PROMO KILAT · TERBATAS',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    prod.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        formatRp(prod.price),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        formatRp(hargaPromo),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                builder: (_) => ProductDetailSheet(product: prod),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF34231C),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Lihat Detail',
+                  style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Chip kategori ala PWA: border, aktif = krem #fdeeda, "✓ " utk Semua aktif.
   Widget _chip(String label, String value) {
     final active = _category == value;
+    final text = (label == 'Semua' && active) ? '✓ $label' : label;
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: active,
-        onSelected: (_) => setState(() => _category = value),
-        selectedColor: AppColors.orange.withValues(alpha: 0.2),
+      padding: const EdgeInsets.only(right: 10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => setState(() => _category = value),
+        child: Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: active ? const Color(0xFFFDEEDA) : Colors.white,
+            border: Border.all(
+              color: active
+                  ? const Color(0xFFFDEEDA)
+                  : const Color(0xFF2B2B2B),
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1A1A),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -178,6 +354,8 @@ int hargaJualAktif(Product p, List<Promo> promos) {
   return p.price;
 }
 
+/// Kartu produk ala PWA: flag PROMO/HABIS, foto, nama, harga, stok,
+/// tombol "+" bulat kanan-bawah. Tap kartu → detail, tap "+" → +1 keranjang.
 class _ProductCard extends ConsumerWidget {
   final Product product;
 
@@ -186,120 +364,164 @@ class _ProductCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final out = product.stock <= 0;
-    // Promo produk: harga coret + harga promo (skema: discountType/Value).
     final promos = ref.watch(promosProvider).valueOrNull ?? const <Promo>[];
     final hargaAkhir = hargaJualAktif(product, promos);
     final adaDiskon = hargaAkhir < product.price;
+
+    void tambahSatu() {
+      final ok = ref.read(cartProvider.notifier).add(product);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ok
+              ? '${product.name} masuk keranjang'
+              : Strings.stokMenipis),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+
     return AppCard(
       onTap: () => _showDetail(context, ref),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.zero,
+      child: Stack(
         children: [
-          // Foto (bila ada) — tanpa foto: blok kategori.
-          // Opsi B (anti-ledak): provider null → placeholder, tanpa `!`.
-          Expanded(
-            child: Builder(
-              builder: (_) {
-                final provider = photoImageProvider(product.photoPath);
-                if (provider == null) {
-                  return Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppColors.orange.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.shopping_basket_outlined,
-                      size: 40,
-                      color: AppColors.orange,
-                    ),
-                  );
-                }
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image(
-                    image: provider,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color:
-                              AppColors.orange.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.shopping_basket_outlined,
-                          size: 40,
-                          color: AppColors.orange,
-                        ),
-                      ),
-                    ),
-                  );
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            product.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-          ),
-          const SizedBox(height: 2),
-          if (adaDiskon)
-            Text(
-              formatRp(product.price),
-              style: TextStyle(
-                color: context.teksRedup,
-                fontSize: 12,
-                decoration: TextDecoration.lineThrough,
-              ),
-            ),
-          Text(
-            formatRp(hargaAkhir),
-            style: const TextStyle(
-              color: AppColors.orange,
-              fontWeight: FontWeight.w800,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            out
-                ? Strings.habis
-                : product.stock <= product.lowStockAt
-                    ? '${Strings.stokMenipis} (${formatStok(product.stock)})'
-                    : 'Stok ${formatStok(product.stock)}',
-            style: TextStyle(
-              fontSize: 12,
-              color: out ? AppColors.danger : context.teksRedup,
-              fontWeight: out ? FontWeight.w700 : FontWeight.w400,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 36,
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: out
-                  ? null
-                  : () {
-                      final ok = ref
-                          .read(cartProvider.notifier)
-                          .add(product);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(ok
-                              ? '${product.name} masuk keranjang'
-                              : Strings.stokMenipis),
-                          duration: const Duration(seconds: 1),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Foto full-width 90px.
+                SizedBox(
+                  height: 90,
+                  width: double.infinity,
+                  child: Builder(
+                    builder: (_) {
+                      final provider =
+                          photoImageProvider(product.photoPath);
+                      if (provider == null) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.orange
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.shopping_basket_outlined,
+                            size: 36,
+                            color: AppColors.orange,
+                          ),
+                        );
+                      }
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image(
+                          image: provider,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.orange
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.shopping_basket_outlined,
+                              size: 36,
+                              color: AppColors.orange,
+                            ),
+                          ),
                         ),
                       );
                     },
-              child: const Text(Strings.tambahKeranjang,
-                  style: TextStyle(fontSize: 12)),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+                const SizedBox(height: 2),
+                if (adaDiskon)
+                  Text(
+                    formatRp(product.price),
+                    style: TextStyle(
+                      color: context.teksRedup,
+                      fontSize: 11,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                Text(
+                  formatRp(hargaAkhir),
+                  style: const TextStyle(
+                    color: AppColors.orange,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Stok ${formatStok(product.stock)}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: out ? AppColors.danger : context.teksRedup,
+                  ),
+                ),
+                // Ruang untuk tombol "+" absolute.
+                const SizedBox(height: 28),
+              ],
+            ),
+          ),
+          // Flag PROMO / HABIS kiri-atas.
+          if (adaDiskon || out)
+            Positioned(
+              left: 6,
+              top: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 5, vertical: 3),
+                decoration: BoxDecoration(
+                  color: out
+                      ? const Color(0xFF999999)
+                      : const Color(0xFFDF624F),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  out ? 'HABIS' : 'PROMO',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+          // Tombol "+" bulat kanan-bawah.
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: Opacity(
+              opacity: out ? 0.4 : 1,
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: ElevatedButton(
+                  onPressed: out ? null : tambahSatu,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.orange,
+                    foregroundColor: const Color(0xFF24170F),
+                    shape: const CircleBorder(),
+                    padding: EdgeInsets.zero,
+                    elevation: 2,
+                  ),
+                  child: const Text(
+                    '+',
+                    style: TextStyle(
+                        fontSize: 28, fontWeight: FontWeight.w400),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -355,14 +577,39 @@ class ProductDetailSheetState
                 child: const Text('Tutup'),
               ),
             ),
-            // Foto produk (bila ada).
+            // Foto produk (bila ada) + badge PROMO ala PWA.
             if (p.photoPath != null)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: ProductPhoto(
-                    photoPath: p.photoPath,
-                    size: 160,
+                  child: Stack(
+                    children: [
+                      ProductPhoto(
+                        photoPath: p.photoPath,
+                        size: 160,
+                      ),
+                      if (adaDiskon)
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFDF624F),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'PROMO',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
