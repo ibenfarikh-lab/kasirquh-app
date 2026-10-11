@@ -24,6 +24,7 @@ import '../../gateway/gateway_screen.dart';
 import '../session.dart';
 import 'coin_history_page.dart';
 import 'misi_koin_page.dart';
+import 'tebak_harga_page.dart';
 
 /// Tab Akun — bergembok untuk tamu.
 /// Member: data akun + koin + riwayat pesanan + Keluar.
@@ -188,6 +189,19 @@ class AccountTab extends ConsumerWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const MisiKoinPage(),
+                  ),
+                );
+              },
+            ),
+            _menuTile(
+              context,
+              icon: Icons.help_outline,
+              title: 'Tebak Harga',
+              subtitle: 'Tebak harga produk, dapat koin',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const TebakHargaPage(),
                   ),
                 );
               },
