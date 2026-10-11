@@ -63,10 +63,8 @@ Map<String, int> misiProgress({
 }
 
 /// Mode Pelanggan > Akun > Misi koin — tantangan sederhana berhadiah koin.
-/// Hadiah diberikan admin (hanya admin yang bisa menulis coin_ledger):
-/// pelanggan mengetuk "Minta hadiah" → pesan terkirim ke Chat Toko,
-/// admin memberi koin lewat penyesuaian koin. Penanda klaim disimpan
-/// lokal agar tidak diminta dua kali.
+/// Klaim otomatis via grantCoins (ikut PWA): koin langsung masuk dompet.
+/// Penanda klaim di Firestore (missionClaims).
 class MisiKoinPage extends ConsumerStatefulWidget {
   const MisiKoinPage({super.key});
 
@@ -177,8 +175,8 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                'Selesaikan misi, kumpulkan koin. Hadiah diberikan '
-                'admin lewat Chat Toko.',
+                'Selesaikan misi, kumpulkan koin. Koin yang diambil '
+                'langsung masuk ke dompet Koin Warga.',
                 style:
                     TextStyle(color: context.teksRedup, fontSize: 13),
               ),
