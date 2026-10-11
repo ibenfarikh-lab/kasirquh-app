@@ -327,3 +327,57 @@ final promosProvider = StreamProvider<List<Promo>>((ref) {
 final recipesProvider = StreamProvider<List<Recipe>>((ref) {
   return ref.watch(storeRepositoryProvider).watchRecipes();
 });
+
+/// Pengaturan Koin Warga — mirror `store_settings/main` (ikut PWA).
+class CoinSettings {
+  final bool enabled;
+  final int coinRate; // Rp per koin
+  final int redeemLimit; // % maksimal dari total
+  final Map<String, bool> events; // checkin, mission, guess, spend
+  final Map<String, int> rewards; // checkin, mission, guess
+  final int spendRule; // Rp per bonus
+  final int spendReward; // koin per rule
+
+  const CoinSettings({
+    this.enabled = true,
+    this.coinRate = 1,
+    this.redeemLimit = 50,
+    this.events = const {},
+    this.rewards = const {},
+    this.spendRule = 10000,
+    this.spendReward = 1,
+  });
+
+  factory CoinSettings.fromMap(Map<String, dynamic> m) {
+    final events = (m['coinEvents'] as Map? ?? {}).map(
+      (k, v) => MapEntry(k.toString(), v == true),
+    );
+    final rewards = (m['coinRewards'] as Map? ?? {}).map(
+      (k, v) => MapEntry(k.toString(), (v as num?)?.toInt() ?? 0),
+    );
+    return CoinSettings(
+      enabled: m['coinProgramEnabled'] != false,
+      coinRate: (m['coinRate'] as num?)?.toInt() ?? 1,
+      redeemLimit: (m['coinRedeemLimit'] as num?)?.toInt() ?? 50,
+      events: events,
+      rewards: rewards,
+      spendRule: (m['coinSpendRule'] as num?)?.toInt() ?? 10000,
+      spendReward: (m['coinSpendReward'] as num?)?.toInt() ?? 1,
+    );
+  }
+}
+
+/// Stream pengaturan koin (ikut PWA).
+final coinSettingsProvider = StreamProvider<CoinSettings>((ref) {
+  final db = ref.watch(firestoreOrNullProvider);
+  if (db == null) {
+    return Stream.value(const CoinSettings());
+  }
+  return db
+      .collection('store_settings')
+      .doc('main')
+      .snapshots()
+      .map((doc) => doc.data() == null
+          ? const CoinSettings()
+          : CoinSettings.fromMap(doc.data()!));
+});

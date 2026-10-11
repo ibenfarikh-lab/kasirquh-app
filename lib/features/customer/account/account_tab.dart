@@ -14,6 +14,8 @@ import '../../../data/models/customer_note.dart';
 import '../../../data/remote/auth_service.dart';
 import '../../../data/repositories/customer_note_repository.dart';
 import '../../../data/repositories/order_repository.dart';
+import '../../../data/repositories/admin_repository.dart';
+import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../../admin/admin_shell.dart';
 import '../../auth/biometric_credential_service.dart';
@@ -138,35 +140,7 @@ class AccountTab extends ConsumerWidget {
             border: Border.all(color: const Color(0xFFECCB9E)),
             borderRadius: BorderRadius.circular(15),
           ),
-          child: Row(
-            children: [
-              const Icon(Icons.calendar_month_outlined,
-                  color: AppColors.orange),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Bonus harian',
-                      style: TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    Text(
-                      'Bonus masuk setelah pelanggan login.',
-                      style: TextStyle(fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                'Belum diambil',
-                style: TextStyle(
-                    color: context.teksRedup,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
+          child: const _BonusHarianCard(),
         ),
         const SizedBox(height: 12),
         // Grid menu 2 kolom ala PWA.
@@ -994,3 +968,111 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
   }
 }
 
+
+/// Kartu Bonus Harian — bisa diklaim 1x sehari (ikut PWA).
+class _BonusHarianCard extends ConsumerStatefulWidget {
+  const _BonusHarianCard();
+
+  @override
+  ConsumerState<_BonusHarianCard> createState() => _BonusHarianCardState();
+}
+
+class _BonusHarianCardState extends ConsumerState<_BonusHarianCard> {
+  bool _busy = false;
+
+  String get _todayKey {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _klaim() async {
+    final session = ref.read(sessionProvider).valueOrNull;
+    final uid = session == null || session.isGuest ? null : session.user?.uid;
+    if (uid == null) return;
+
+    setState(() => _busy = true);
+    try {
+      final settings = ref.read(coinSettingsProvider).valueOrNull ??
+          const CoinSettings();
+      final reward = settings.rewards['checkin'] ?? 5;
+
+      await ref.read(adminRepositoryProvider).grantCoins(
+            uid,
+            reward,
+            reason: 'harian',
+            label: 'Bonus harian',
+            detail: 'Check-in $_todayKey',
+          );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('+$reward koin masuk!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal klaim, coba lagi.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = ref.watch(sessionProvider).valueOrNull;
+    final uid = session == null || session.isGuest ? null : session.user?.uid;
+
+    return Row(
+      children: [
+        const Icon(Icons.calendar_month_outlined,
+            color: AppColors.orange),
+        const SizedBox(width: 12),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Bonus harian',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              Text(
+                'Bonus masuk setelah pelanggan login.',
+                style: TextStyle(fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+        if (uid == null)
+          Text(
+            'Login dulu',
+            style: TextStyle(
+                color: context.teksRedup,
+                fontSize: 12,
+                fontWeight: FontWeight.w700),
+          )
+        else
+          FilledButton(
+            onPressed: _busy ? null : _klaim,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.orange,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 8),
+            ),
+            child: _busy
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text('Ambil'),
+          ),
+      ],
+    );
+  }
+}

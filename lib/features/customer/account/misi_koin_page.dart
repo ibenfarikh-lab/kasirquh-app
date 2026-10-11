@@ -32,32 +32,18 @@ class Misi {
 
 const kMisiList = [
   Misi(
-    id: 'belanja_pertama',
-    judul: 'Belanja pertama',
-    deskripsi: 'Selesaikan 1 pesanan.',
+    id: 'belanja_3x_minggu',
+    judul: 'Belanja 3x seminggu',
+    deskripsi: 'Selesaikan 3 pesanan dalam seminggu.',
+    target: 3,
+    hadiahKoin: 15, // Ikut coinRewards.mission (default)
+  ),
+  Misi(
+    id: 'coba_produk_baru',
+    judul: 'Coba produk baru',
+    deskripsi: 'Beli produk yang belum pernah dibeli.',
     target: 1,
     hadiahKoin: 10,
-  ),
-  Misi(
-    id: 'pelanggan_setia',
-    judul: 'Pelanggan setia',
-    deskripsi: 'Selesaikan 5 pesanan.',
-    target: 5,
-    hadiahKoin: 25,
-  ),
-  Misi(
-    id: 'kabar_pertama',
-    judul: 'Kabar pertama',
-    deskripsi: 'Kirim 1 kabar di Rumpi.',
-    target: 1,
-    hadiahKoin: 5,
-  ),
-  Misi(
-    id: 'tukang_cerita',
-    judul: 'Tukang cerita',
-    deskripsi: 'Kirim 10 kabar di Rumpi.',
-    target: 10,
-    hadiahKoin: 20,
   ),
 ];
 

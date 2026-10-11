@@ -33,6 +33,7 @@ class OrderRepository {
     required String paymentMethod, // cod | transfer
     String? note,
     int koinDipakai = 0,
+    int bonusKoin = 0, // Bonus dari belanja (dihitung caller)
   }) async {
     final db = _db;
     if (db == null) throw const OfflineCheckout();
@@ -115,6 +116,24 @@ class OrderRepository {
           'amount': -koinDipakai,
           'reason': 'tukar',
           'label': 'Tukar koin belanja',
+          'detail': 'Pesanan $code',
+          'orderId': ref.id,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // 5. Bonus koin dari belanja (otomatis, ikut PWA).
+      if (bonusKoin > 0) {
+        final custRef = db.collection('customers').doc(customerId);
+        tx.update(custRef, {
+          'coins': FieldValue.increment(bonusKoin),
+        });
+        final ledgerRef = db.collection('coin_ledger').doc();
+        tx.set(ledgerRef, {
+          'customerId': customerId,
+          'amount': bonusKoin,
+          'reason': 'belanja',
+          'label': 'Bonus belanja',
           'detail': 'Pesanan $code',
           'orderId': ref.id,
           'createdAt': FieldValue.serverTimestamp(),

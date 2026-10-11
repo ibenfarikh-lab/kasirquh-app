@@ -11,6 +11,7 @@ import '../../../core/widgets/guest_lock_sheet.dart';
 import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/order.dart';
 import '../../../data/repositories/order_repository.dart';
+import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../customer_shell.dart';
 import '../session.dart';
@@ -475,8 +476,10 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
     final belanja = ref.read(cartProvider.notifier).total;
     final ongkir = _fulfillment == 'delivery' ? _ongkir : 0;
     final koinDipakai = _koinDipakai(ref, belanja);
-    // 1 koin = Rp1 (ikut peta PWA).
-    final potonganKoin = koinDipakai;
+    // Nilai koin dari pengaturan admin (jangan hardcoded).
+    final coinSettings = ref.read(coinSettingsProvider).valueOrNull ??
+        const CoinSettings();
+    final potonganKoin = koinDipakai * coinSettings.coinRate;
     final grand = belanja + ongkir - potonganKoin;
     return SafeArea(
       child: Padding(
@@ -647,14 +650,18 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
   }
 
   /// Box Tukar Koin Warga ala PWA.
-  /// Rumus: maksimal = total × 50% / 100; koin = min(saldo, maksimal).
+  /// Rumus: maksimal = total × redeemLimit% / 100; koin = min(saldo, maksimal).
   Widget _koinBox(BuildContext context, WidgetRef ref, int belanja) {
     final session = ref.watch(sessionProvider).valueOrNull;
     final saldo = session?.coins ?? 0;
-    if (saldo <= 0) return const SizedBox.shrink();
+    final coinSettings = ref.watch(coinSettingsProvider).valueOrNull ??
+        const CoinSettings();
+    if (saldo <= 0 || !coinSettings.enabled) {
+      return const SizedBox.shrink();
+    }
 
-    // Batas 50% dari total belanja (ikut peta PWA).
-    final maksimal = (belanja * 50 ~/ 100);
+    // Batas dari pengaturan admin (jangan hardcoded).
+    final maksimal = (belanja * coinSettings.redeemLimit ~/ 100);
     final koinBisa = saldo < maksimal ? saldo : maksimal;
 
     return Container(
@@ -699,7 +706,9 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
     if (!_pakaiKoin) return 0;
     final session = ref.read(sessionProvider).valueOrNull;
     final saldo = session?.coins ?? 0;
-    final maksimal = (belanja * 50 ~/ 100);
+    final coinSettings = ref.read(coinSettingsProvider).valueOrNull ??
+        const CoinSettings();
+    final maksimal = (belanja * coinSettings.redeemLimit ~/ 100);
     return saldo < maksimal ? saldo : maksimal;
   }
 
@@ -812,6 +821,15 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
       final belanjaTotal =
           ref.read(cartProvider.notifier).total;
       final koinDipakai = _koinDipakai(ref, belanjaTotal);
+      // Bonus koin dari belanja (otomatis, ikut pengaturan admin).
+      final coinSettings = ref.read(coinSettingsProvider).valueOrNull ??
+          const CoinSettings();
+      int bonusKoin = 0;
+      if (coinSettings.enabled &&
+          (coinSettings.events['spend'] ?? false)) {
+        bonusKoin = (belanjaTotal ~/ coinSettings.spendRule) *
+            coinSettings.spendReward;
+      }
       final code =
           await ref.read(orderRepositoryProvider).checkout(
                 customerId: uid,
@@ -820,6 +838,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                 paymentMethod: _payment,
                 note: note.isEmpty ? null : note,
                 koinDipakai: koinDipakai,
+                bonusKoin: bonusKoin,
               );
       ref.read(cartProvider.notifier).clear();
       if (!context.mounted) return;

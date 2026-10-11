@@ -624,6 +624,49 @@ class AdminRepository {
     }
   }
 
+  /// Beri koin ke pelanggan (ikut PWA grantCoins).
+  /// Setiap pemberian WAJIB ada entri ledger + pakai increment atomik.
+  /// [reason]: 'harian' | 'tebak_harga' | 'belanja' | 'misi'
+  /// [claimKey]: untuk misi (cegah klaim ganda via missionClaims)
+  Future<void> grantCoins(
+    String uid,
+    int amount, {
+    required String reason,
+    String? label,
+    String? detail,
+    String? claimKey,
+  }) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet.');
+    if (amount <= 0) return;
+
+    final today = DateTime.now();
+    final todayKey =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    final update = <String, dynamic>{
+      'coins': FieldValue.increment(amount),
+    };
+    if (reason == 'harian') update['lastCheckin'] = todayKey;
+    if (reason == 'tebak_harga') update['lastGuessDate'] = todayKey;
+    if (reason == 'misi' && claimKey != null) {
+      final safeKey = claimKey.replaceAll(RegExp(r'[./]'), '_');
+      update['missionClaims.$safeKey'] = true;
+    }
+
+    final batch = db.batch();
+    batch.update(db.collection('customers').doc(uid), update);
+    batch.set(db.collection('coin_ledger').doc(), {
+      'customerId': uid,
+      'amount': amount,
+      'reason': reason,
+      'label': label ?? 'Bonus koin',
+      'detail': detail ?? '',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+  }
+
   /// Sesuaikan koin pelanggan + catat di coin_ledger (append-only).
   ///
   /// Bila [delta] negatif (= koin ditukar/dipakai pelanggan), penukaran
