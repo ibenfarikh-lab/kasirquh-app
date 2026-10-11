@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
@@ -10,6 +9,8 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/order.dart';
 import '../../../data/repositories/order_repository.dart';
 import '../../../data/repositories/social_repository.dart';
+import '../../../data/repositories/admin_repository.dart';
+import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../session.dart';
 
@@ -80,54 +81,48 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
   @override
   void initState() {
     super.initState();
-    _muatPenanda();
-  }
-
-  Future<void> _muatPenanda() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final list = prefs.getStringList('misiKoinDiminta') ?? const [];
-      if (mounted) {
-        setState(() {
-          _diminta = list.toSet();
-          _memuat = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _memuat = false);
-    }
+    // Penanda klaim dibaca dari Firestore (bukan lokal).
+    // Untuk simplicity, mulai dengan kosong — status real dibaca saat klaim.
+    setState(() {
+      _diminta = {};
+      _memuat = false;
+    });
   }
 
   Future<void> _mintaHadiah(
       BuildContext context, WidgetRef ref, Misi misi, String uid) async {
-    final thread =
-        ref.read(myTokoThreadProvider(uid)).valueOrNull;
-    if (thread == null) {
+    // Klaim otomatis via grantCoins (ikut PWA) — tidak perlu via chat.
+    // Penanda klaim di Firestore (missionClaims), bukan SharedPreferences.
+    try {
+      final settings = ref.read(coinSettingsProvider).valueOrNull ??
+          const CoinSettings();
+      final reward = settings.rewards['mission'] ?? misi.hadiahKoin;
+
+      await ref.read(adminRepositoryProvider).grantCoins(
+            uid,
+            reward,
+            reason: 'misi',
+            label: 'Hadiah misi: ${misi.judul}',
+            detail: misi.id,
+            claimKey: misi.id,
+          );
+
+      if (mounted) {
+        setState(() {
+          _diminta = {..._diminta, misi.id};
+        });
+      }
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
               content: Text(
-                  'Chat toko belum siap. Tunggu persetujuan admin dulu ya.')),
+                  '+$reward koin dari misi "${misi.judul}"!')),
         );
       }
-      return;
-    }
-    try {
-      await ref.read(socialRepositoryProvider).sendTokoMessage(
-            threadId: thread.id,
-            uid: uid,
-            text: 'Halo! Saya menyelesaikan misi "${misi.judul}" '
-                '(${misi.hadiahKoin} koin). Mohon hadiahnya ya, terima kasih!',
-          );
-      final prefs = await SharedPreferences.getInstance();
-      final baru = {..._diminta, misi.id};
-      await prefs.setStringList('misiKoinDiminta', baru.toList());
-      if (mounted) setState(() => _diminta = baru);
+    } on StateError catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Permintaan dikirim ke toko. Tunggu admin memberi koin ya.')),
+          SnackBar(content: Text(e.message)),
         );
       }
     } catch (_) {

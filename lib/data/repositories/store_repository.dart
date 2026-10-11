@@ -335,7 +335,7 @@ class CoinSettings {
   final int redeemLimit; // % maksimal dari total
   final Map<String, bool> events; // checkin, mission, guess, spend
   final Map<String, int> rewards; // checkin, mission, guess
-  final int spendRule; // Rp per bonus
+  final int spendRule; // Rp per bonus (default PWA: 100)
   final int spendReward; // koin per rule
 
   const CoinSettings({
@@ -344,7 +344,7 @@ class CoinSettings {
     this.redeemLimit = 50,
     this.events = const {},
     this.rewards = const {},
-    this.spendRule = 10000,
+    this.spendRule = 100,
     this.spendReward = 1,
   });
 
@@ -361,7 +361,7 @@ class CoinSettings {
       redeemLimit: (m['coinRedeemLimit'] as num?)?.toInt() ?? 50,
       events: events,
       rewards: rewards,
-      spendRule: (m['coinSpendRule'] as num?)?.toInt() ?? 10000,
+      spendRule: (m['coinSpendRule'] as num?)?.toInt() ?? 100,
       spendReward: (m['coinSpendReward'] as num?)?.toInt() ?? 1,
     );
   }

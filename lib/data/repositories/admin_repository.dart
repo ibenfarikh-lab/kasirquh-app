@@ -628,6 +628,9 @@ class AdminRepository {
   /// Setiap pemberian WAJIB ada entri ledger + pakai increment atomik.
   /// [reason]: 'harian' | 'tebak_harga' | 'belanja' | 'misi'
   /// [claimKey]: untuk misi (cegah klaim ganda via missionClaims)
+  ///
+  /// Untuk 'harian' dan 'tebak_harga': cek dulu apakah sudah klaim hari ini.
+  /// Jika sudah → throw StateError('Sudah diklaim hari ini').
   Future<void> grantCoins(
     String uid,
     int amount, {
@@ -643,6 +646,22 @@ class AdminRepository {
     final today = DateTime.now();
     final todayKey =
         '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    // Cek klaim ganda (ikut PWA).
+    final custDoc = await db.collection('customers').doc(uid).get();
+    final data = custDoc.data();
+    if (reason == 'harian' && data?['lastCheckin'] == todayKey) {
+      throw StateError('Sudah diklaim hari ini');
+    }
+    if (reason == 'tebak_harga' && data?['lastGuessDate'] == todayKey) {
+      throw StateError('Sudah main hari ini');
+    }
+    if (reason == 'misi' && claimKey != null) {
+      final safeKey = claimKey.replaceAll(RegExp(r'[./]'), '_');
+      if ((data?['missionClaims'] as Map?)?[safeKey] == true) {
+        throw StateError('Misi sudah diklaim');
+      }
+    }
 
     final update = <String, dynamic>{
       'coins': FieldValue.increment(amount),

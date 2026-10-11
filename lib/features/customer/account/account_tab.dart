@@ -1008,6 +1008,14 @@ class _BonusHarianCardState extends ConsumerState<_BonusHarianCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('+$reward koin masuk!')),
         );
+        // Refresh session agar saldo update.
+        ref.invalidate(sessionProvider);
+      }
+    } on StateError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
       }
     } catch (e) {
       if (mounted) {
