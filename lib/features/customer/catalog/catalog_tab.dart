@@ -310,6 +310,11 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
   Widget _chip(String label, String value) {
     final active = _category == value;
     final text = (label == 'Semua' && active) ? '✓ $label' : label;
+    // Aturan tema: selected = border orange saja (bukan bg terang).
+    // Background ikut tema (tidak hardcoded terang/gelap).
+    final bg = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF2B2B2B)
+        : Colors.white;
     return Padding(
       padding: const EdgeInsets.only(right: 10),
       child: InkWell(
@@ -319,12 +324,10 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
           padding:
               const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
-            color: active ? const Color(0xFFFDEEDA) : Colors.white,
+            color: bg,
             border: Border.all(
-              color: active
-                  ? const Color(0xFFFDEEDA)
-                  : const Color(0xFF2B2B2B),
-              width: 1.5,
+              color: active ? AppColors.orange : context.teksRedup.withValues(alpha: 0.3),
+              width: active ? 2 : 1.5,
             ),
             borderRadius: BorderRadius.circular(16),
           ),

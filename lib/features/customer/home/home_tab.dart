@@ -2270,10 +2270,16 @@ class _PromoCarouselViewState extends State<_PromoCarouselView> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF7ED),
-        border: Border.all(color: const Color(0xFFF0D9B5)),
+        color: isDark
+            ? const Color(0xFF3A2E1A)
+            : const Color(0xFFFFF7ED),
+        border: Border.all(
+            color: isDark
+                ? AppColors.orange.withValues(alpha: 0.5)
+                : const Color(0xFFF0D9B5)),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Stack(
@@ -2459,9 +2465,15 @@ class _PromoKilatCardState extends ConsumerState<_PromoKilatCard> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        // Warna PWA light: bg #fff0df, border #f0cc9f, teks #623615.
-        color: const Color(0xFFFFF0DF),
-        border: Border.all(color: const Color(0xFFF0CC9F)),
+        // Warna PWA light: bg #fff0df, border #f0cc9f.
+        // Dark: ikut tema (tidak hardcoded terang).
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF3A2E1A)
+            : const Color(0xFFFFF0DF),
+        border: Border.all(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.orange.withValues(alpha: 0.5)
+                : const Color(0xFFF0CC9F)),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(

@@ -664,11 +664,18 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
     final maksimal = (belanja * coinSettings.redeemLimit ~/ 100);
     final koinBisa = saldo < maksimal ? saldo : maksimal;
 
+    // Aturan tema: background ikut tema (tidak hardcoded terang).
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF0C8),
-        border: Border.all(color: const Color(0xFFECCB9E)),
+        color: isDark
+            ? const Color(0xFF3A2E1A)
+            : const Color(0xFFFFF0C8),
+        border: Border.all(
+            color: isDark
+                ? AppColors.orange.withValues(alpha: 0.5)
+                : const Color(0xFFECCB9E)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

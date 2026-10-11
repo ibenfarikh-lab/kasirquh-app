@@ -114,7 +114,10 @@ class AccountTab extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF0C8),
+                    color: Theme.of(context).brightness ==
+                            Brightness.dark
+                        ? const Color(0xFF3A2E1A)
+                        : const Color(0xFFFFF0C8),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -133,12 +136,17 @@ class AccountTab extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // Kartu Bonus Harian ala PWA.
+        // Kartu Bonus Harian ala PWA (background ikut tema).
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF2DF),
-            border: Border.all(color: const Color(0xFFECCB9E)),
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF3A2E1A)
+                : const Color(0xFFFFF2DF),
+            border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.orange.withValues(alpha: 0.5)
+                    : const Color(0xFFECCB9E)),
             borderRadius: BorderRadius.circular(15),
           ),
           child: const _BonusHarianCard(),
@@ -889,13 +897,14 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
+          // Aturan: selected = border orange saja (tanpa bg terang).
           border: Border.all(
-            color: aktif ? AppColors.orange : context.teksRedup.withValues(alpha: 0.3),
+            color: aktif
+                ? AppColors.orange
+                : context.teksRedup.withValues(alpha: 0.3),
+            width: aktif ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
-          color: aktif
-              ? AppColors.orange.withValues(alpha: 0.08)
-              : null,
         ),
         child: Row(
           children: [
