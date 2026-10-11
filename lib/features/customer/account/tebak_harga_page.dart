@@ -25,6 +25,34 @@ class TebakHargaPage extends ConsumerStatefulWidget {
   ConsumerState<TebakHargaPage> createState() => _TebakHargaPageState();
 }
 
+/// Buat 2 opsi pengecoh yang wajar (kelipatan Rp500) untuk Tebak Harga.
+/// Diambil acak dari kelipatan 500 dalam ±40% harga asli; bila kandidat
+/// kurang (mis. harga kecil), fallback ke kelipatan 500 terdekat.
+/// Dijamin: kelipatan 500, positif, tidak sama dengan harga asli.
+/// Fungsi pure (bisa di-test).
+List<int> buatPengecoh(int hargaAsli, Random rand) {
+  final kandidat = <int>{};
+  final bawah = (hargaAsli * 0.6 / 500).floor() * 500;
+  final atas = (hargaAsli * 1.4 / 500).ceil() * 500;
+  for (var p = bawah; p <= atas; p += 500) {
+    if (p > 0 && p != hargaAsli) kandidat.add(p);
+  }
+  final acak = kandidat.toList()..shuffle(rand);
+  final hasil = acak.take(2).toList();
+  var delta = 500;
+  while (hasil.length < 2 && delta <= 20000) {
+    for (final p in [hargaAsli + delta, hargaAsli - delta]) {
+      final pr = (p / 500).round() * 500;
+      if (pr > 0 && pr != hargaAsli && !hasil.contains(pr)) {
+        hasil.add(pr);
+      }
+      if (hasil.length >= 2) break;
+    }
+    delta += 500;
+  }
+  return hasil;
+}
+
 class _TebakHargaPageState extends ConsumerState<TebakHargaPage> {
   Product? _soal;
   List<int> _pilihan = [];
@@ -32,21 +60,14 @@ class _TebakHargaPageState extends ConsumerState<TebakHargaPage> {
   bool _sudahJawab = false;
   bool _busy = false;
 
-  /// Pilih soal acak + buat 2 pengecoh.
+  /// Pilih soal acak + buat 2 pengecoh (kelipatan Rp500, wajar).
   void _acakSoal(List<Product> produk) {
     if (produk.isEmpty) return;
     final rand = Random();
     final soal = produk[rand.nextInt(produk.length)];
     final hargaAsli = soal.price;
 
-    // Buat 2 pengecoh: ±10-30% dari harga asli.
-    final pengecoh = <int>{};
-    while (pengecoh.length < 2) {
-      final faktor = 0.7 + rand.nextDouble() * 0.6; // 0.7 - 1.3
-      final p = (hargaAsli * faktor).round();
-      if (p != hargaAsli && p > 0) pengecoh.add(p);
-    }
-
+    final pengecoh = buatPengecoh(hargaAsli, rand);
     final semua = [hargaAsli, ...pengecoh]..shuffle(rand);
     setState(() {
       _soal = soal;

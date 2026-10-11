@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kasirquh_app/core/theme/theme_settings.dart';
@@ -8,6 +10,8 @@ import 'package:kasirquh_app/features/admin/menu/ai_admin_sheet.dart'
     show hasilkanSaran;
 import 'package:kasirquh_app/features/customer/account/misi_koin_page.dart'
     show misiProgress;
+import 'package:kasirquh_app/features/customer/account/tebak_harga_page.dart'
+    show buatPengecoh;
 
 Order buatOrder(String id, List<OrderItem> items,
     {OrderStatus status = OrderStatus.selesai}) {
@@ -231,5 +235,35 @@ void main() {
       expect(customerNoteTypeLabel('catatan'), 'Catatan');
       expect(customerNoteTypeLabel('aneh'), 'Catatan');
     });
+  
+  group('buatPengecoh', () {
+    test('kelipatan 500, positif, beda dari harga asli', () {
+      final rand = Random(42);
+      for (final harga in [500, 1000, 3500, 7500, 12500, 50000]) {
+        final p = buatPengecoh(harga, rand);
+        expect(p.length, 2, reason: 'harga $harga');
+        for (final x in p) {
+          expect(x % 500, 0, reason: 'bukan kelipatan 500: $x');
+          expect(x > 0, isTrue);
+          expect(x != harga, isTrue, reason: 'sama dengan harga asli');
+        }
+      }
+    });
+
+    test('hasil acak tapi selalu valid (100x)', () {
+      final rand = Random();
+      for (var i = 0; i < 100; i++) {
+        final harga = 500 + rand.nextInt(50) * 500;
+        final p = buatPengecoh(harga, rand);
+        expect(p.length, 2);
+        expect(p.toSet().length, 2);
+        for (final x in p) {
+          expect(x % 500, 0);
+          expect(x > 0, isTrue);
+          expect(x != harga, isTrue);
+        }
+      }
+    });
   });
+});
 }
