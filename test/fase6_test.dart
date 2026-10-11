@@ -9,7 +9,7 @@ import 'package:kasirquh_app/features/admin/menu/ai_admin_sheet.dart'
 import 'package:kasirquh_app/features/customer/account/misi_koin_page.dart'
     show misiProgress;
 
-Order _order(String id, List<OrderItem> items,
+Order buatOrder(String id, List<OrderItem> items,
     {OrderStatus status = OrderStatus.selesai}) {
   return Order(
     id: id,
@@ -39,17 +39,17 @@ void main() {
   group('topProductsByQty', () {
     test('urut terbanyak, batal tidak dihitung', () {
       final orders = [
-        _order('o1', [
+        buatOrder('o1', [
           const OrderItem(
               productId: 'p1', name: 'A', qty: 2, price: 1000),
           const OrderItem(
               productId: 'p2', name: 'B', qty: 5, price: 1000),
         ]),
-        _order('o2', [
+        buatOrder('o2', [
           const OrderItem(
               productId: 'p1', name: 'A', qty: 3, price: 1000),
         ]),
-        _order('o3', [
+        buatOrder('o3', [
           const OrderItem(
               productId: 'p3', name: 'C', qty: 99, price: 1000),
         ], status: OrderStatus.dibatalkan),
@@ -64,7 +64,7 @@ void main() {
 
     test('limit dihormati', () {
       final orders = [
-        _order('o1', [
+        buatOrder('o1', [
           for (var i = 0; i < 10; i++)
             OrderItem(
                 productId: 'p$i',
@@ -125,12 +125,55 @@ void main() {
   });
 
   group('misiProgress', () {
-    test('peta capaian per misi', () {
-      final p = misiProgress(selesaiCount: 3, kabarCount: 7);
-      expect(p['belanja_pertama'], 3);
-      expect(p['pelanggan_setia'], 3);
-      expect(p['kabar_pertama'], 7);
-      expect(p['tukang_cerita'], 7);
+    Order buatOrderMisi(String id, DateTime t, List<String> productIds) => Order(
+          id: id,
+          customerId: 'u1',
+          customerName: 'T',
+          code: id,
+          items: [
+            for (final pid in productIds)
+              OrderItem(
+                  productId: pid, name: pid, qty: 1, price: 1000),
+          ],
+          total: 1000,
+          status: OrderStatus.selesai,
+          payment: 'cod',
+          createdAt: t,
+        );
+
+    test('belanja_3x_minggu: hitung pesanan 7 hari terakhir', () {
+      final now = DateTime.now();
+      final orders = [
+        buatOrderMisi('a', now.subtract(const Duration(days: 1)), ['p1']),
+        buatOrderMisi('b', now.subtract(const Duration(days: 3)), ['p1']),
+        buatOrderMisi('c', now.subtract(const Duration(days: 10)), ['p1']),
+      ];
+      final p = misiProgress(orders);
+      expect(p['belanja_3x_minggu'], 2);
+    });
+
+    test('coba_produk_baru: pesanan terbaru ada produk baru', () {
+      final now = DateTime.now();
+      final orders = [
+        buatOrderMisi('lama', now.subtract(const Duration(days: 5)), ['p1']),
+        buatOrderMisi('baru', now.subtract(const Duration(days: 1)), ['p1', 'p2']),
+      ];
+      expect(misiProgress(orders)['coba_produk_baru'], 1);
+    });
+
+    test('coba_produk_baru: tanpa produk baru = 0', () {
+      final now = DateTime.now();
+      final orders = [
+        buatOrderMisi('lama', now.subtract(const Duration(days: 5)), ['p1']),
+        buatOrderMisi('baru', now.subtract(const Duration(days: 1)), ['p1']),
+      ];
+      expect(misiProgress(orders)['coba_produk_baru'], 0);
+    });
+
+    test('tanpa pesanan: semua 0', () {
+      final p = misiProgress([]);
+      expect(p['belanja_3x_minggu'], 0);
+      expect(p['coba_produk_baru'], 0);
     });
   });
 

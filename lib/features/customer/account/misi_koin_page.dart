@@ -8,7 +8,6 @@ import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/order.dart';
 import '../../../data/repositories/order_repository.dart';
-import '../../../data/repositories/social_repository.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
@@ -48,17 +47,33 @@ const kMisiList = [
   ),
 ];
 
-/// Progress misi dari data milik sendiri — fungsi pure (bisa di-test).
-/// [selesaiCount] = pesanan berstatus selesai; [kabarCount] = kabar Rumpi.
-Map<String, int> misiProgress({
-  required int selesaiCount,
-  required int kabarCount,
-}) {
+/// Progress misi dari daftar pesanan sendiri — fungsi pure (bisa di-test).
+/// Ikut logika PWA (renderMissions):
+/// - 'belanja_3x_minggu' = jumlah pesanan dalam 7 hari terakhir.
+/// - 'coba_produk_baru' = 1 jika pesanan TERBARU berisi produk yang belum
+///   pernah dibeli di pesanan sebelumnya, selain itu 0.
+Map<String, int> misiProgress(List<Order> orders) {
+  final now = DateTime.now();
+  final mingguIni = orders
+      .where((o) =>
+          !o.createdAt.isAfter(now) &&
+          now.difference(o.createdAt).inDays < 7)
+      .length;
+  int produkBaru = 0;
+  if (orders.isNotEmpty) {
+    final sorted = [...orders]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final priorIds = <String>{
+      for (final o in sorted.skip(1))
+        for (final it in o.items) it.productId,
+    };
+    final latestIds =
+        sorted.first.items.map((e) => e.productId).toSet();
+    if (latestIds.any((id) => !priorIds.contains(id))) produkBaru = 1;
+  }
   return {
-    'belanja_pertama': selesaiCount,
-    'pelanggan_setia': selesaiCount,
-    'kabar_pertama': kabarCount,
-    'tukang_cerita': kabarCount,
+    'belanja_3x_minggu': mingguIni,
+    'coba_produk_baru': produkBaru,
   };
 }
 
@@ -147,7 +162,6 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
       );
     }
     final ordersAsync = ref.watch(_misiOrdersProvider(uid));
-    final postsAsync = ref.watch(rumpiPostsProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Misi koin')),
@@ -160,17 +174,7 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
           hint: Strings.periksaKoneksi,
         ),
         data: (orders) {
-          final selesaiCount = orders
-              .where((o) => o.status == OrderStatus.selesai)
-              .length;
-          final kabarCount = postsAsync.valueOrNull
-                  ?.where((p) => p.authorId == uid)
-                  .length ??
-              0;
-          final progress = misiProgress(
-            selesaiCount: selesaiCount,
-            kabarCount: kabarCount,
-          );
+          final progress = misiProgress(orders);
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -269,14 +273,20 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
             if (tuntas) ...[
               const SizedBox(height: 8),
               AppButton(
-                label: diminta
-                    ? 'Sudah diminta — tunggu admin ya'
-                    : 'Minta hadiah ke toko',
+                label: diminta ? 'Sudah diambil' : 'Ambil hadiah',
                 fullWidth: true,
                 onPressed: diminta
                     ? null
                     : () =>
                         _mintaHadiah(context, ref, misi, uid),
+              ),
+            ] else ...[
+              // Ikut PWA: misi belum tersedia -> tombol grey out.
+              const SizedBox(height: 8),
+              const AppButton(
+                label: 'Belum tersedia',
+                fullWidth: true,
+                onPressed: null,
               ),
             ],
           ],
