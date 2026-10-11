@@ -458,6 +458,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
   final _note = TextEditingController();
   bool _busy = false;
   String? _error;
+  bool _pakaiKoin = false;
 
   static const _ongkir = 5000;
 
@@ -473,7 +474,10 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
   Widget build(BuildContext context) {
     final belanja = ref.read(cartProvider.notifier).total;
     final ongkir = _fulfillment == 'delivery' ? _ongkir : 0;
-    final grand = belanja + ongkir;
+    final koinDipakai = _koinDipakai(ref, belanja);
+    // 1 koin = Rp1 (ikut peta PWA).
+    final potonganKoin = koinDipakai;
+    final grand = belanja + ongkir - potonganKoin;
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
@@ -598,11 +602,21 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                   border: OutlineInputBorder(),
                 ),
               ),
+              // Box Tukar Koin Warga ala PWA.
+              const SizedBox(height: 12),
+              _koinBox(context, ref, belanja),
               // Ringkasan ala PWA.
               const SizedBox(height: 16),
               _ringkasRow('Belanja', formatRp(belanja)),
               const SizedBox(height: 6),
               _ringkasRow('Ongkir', formatRp(ongkir)),
+              if (potonganKoin > 0) ...[
+                const SizedBox(height: 6),
+                _ringkasRow(
+                  'Koin Warga (-$koinDipakai)',
+                  '-${formatRp(potonganKoin)}',
+                ),
+              ],
               const Divider(height: 20),
               _ringkasRow(
                 'Total dibayar',
@@ -630,6 +644,63 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
         ),
       ),
     );
+  }
+
+  /// Box Tukar Koin Warga ala PWA.
+  /// Rumus: maksimal = total × 50% / 100; koin = min(saldo, maksimal).
+  Widget _koinBox(BuildContext context, WidgetRef ref, int belanja) {
+    final session = ref.watch(sessionProvider).valueOrNull;
+    final saldo = session?.coins ?? 0;
+    if (saldo <= 0) return const SizedBox.shrink();
+
+    // Batas 50% dari total belanja (ikut peta PWA).
+    final maksimal = (belanja * 50 ~/ 100);
+    final koinBisa = saldo < maksimal ? saldo : maksimal;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF0C8),
+        border: Border.all(color: const Color(0xFFECCB9E)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.monetization_on, color: Color(0xFF8B5910)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tukar Koin Warga',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  'Saldo: $saldo koin · Bisa pakai: $koinBisa koin',
+                  style: const TextStyle(
+                      fontSize: 12, color: Color(0xFF8B5910)),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _pakaiKoin,
+            onChanged: (v) => setState(() => _pakaiKoin = v),
+            activeThumbColor: AppColors.orange,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Hitung koin yang dipakai (0 jika tidak dicentang).
+  int _koinDipakai(WidgetRef ref, int belanja) {
+    if (!_pakaiKoin) return 0;
+    final session = ref.read(sessionProvider).valueOrNull;
+    final saldo = session?.coins ?? 0;
+    final maksimal = (belanja * 50 ~/ 100);
+    return saldo < maksimal ? saldo : maksimal;
   }
 
   /// Segmented control ala PWA.
@@ -738,6 +809,9 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
       final noteUser = _note.text.trim();
       final note =
           ([...info, if (noteUser.isNotEmpty) noteUser]).join(' · ');
+      final belanjaTotal =
+          ref.read(cartProvider.notifier).total;
+      final koinDipakai = _koinDipakai(ref, belanjaTotal);
       final code =
           await ref.read(orderRepositoryProvider).checkout(
                 customerId: uid,
@@ -745,6 +819,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
                 items: items,
                 paymentMethod: _payment,
                 note: note.isEmpty ? null : note,
+                koinDipakai: koinDipakai,
               );
       ref.read(cartProvider.notifier).clear();
       if (!context.mounted) return;

@@ -32,6 +32,7 @@ class OrderRepository {
     required List<OrderItem> items,
     required String paymentMethod, // cod | transfer
     String? note,
+    int koinDipakai = 0,
   }) async {
     final db = _db;
     if (db == null) throw const OfflineCheckout();
@@ -88,9 +89,38 @@ class OrderRepository {
         'paymentMethod': paymentMethod,
         'status': 'menunggu',
         'note': note,
+        'koinDipakai': koinDipakai,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // 4. Tukar koin (jika ada): kurangi saldo + catat ledger.
+      //    Aturan PWA: setiap perubahan saldo WAJIB ada entri ledger.
+      if (koinDipakai > 0) {
+        final custRef = db.collection('customers').doc(customerId);
+        final custSnap = await tx.get(custRef);
+        final saldo =
+            ((custSnap.data()?['coins'] as num?)?.toInt() ?? 0);
+        if (saldo < koinDipakai) {
+          throw StateError('Koin tidak cukup');
+        }
+        // Kurangi saldo atomik.
+        tx.update(custRef, {
+          'coins': FieldValue.increment(-koinDipakai),
+        });
+        // Catat di ledger.
+        final ledgerRef = db.collection('coin_ledger').doc();
+        tx.set(ledgerRef, {
+          'customerId': customerId,
+          'amount': -koinDipakai,
+          'reason': 'tukar',
+          'label': 'Tukar koin belanja',
+          'detail': 'Pesanan $code',
+          'orderId': ref.id,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
       return code;
     });
   }
