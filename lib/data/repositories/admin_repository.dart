@@ -631,6 +631,10 @@ class AdminRepository {
   ///
   /// Untuk 'harian' dan 'tebak_harga': cek dulu apakah sudah klaim hari ini.
   /// Jika sudah → throw StateError('Sudah diklaim hari ini').
+  ///
+  /// Anti race condition: cek + tulis dalam SATU transaksi Firestore,
+  /// bukan baca-lalu-batch. Dua pemanggilan bersamaan tidak bisa
+  /// sama-sama lolos cek (audit 2026-10-12).
   Future<void> grantCoins(
     String uid,
     int amount, {
@@ -647,43 +651,45 @@ class AdminRepository {
     final todayKey =
         '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
-    // Cek klaim ganda (ikut PWA).
-    final custDoc = await db.collection('customers').doc(uid).get();
-    final data = custDoc.data();
-    if (reason == 'harian' && data?['lastCheckin'] == todayKey) {
-      throw StateError('Sudah diklaim hari ini');
-    }
-    if (reason == 'tebak_harga' && data?['lastGuessDate'] == todayKey) {
-      throw StateError('Sudah main hari ini');
-    }
-    if (reason == 'misi' && claimKey != null) {
-      final safeKey = claimKey.replaceAll(RegExp(r'[./]'), '_');
-      if ((data?['missionClaims'] as Map?)?[safeKey] == true) {
-        throw StateError('Misi sudah diklaim');
+    await db.runTransaction((tx) async {
+      // Cek klaim ganda (ikut PWA) — di dalam transaksi.
+      final custRef = db.collection('customers').doc(uid);
+      final custSnap = await tx.get(custRef);
+      final data = custSnap.data();
+      if (reason == 'harian' && data?['lastCheckin'] == todayKey) {
+        throw StateError('Sudah diklaim hari ini');
       }
-    }
+      if (reason == 'tebak_harga' && data?['lastGuessDate'] == todayKey) {
+        throw StateError('Sudah main hari ini');
+      }
+      if (reason == 'misi' && claimKey != null) {
+        final safeKey = claimKey.replaceAll(RegExp(r'[./]'), '_');
+        if ((data?['missionClaims'] as Map?)?[safeKey] == true) {
+          throw StateError('Misi sudah diklaim');
+        }
+      }
 
-    final update = <String, dynamic>{
-      'coins': FieldValue.increment(amount),
-    };
-    if (reason == 'harian') update['lastCheckin'] = todayKey;
-    if (reason == 'tebak_harga') update['lastGuessDate'] = todayKey;
-    if (reason == 'misi' && claimKey != null) {
-      final safeKey = claimKey.replaceAll(RegExp(r'[./]'), '_');
-      update['missionClaims.$safeKey'] = true;
-    }
+      final update = <String, dynamic>{
+        'coins': FieldValue.increment(amount),
+      };
+      if (reason == 'harian') update['lastCheckin'] = todayKey;
+      if (reason == 'tebak_harga') update['lastGuessDate'] = todayKey;
+      if (reason == 'misi' && claimKey != null) {
+        final safeKey = claimKey.replaceAll(RegExp(r'[./]'), '_');
+        update['missionClaims.$safeKey'] = true;
+      }
 
-    final batch = db.batch();
-    batch.update(db.collection('customers').doc(uid), update);
-    batch.set(db.collection('coin_ledger').doc(), {
-      'customerId': uid,
-      'amount': amount,
-      'reason': reason,
-      'label': label ?? 'Bonus koin',
-      'detail': detail ?? '',
-      'createdAt': FieldValue.serverTimestamp(),
+      tx.update(custRef, update);
+      final ledgerRef = db.collection('coin_ledger').doc();
+      tx.set(ledgerRef, {
+        'customerId': uid,
+        'amount': amount,
+        'reason': reason,
+        'label': label ?? 'Bonus koin',
+        'detail': detail ?? '',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
     });
-    await batch.commit();
   }
 
   /// Sesuaikan koin pelanggan + catat di coin_ledger (append-only).

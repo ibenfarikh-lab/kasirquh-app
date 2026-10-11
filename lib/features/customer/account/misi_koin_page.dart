@@ -90,6 +90,7 @@ class MisiKoinPage extends ConsumerStatefulWidget {
 class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
   Set<String> _diminta = {};
   bool _memuat = true;
+  bool _klaimBusy = false; // Guard double-tap (audit 2026-10-12).
 
   @override
   void initState() {
@@ -106,6 +107,8 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
       BuildContext context, WidgetRef ref, Misi misi, String uid) async {
     // Klaim otomatis via grantCoins (ikut PWA) — tidak perlu via chat.
     // Penanda klaim di Firestore (missionClaims), bukan SharedPreferences.
+    if (_klaimBusy) return;
+    setState(() => _klaimBusy = true);
     try {
       final settings = ref.read(coinSettingsProvider).valueOrNull ??
           const CoinSettings();
@@ -143,6 +146,12 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text(Strings.butuhInternetUmum)),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _klaimBusy = false);
+      } else {
+        _klaimBusy = false;
       }
     }
   }
@@ -273,9 +282,11 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
             if (tuntas) ...[
               const SizedBox(height: 8),
               AppButton(
-                label: diminta ? 'Sudah diambil' : 'Ambil hadiah',
+                label: diminta
+                    ? 'Sudah diambil'
+                    : (_klaimBusy ? 'Memproses...' : 'Ambil hadiah'),
                 fullWidth: true,
-                onPressed: diminta
+                onPressed: (diminta || _klaimBusy)
                     ? null
                     : () =>
                         _mintaHadiah(context, ref, misi, uid),
