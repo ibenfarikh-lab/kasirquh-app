@@ -222,15 +222,21 @@ class SocialRepository {
       return;
     }
     try {
+      // Tanpa orderBy di Firestore: query where+orderBy butuh composite index
+      // khusus (tanpanya query gagal total — insiden 2026-10-09).
+      // Urutkan di Dart (terbaru dulu).
       yield* db
           .collection('coin_ledger')
           .where('customerId', isEqualTo: uid)
-          .orderBy('createdAt', descending: true)
           .limit(limit)
           .snapshots()
-          .map((snap) => snap.docs
-              .map((d) => CoinEntry.fromDoc(d.id, d.data()))
-              .toList());
+          .map((snap) {
+        final list = snap.docs
+            .map((d) => CoinEntry.fromDoc(d.id, d.data()))
+            .toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
     } catch (_) {
       yield const [];
     }
