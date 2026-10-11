@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/models/customer.dart';
 import '../../../data/repositories/admin_repository.dart';
@@ -88,9 +87,9 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
       );
 
   /// Nilai koin + batas penukaran + event bonus — selaras prototipe.
+  /// Nilai koin DIKUNCI Rp1 (instruksi user) — hanya tampil info.
   Widget _pengaturanKoin() {
     final info = ref.watch(storeInfoProvider).valueOrNull;
-    final rate = info?.coinRate ?? 0;
     final batas = info?.coinRedeemLimit ?? 0;
     return Container(
       padding: const EdgeInsets.all(12),
@@ -103,23 +102,19 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             dense: true,
+            // Nilai koin DIKUNCI: 1 koin = Rp1 tetap (instruksi user).
+            // Tidak bisa diubah, tampil sebagai info saja.
             title: Text(
               'Nilai koin',
               style: TextStyle(color: context.teksUtama),
             ),
             subtitle: Text(
-              rate <= 0
-                  ? Strings.belumDiatur
-                  : '${formatRp(rate)} per koin',
+              'Rp1 per koin (tetap)',
               style: TextStyle(color: context.teksRedup),
             ),
-            trailing: Icon(Icons.chevron_right,
-                color: context.teksRedup),
-            onTap: () => _ubahAngka(
-              judul: 'Nilai koin (Rp)',
-              awal: rate,
-              kunci: 'coinRate',
-            ),
+            trailing: Icon(Icons.lock_outline,
+                color: context.teksRedup, size: 20),
+            onTap: null,
           ),
           const Divider(height: 1, color: AppColors.adminLine),
           ListTile(
