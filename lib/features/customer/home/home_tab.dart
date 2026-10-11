@@ -24,7 +24,7 @@ import '../../../data/repositories/social_repository.dart';
 
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
-import '../account/coin_history_page.dart';
+import '../account/dompet_koin_page.dart';
 import '../cart/cart_provider.dart';
 import '../patungan/patungan_customer_page.dart';
 import '../catalog/catalog_tab.dart';
@@ -132,10 +132,19 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
+  // ---------- Teks berjalan (marquee ala PWA, 18 detik) ----------
+  /// Teks mengalir mulus dari kanan ke kiri, infinite.
+  /// Kalau teks muat dalam lebar layar, tampil statis (tanpa animasi).
+  Widget _marqueeText(String teks, TextStyle style) {
+    return _MarqueeText(teks: teks, style: style);
+  }
+
   // ---------- Teks berjalan (running-info ala PWA) ----------
   Widget _runningBar(StoreInfo store) {
     final teks = (store.runningText ?? '').trim();
     if (teks.isEmpty) return const SizedBox.shrink();
+    final style =
+        const TextStyle(fontSize: 12, color: Color(0xFF8A5A1A));
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Container(
@@ -150,11 +159,7 @@ class HomeTab extends ConsumerWidget {
                 size: 20, color: Color(0xFF8A5A1A)),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                teks,
-                style: const TextStyle(
-                    fontSize: 12, color: Color(0xFF8A5A1A)),
-              ),
+              child: _marqueeText(teks, style),
             ),
           ],
         ),
@@ -311,10 +316,9 @@ class HomeTab extends ConsumerWidget {
           requireLogin(context, ref, () async {});
           return;
         }
-        final uid = memberUid(session);
-        if (uid == null) return;
+        // Ala PWA: slide koin -> Dompet loyalti (satu pintu masuk).
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => CoinHistoryPage(uid: uid)),
+          MaterialPageRoute(builder: (_) => const DompetKoinPage()),
         );
         break;
       case 'budgetModal':
@@ -2226,6 +2230,79 @@ class _CarouselSlot {
   });
 }
 
+/// Teks berjalan (marquee) ala PWA: mengalir mulus kanan → kiri,
+/// 18 detik, infinite. Kalau teks muat, tampil statis.
+class _MarqueeText extends StatefulWidget {
+  final String teks;
+  final TextStyle style;
+  const _MarqueeText({required this.teks, required this.style});
+
+  @override
+  State<_MarqueeText> createState() => _MarqueeTextState();
+}
+
+class _MarqueeTextState extends State<_MarqueeText>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  double _lebarTeks = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 18),
+    )..repeat();
+    _ukur();
+  }
+
+  void _ukur() {
+    final tp = TextPainter(
+      text: TextSpan(text: widget.teks, style: widget.style),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout();
+    _lebarTeks = tp.width;
+  }
+
+  @override
+  void didUpdateWidget(covariant _MarqueeText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.teks != widget.teks) _ukur();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        if (_lebarTeks <= w || _lebarTeks <= 0) {
+          return Text(widget.teks, style: widget.style, maxLines: 1);
+        }
+        return ClipRect(
+          child: AnimatedBuilder(
+            animation: _ctrl,
+            builder: (_, __) {
+              final dx = w - _ctrl.value * (w + _lebarTeks);
+              return Transform.translate(
+                offset: Offset(dx, 0),
+                child: Text(widget.teks,
+                    style: widget.style, maxLines: 1),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// Carousel promo ala PWA: PageView auto-rotate + dots + swipe.
 /// Style light: bg #fff7ed, border #f0d9b5, rounded 18px.
 class _PromoCarouselView extends StatefulWidget {
@@ -2285,17 +2362,20 @@ class _PromoCarouselViewState extends State<_PromoCarouselView> {
       child: Stack(
         children: [
           SizedBox(
-            height: 150,
+            height: 104,
             child: PageView.builder(
               controller: _ctrl,
               itemCount: widget.slots.length,
               onPageChanged: (i) => setState(() => _idx = i),
               itemBuilder: (_, i) {
                 final s = widget.slots[i];
+                // Layout ala PWA: badge di atas, headline + tombol sebaris,
+                // subheadline di bawah. Kanan disisakan untuk dots vertikal.
                 return Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+                  padding: const EdgeInsets.fromLTRB(16, 10, 40, 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -2313,48 +2393,49 @@ class _PromoCarouselViewState extends State<_PromoCarouselView> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              s.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF7C4A12),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () => widget.onAction(s.action),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF34231C),
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              textStyle: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: const Text('Lihat \u2192'),
+                          ),
+                        ],
+                      ),
                       Text(
-                        s.title,
+                        s.copy,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: Color(0xFF7C4A12),
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Expanded(
-                        child: Text(
-                          s.copy,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFA0805A),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: ElevatedButton(
-                          onPressed: () => widget.onAction(s.action),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF34231C),
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 8),
-                            textStyle: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: const Text('Lihat →'),
+                          color: Color(0xFFA0805A),
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -2364,26 +2445,30 @@ class _PromoCarouselViewState extends State<_PromoCarouselView> {
             ),
           ),
           Positioned(
-            left: 15,
-            bottom: 8,
-            child: Row(
-              children: List.generate(
-                widget.slots.length,
-                (i) => GestureDetector(
-                  onTap: () => _ctrl.animateToPage(
-                    i,
-                    duration: const Duration(milliseconds: 450),
-                    curve: Curves.ease,
-                  ),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 5),
-                    width: _idx == i ? 18 : 5,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: _idx == i
-                          ? const Color(0xFFFFC16C)
-                          : const Color(0xFF80695D),
-                      borderRadius: BorderRadius.circular(5),
+            right: 10,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(
+                  widget.slots.length,
+                  (i) => GestureDetector(
+                    onTap: () => _ctrl.animateToPage(
+                      i,
+                      duration: const Duration(milliseconds: 450),
+                      curve: Curves.ease,
+                    ),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 5),
+                      width: 5,
+                      height: _idx == i ? 18 : 5,
+                      decoration: BoxDecoration(
+                        color: _idx == i
+                            ? const Color(0xFFFFC16C)
+                            : const Color(0xFF80695D),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
                     ),
                   ),
                 ),
