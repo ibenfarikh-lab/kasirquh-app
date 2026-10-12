@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_settings.dart';
+import '../../../core/pengaturan/pengaturan_pelanggan.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -796,6 +797,9 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
     // Map tema provider ke string PWA.
     final t = ref.read(temaPelangganProvider);
     _tema = t.name;
+    // Muat density & dering tersimpan.
+    _density = ref.read(densityPelangganProvider);
+    _dering = ref.read(deringPelangganProvider);
   }
 
   @override
@@ -871,14 +875,37 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
             const SizedBox(width: 8),
             Expanded(
               child: FilledButton(
-                onPressed: () {
-                  // Terapkan: simpan nama & tema.
-                  // (Nama panggilan tersimpan di sesi lokal.)
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Pengaturan diterapkan')),
-                  );
-                  Navigator.of(context).pop();
+                onPressed: () async {
+                  // Terapkan SEMUA: tema, nama, density, dering.
+                  // (Bug lapor user 2026-10-12: tombol tidak menyimpan apa-apa.)
+                  await ref
+                      .read(temaPelangganProvider.notifier)
+                      .pilih(TemaPilihan.fromString(_tema));
+                  await ref
+                      .read(densityPelangganProvider.notifier)
+                      .pilih(_density);
+                  await ref
+                      .read(deringPelangganProvider.notifier)
+                      .pilih(_dering);
+                  final session =
+                      ref.read(sessionProvider).valueOrNull;
+                  final uid = session == null
+                      ? null
+                      : memberUid(session);
+                  if (uid != null) {
+                    try {
+                      await ref
+                          .read(adminRepositoryProvider)
+                          .updateNamaCustomer(uid, _nama.text);
+                    } catch (_) {}
+                  }
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Pengaturan diterapkan')),
+                    );
+                    Navigator.of(context).pop();
+                  }
                 },
                 child: const Text('Terapkan pengaturan'),
               ),

@@ -66,6 +66,17 @@ class AdminRepository {
 
   bool get online => _db != null;
 
+  /// Ubah nama panggilan pelanggan di `customers/{uid}`.
+  /// Dipakai form Pengaturan Pelanggan (laporan user 2026-10-12:
+  /// tombol "Terapkan" tidak menyimpan apa-apa).
+  Future<void> updateNamaCustomer(String uid, String nama) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet.');
+    final bersih = nama.trim();
+    if (bersih.isEmpty) return;
+    await db.collection('customers').doc(uid).update({'name': bersih});
+  }
+
   // ============ TULIS LOKAL + ANTREAN ============
 
   Future<void> _writeLocalThenQueue({

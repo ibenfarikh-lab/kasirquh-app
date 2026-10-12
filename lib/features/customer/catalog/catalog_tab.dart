@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/pengaturan/pengaturan_pelanggan.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -176,14 +177,31 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
                   title: 'Produk tidak ditemukan.',
                 );
               }
+              // Tampilan produk ikut pengaturan pelanggan:
+              // ringkas = grid 3, lega = grid 2, daftar = list.
+              final density = DensityPilihan.fromString(
+                  ref.watch(densityPelangganProvider));
+              if (density == DensityPilihan.daftar) {
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filtered.length,
+                  itemBuilder: (_, i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _ProductListTile(product: filtered[i]),
+                  ),
+                );
+              }
+              final cols =
+                  density == DensityPilihan.ringkas ? 3 : 2;
               return GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
+                    SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: cols,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 0.78,
+                  childAspectRatio:
+                      density == DensityPilihan.ringkas ? 0.72 : 0.78,
                 ),
                 itemCount: filtered.length,
                 itemBuilder: (_, i) =>
@@ -540,6 +558,99 @@ class _ProductCard extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (_) => ProductDetailSheet(product: product),
+    );
+  }
+}
+
+/// Tile horizontal untuk mode "Daftar" — foto + nama + harga + tambah.
+class _ProductListTile extends ConsumerWidget {
+  final Product product;
+
+  const _ProductListTile({required this.product});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final promos = ref.watch(promosProvider).valueOrNull ?? const <Promo>[];
+    final hargaAkhir = hargaJualAktif(product, promos);
+    final adaDiskon = hargaAkhir < product.price;
+    final out = product.stock <= 0;
+
+    void tambahSatu() {
+      final ok = ref.read(cartProvider.notifier).add(product);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ok
+              ? '${product.name} masuk keranjang'
+              : Strings.stokMenipis),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+
+    final foto = photoImageProvider(product.photoPath);
+
+    return AppCard(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          builder: (_) => ProductDetailSheet(product: product),
+        );
+      },
+      child: Row(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.orange.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: foto == null
+                ? const Icon(Icons.shopping_basket_outlined, size: 28)
+                : Image(image: foto, fit: BoxFit.cover),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(product.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(formatRp(hargaAkhir),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.orange)),
+                    if (adaDiskon) ...[
+                      const SizedBox(width: 6),
+                      Text(formatRp(product.price),
+                          style: TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: context.teksRedup,
+                              fontSize: 11)),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: out ? null : tambahSatu,
+            icon: const Icon(Icons.add_circle_outline),
+            color: AppColors.orange,
+          ),
+        ],
+      ),
     );
   }
 }
