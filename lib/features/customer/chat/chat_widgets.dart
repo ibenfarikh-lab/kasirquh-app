@@ -32,7 +32,7 @@ class ChatBubble extends StatelessWidget {
         decoration: BoxDecoration(
           color: milikSaya
               ? AppColors.orange
-              : (context.temaGelap ? AppColors.panel2 : AppColors.card),
+              : (context.temaGelap ? const Color(0xFF0A0A0A) : AppColors.card),
           borderRadius: BorderRadius.circular(14),
           border:
               milikSaya ? null : Border.all(color: context.garis),

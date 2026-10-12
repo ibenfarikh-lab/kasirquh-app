@@ -113,7 +113,9 @@ class _PatunganCustomerCard extends ConsumerWidget {
                 value: p.totalSlots > 0
                     ? p.filledSlots / p.totalSlots
                     : 0,
-                backgroundColor: context.garis,
+                backgroundColor: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF2A2A2A)
+                    : context.garis,
                 valueColor: const AlwaysStoppedAnimation<Color>(
                     AppColors.orange),
                 minHeight: 8,

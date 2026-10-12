@@ -117,7 +117,7 @@ class _TemanBelanjaPanelState extends ConsumerState<_TemanBelanjaPanel> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.panel2
+                  ? const Color(0xFF0A0A0A)
                   : AppColors.paper,
               borderRadius: BorderRadius.circular(12),
             ),

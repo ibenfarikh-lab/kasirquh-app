@@ -670,7 +670,7 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark
-            ? const Color(0xFF3A2E1A)
+            ? const Color(0xFF0A0A0A)
             : const Color(0xFFFFF0C8),
         border: Border.all(
             color: isDark

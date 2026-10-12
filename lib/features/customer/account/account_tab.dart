@@ -117,7 +117,7 @@ class AccountTab extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: Theme.of(context).brightness ==
                             Brightness.dark
-                        ? const Color(0xFF3A2E1A)
+                        ? const Color(0xFF0A0A0A)
                         : const Color(0xFFFFF0C8),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -142,7 +142,7 @@ class AccountTab extends ConsumerWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF3A2E1A)
+                ? const Color(0xFF0A0A0A)
                 : const Color(0xFFFFF2DF),
             border: Border.all(
                 color: Theme.of(context).brightness == Brightness.dark
@@ -836,9 +836,8 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
         const SizedBox(height: 8),
         _opsi('terang', 'Terang', 'Bawaan pelanggan'),
-        _opsi('gelap', 'Gelap', 'Nyaman malam'),
-        _opsi('oled', 'Hitam Pekat', 'Hemat baterai OLED'),
-        _opsi('sistem', 'Ikuti HP', 'Otomatis'),
+        _opsi('gelap', 'Gelap', 'Hitam pekat'),
+        _opsi('sistem', 'Otomatis', 'Ikuti HP'),
         const SizedBox(height: 16),
         // Tampilan produk.
         const Text('Tampilan produk',

@@ -170,6 +170,10 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
                 query: _search.text,
                 category: _category,
               );
+              // Urut abjad A-Z (selaras PWA).
+              filtered.sort((a, b) => a.name
+                  .toLowerCase()
+                  .compareTo(b.name.toLowerCase()));
               if (filtered.isEmpty) {
                 return const EmptyState(
                   icon: Icons.inventory_2_outlined,
@@ -331,7 +335,7 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
     // Aturan tema: selected = border orange saja (bukan bg terang).
     // Background ikut tema (tidak hardcoded terang/gelap).
     final bg = Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF2B2B2B)
+        ? const Color(0xFF0A0A0A)
         : Colors.white;
     return Padding(
       padding: const EdgeInsets.only(right: 10),

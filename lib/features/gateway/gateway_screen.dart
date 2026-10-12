@@ -111,7 +111,8 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
           WidgetsBinding.instance.addPostFrameCallback((_) => _enterAsGuest());
         }
         return Scaffold(
-          backgroundColor: AppColors.adminBg,
+          // Full black selaras tema gelap (keputusan user 2026-10-12).
+          backgroundColor: const Color(0xFF000000),
           body: Stack(
             children: [
               PageView.builder(

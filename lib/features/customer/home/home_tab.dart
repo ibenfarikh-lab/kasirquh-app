@@ -2351,7 +2351,7 @@ class _PromoCarouselViewState extends State<_PromoCarouselView> {
     return Container(
       decoration: BoxDecoration(
         color: isDark
-            ? const Color(0xFF3A2E1A)
+            ? const Color(0xFF0A0A0A)
             : const Color(0xFFFFF7ED),
         border: Border.all(
             color: isDark
@@ -2553,7 +2553,7 @@ class _PromoKilatCardState extends ConsumerState<_PromoKilatCard> {
         // Warna PWA light: bg #fff0df, border #f0cc9f.
         // Dark: ikut tema (tidak hardcoded terang).
         color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF3A2E1A)
+            ? const Color(0xFF0A0A0A)
             : const Color(0xFFFFF0DF),
         border: Border.all(
             color: Theme.of(context).brightness == Brightness.dark

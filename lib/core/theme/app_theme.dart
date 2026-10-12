@@ -144,68 +144,11 @@ class AppTheme {
     );
   }
 
-  /// Varian gelap Mode Pelanggan — palet warm yang sama dengan admin,
-  /// struktur terang pelanggan.
-  static ThemeData customerDarkTheme() {
-    final scheme = const ColorScheme.dark(
-      primary: AppColors.orange,
-      onPrimary: AppColors.adminBg,
-      surface: AppColors.panel,
-      onSurface: AppColors.warmText,
-      surfaceContainerHighest: AppColors.panel2,
-      error: AppColors.danger,
-    );
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: scheme,
-      scaffoldBackgroundColor: AppColors.adminBg,
-      textTheme: AppText.textTheme(scheme),
-      cardTheme: CardThemeData(
-        color: AppColors.panel,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: AppColors.adminLine, width: 1),
-        ),
-      ),
-      dialogTheme: const DialogThemeData(
-        // Aturan 3: dialog = L3.
-        backgroundColor: AppColors.panel2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20)),
-        ),
-      ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        // Aturan 3: sheet/dialog = L3 = panel2.
-        backgroundColor: AppColors.panel2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-      ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.panel,
-        selectedItemColor: AppColors.orange,
-        unselectedItemColor: AppColors.warmMuted,
-        type: BottomNavigationBarType.fixed,
-      ),
-      dividerColor: AppColors.adminLine,
-      chipTheme: ChipThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      inputDecorationTheme: const InputDecorationTheme(
-        labelStyle: TextStyle(color: AppColors.warmMuted),
-        hintStyle: TextStyle(color: AppColors.warmMuted),
-        floatingLabelStyle: TextStyle(color: AppColors.orange),
-      ),
-    );
-  }
-
-  /// Varian OLED Mode Pelanggan — hitam pekat, hemat baterai layar OLED.
+  /// Varian gelap Mode Pelanggan — FULL BLACK AMOLED (keputusan user 2026-10-12).
   /// Background #000000 murni, kartu #0a0a0a + border abu tipis,
-  /// aksen orange lebih kontras. (ACC user 2026-10-12, ikut PWA.)
-  static ThemeData customerOledTheme() {
+  /// teks putih, aksen orange kontras. Tidak ada background warna
+  /// apapun selain hitam.
+  static ThemeData customerDarkTheme() {
     const bg = Color(0xFF000000);
     const kartu = Color(0xFF0A0A0A);
     const garis = Color(0xFF2A2A2A);
