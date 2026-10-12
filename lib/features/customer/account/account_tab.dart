@@ -837,6 +837,7 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
         const SizedBox(height: 8),
         _opsi('terang', 'Terang', 'Bawaan pelanggan'),
         _opsi('gelap', 'Gelap', 'Nyaman malam'),
+        _opsi('oled', 'Hitam Pekat', 'Hemat baterai OLED'),
         _opsi('sistem', 'Ikuti HP', 'Otomatis'),
         const SizedBox(height: 16),
         // Tampilan produk.

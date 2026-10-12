@@ -206,20 +206,24 @@ void main() {
     test('fromString & label', () {
       expect(TemaPilihan.fromString('gelap'), TemaPilihan.gelap);
       expect(TemaPilihan.fromString('sistem'), TemaPilihan.sistem);
+      expect(TemaPilihan.fromString('oled'), TemaPilihan.oled);
       expect(TemaPilihan.fromString(null), TemaPilihan.terang);
       expect(TemaPilihan.fromString('aneh'), TemaPilihan.terang);
       expect(TemaPilihan.terang.label, 'Terang');
       expect(TemaPilihan.gelap.label, 'Gelap');
       expect(TemaPilihan.sistem.label, 'Ikuti HP');
+      expect(TemaPilihan.oled.label, 'Hitam Pekat');
     });
   });
 
   group('resolveGelap', () {
-    test('terang selalu false, gelap selalu true', () {
+    test('terang selalu false, gelap & oled selalu true', () {
       expect(resolveGelap(TemaPilihan.terang, Brightness.dark), isFalse);
       expect(resolveGelap(TemaPilihan.terang, Brightness.light), isFalse);
       expect(resolveGelap(TemaPilihan.gelap, Brightness.dark), isTrue);
       expect(resolveGelap(TemaPilihan.gelap, Brightness.light), isTrue);
+      expect(resolveGelap(TemaPilihan.oled, Brightness.dark), isTrue);
+      expect(resolveGelap(TemaPilihan.oled, Brightness.light), isTrue);
     });
 
     test('sistem mengikuti HP', () {

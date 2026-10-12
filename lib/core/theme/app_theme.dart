@@ -202,6 +202,74 @@ class AppTheme {
     );
   }
 
+  /// Varian OLED Mode Pelanggan — hitam pekat, hemat baterai layar OLED.
+  /// Background #000000 murni, kartu #0a0a0a + border abu tipis,
+  /// aksen orange lebih kontras. (ACC user 2026-10-12, ikut PWA.)
+  static ThemeData customerOledTheme() {
+    const bg = Color(0xFF000000);
+    const kartu = Color(0xFF0A0A0A);
+    const garis = Color(0xFF2A2A2A);
+    const orangeKontras = Color(0xFFFF9B3E);
+    const teks = Color(0xFFF5F0E8);
+    const teksRedup = Color(0xFF9A9A9A);
+    final scheme = const ColorScheme.dark(
+      primary: orangeKontras,
+      onPrimary: bg,
+      surface: kartu,
+      onSurface: teks,
+      surfaceContainerHighest: kartu,
+      error: AppColors.danger,
+    );
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: bg,
+      textTheme: AppText.textTheme(scheme),
+      cardTheme: CardThemeData(
+        color: kartu,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: garis, width: 1),
+        ),
+      ),
+      dialogTheme: const DialogThemeData(
+        backgroundColor: kartu,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: kartu,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: bg,
+        selectedItemColor: orangeKontras,
+        unselectedItemColor: teksRedup,
+        type: BottomNavigationBarType.fixed,
+      ),
+      dividerColor: garis,
+      chipTheme: ChipThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        labelStyle: TextStyle(color: teksRedup),
+        hintStyle: TextStyle(color: teksRedup),
+        floatingLabelStyle: TextStyle(color: orangeKontras),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: bg,
+        foregroundColor: teks,
+        elevation: 0,
+      ),
+    );
+  }
+
   /// Varian terang Mode Admin — palet terang pelanggan.
   static ThemeData adminLightTheme() {
     final scheme = const ColorScheme.light(

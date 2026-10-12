@@ -5,26 +5,31 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app_theme.dart';
 
 /// Pilihan tema per mode — selaras prototipe (Terang / Gelap / Ikuti HP).
+/// Ditambah Hitam Pekat (OLED) atas ACC user 2026-10-12.
 enum TemaPilihan {
   terang,
   gelap,
-  sistem;
+  sistem,
+  oled;
 
   String get label => switch (this) {
         TemaPilihan.terang => 'Terang',
         TemaPilihan.gelap => 'Gelap',
         TemaPilihan.sistem => 'Ikuti HP',
+        TemaPilihan.oled => 'Hitam Pekat',
       };
 
   IconData get icon => switch (this) {
         TemaPilihan.terang => Icons.light_mode_outlined,
         TemaPilihan.gelap => Icons.dark_mode_outlined,
         TemaPilihan.sistem => Icons.smartphone_outlined,
+        TemaPilihan.oled => Icons.contrast_outlined,
       };
 
   static TemaPilihan fromString(String? s) => switch (s) {
         'gelap' => TemaPilihan.gelap,
         'sistem' => TemaPilihan.sistem,
+        'oled' => TemaPilihan.oled,
         _ => TemaPilihan.terang,
       };
 }
@@ -69,15 +74,19 @@ final temaAdminProvider =
 
 /// Putuskan gelap/terang dari pilihan + kecerahan sistem.
 /// Fungsi pure — bisa di-unit-test tanpa Flutter.
+/// OLED selalu gelap.
 bool resolveGelap(TemaPilihan pilihan, Brightness sistem) =>
     switch (pilihan) {
       TemaPilihan.terang => false,
       TemaPilihan.gelap => true,
+      TemaPilihan.oled => true,
       TemaPilihan.sistem => sistem == Brightness.dark,
     };
 
 /// ThemeData Mode Pelanggan berdasar pilihan + kecerahan sistem.
+/// OLED punya ThemeData sendiri (hitam pekat #000000).
 ThemeData temaPelangganAktif(TemaPilihan pilihan, Brightness sistem) {
+  if (pilihan == TemaPilihan.oled) return AppTheme.customerOledTheme();
   return resolveGelap(pilihan, sistem)
       ? AppTheme.customerDarkTheme()
       : AppTheme.customerTheme();
