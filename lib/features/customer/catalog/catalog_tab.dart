@@ -351,10 +351,11 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
           ),
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
+              // Aturan tema: teks kontras ikut tema (bukan hardcoded gelap).
+              color: context.teksUtama,
             ),
           ),
         ),

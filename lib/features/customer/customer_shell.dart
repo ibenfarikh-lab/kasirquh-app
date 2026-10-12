@@ -96,10 +96,8 @@ class CustomerShell extends ConsumerWidget {
       floatingActionButton: index == 0
           ? FloatingActionButton(
               tooltip: 'Buka Teman Belanja',
-              backgroundColor:
-                  Theme.of(context).brightness == Brightness.dark
-                      ? AppColors.orange
-                      : Colors.black,
+              // Aturan tema: tanpa background gelap di tema terang.
+              backgroundColor: AppColors.orange,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
