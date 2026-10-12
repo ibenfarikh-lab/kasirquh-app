@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/mode_provider.dart';
 import '../../core/theme/theme_settings.dart';
 import '../../core/widgets/app_button.dart';
 import '../../data/remote/auth_service.dart';
@@ -91,6 +92,8 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
   }
 
   void _goAdmin() {
+    // Masuk mode admin → tema admin berlaku global.
+    ref.read(modeAktifProvider.notifier).state = 'admin';
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const AdminShell()),
       (_) => false,

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/mode_provider.dart';
 import '../../core/utils/startup_report.dart';
 import '../../data/remote/auth_service.dart';
 import '../../data/repositories/store_repository.dart';
@@ -76,6 +77,8 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
     _timer?.cancel();
     if (_navigated || !mounted) return;
     _navigated = true;
+    // Masuk mode pelanggan → tema pelanggan berlaku global.
+    ref.read(modeAktifProvider.notifier).state = 'pelanggan';
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const CustomerShell()),
     );
@@ -84,6 +87,8 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
   /// Hotspot admin tersembunyi: area tak terlihat di pojok kanan atas.
   void _openAdminGate() {
     _timer?.cancel();
+    // Layar PIN/gate admin → tema admin berlaku global.
+    ref.read(modeAktifProvider.notifier).state = 'admin';
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const PinScreen()),
     );

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../core/theme/theme_settings.dart';
 import '../../core/widgets/guest_lock_sheet.dart';
 import '../../data/repositories/social_repository.dart';
 import '../../data/repositories/store_repository.dart';
@@ -42,13 +41,10 @@ class CustomerShell extends ConsumerWidget {
         ? 0
         : ref.watch(myTokoThreadProvider(uid)).valueOrNull?.unreadCustomer ??
             0;
-    final tema = ref.watch(temaPelangganProvider);
-    final sistem =
-        MediaQuery.platformBrightnessOf(context);
 
-    return Theme(
-      data: temaPelangganAktif(tema, sistem),
-      child: Scaffold(
+    // Tema diatur di MaterialApp berdasar modeAktifProvider —
+    // tidak perlu Theme lokal (agar halaman push ikut tema).
+    return Scaffold(
         appBar: index == 0
             ? _berandaHeader(context, ref, session)
             : index >= 1 && index <= 4
@@ -161,7 +157,6 @@ class CustomerShell extends ConsumerWidget {
             label: Strings.tabAkun,
           ),
         ],
-      ),
       ),
     );
   }

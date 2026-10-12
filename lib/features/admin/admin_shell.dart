@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/theme_settings.dart';
 import '../../data/repositories/admin_repository.dart';
 import '../../l10n/strings_id.dart';
 import 'admin_push_bootstrap.dart';
@@ -25,13 +24,10 @@ class AdminShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final index = ref.watch(adminTabProvider);
     final inboxBadge = ref.watch(inboxBadgeProvider);
-    final tema = ref.watch(temaAdminProvider);
-    final sistem =
-        MediaQuery.platformBrightnessOf(context);
 
-    return Theme(
-      data: temaAdminAktif(tema, sistem),
-      child: Scaffold(
+    // Tema diatur di MaterialApp berdasar modeAktifProvider —
+    // tidak perlu Theme lokal (agar halaman push ikut tema).
+    return Scaffold(
         appBar: AppBar(
           title: const Row(
             mainAxisSize: MainAxisSize.min,
@@ -106,7 +102,6 @@ class AdminShell extends ConsumerWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

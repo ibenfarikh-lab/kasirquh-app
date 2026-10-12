@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_settings.dart';
 import '../../../core/pengaturan/pengaturan_pelanggan.dart';
+import '../../../core/theme/mode_provider.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
@@ -652,6 +653,8 @@ class AccountTab extends ConsumerWidget {
     if (ok == true && context.mounted) {
       await ref.read(authServiceProvider)?.signOut();
       if (context.mounted) {
+        // Keluar → kembali ke gateway.
+        ref.read(modeAktifProvider.notifier).state = 'gateway';
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const GatewayScreen()),
           (_) => false,

@@ -4,6 +4,7 @@ import '../admin_nav.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/mode_provider.dart';
 import '../../../data/remote/auth_service.dart';
 import '../../../l10n/strings_id.dart';
 import '../../auth/biometric_credential_service.dart';
@@ -229,6 +230,8 @@ class MenuTab extends ConsumerWidget {
       await auth.signOut();
       await auth.signIn(email: cred.email, password: cred.password);
       if (context.mounted) {
+        // Kembali ke mode pelanggan → tema pelanggan berlaku global.
+        ref.read(modeAktifProvider.notifier).state = 'pelanggan';
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const CustomerShell()),
           (_) => false,
