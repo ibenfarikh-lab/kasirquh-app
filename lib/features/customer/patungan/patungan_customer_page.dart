@@ -94,7 +94,10 @@ class _PatunganCustomerCard extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: context.garis,
+                    // Aturan tema: dark = full black, tanpa warna lain.
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF2A2A2A)
+                        : context.garis,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
