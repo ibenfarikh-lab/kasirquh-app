@@ -13,6 +13,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/order.dart';
+import '../../../data/models/customer.dart';
 import '../../../data/models/customer_note.dart';
 import '../../../data/remote/auth_service.dart';
 import '../../../data/repositories/customer_note_repository.dart';
@@ -1034,14 +1035,8 @@ class _MemberBarcodeCard extends StatelessWidget {
 
   const _MemberBarcodeCard({required this.uid, required this.nama});
 
-  /// Kode member: 8 karakter alfanumerik dari UID (Code39-friendly).
-  String get kodeMember {
-    final bersih =
-        uid.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
-    final potong =
-        bersih.length >= 8 ? bersih.substring(0, 8) : bersih.padRight(8, '0');
-    return 'KQ-$potong';
-  }
+  /// Kode member — fungsi bersama, format identik PWA.
+  String get kodeMember => memberCodeFromUid(uid);
 
   @override
   Widget build(BuildContext context) {

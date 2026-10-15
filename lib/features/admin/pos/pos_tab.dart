@@ -9,6 +9,7 @@ import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/product.dart';
+import '../../../data/models/customer.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/product_repository.dart';
 import '../../../l10n/strings_id.dart';
@@ -21,6 +22,10 @@ final posCartProvider =
     StateNotifierProvider<CartNotifier, List<CartLine>>((ref) {
   return CartNotifier();
 });
+
+/// Member aktif di kasir — hasil scan kartu KQ-XXXXXXXX.
+/// null = transaksi tanpa member (tamu).
+final posMemberProvider = StateProvider<Customer?>((ref) => null);
 
 /// Tab Kasir (POS): cari produk, pindai barcode, keranjang,
 /// bayar tunai + kembalian otomatis, struk 58mm.
@@ -204,6 +209,8 @@ class _PosTabState extends ConsumerState<PosTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Banner member aktif (hasil scan kartu KQ-).
+                _memberBanner(context),
                 Text(
                   '${Strings.transaksiAktif} $totalQty item',
                   style: TextStyle(
@@ -316,8 +323,14 @@ class _PosTabState extends ConsumerState<PosTab> {
   }
 
   Future<void> _findAndAdd(String barcode) async {
+    final q = barcode.trim();
+    // Kartu member (KQ-XXXXXXXX) → identifikasi member, bukan produk.
+    if (q.toUpperCase().startsWith('KQ-')) {
+      await _findMember(q);
+      return;
+    }
     final product =
-        await ref.read(adminRepositoryProvider).findByBarcode(barcode);
+        await ref.read(adminRepositoryProvider).findByBarcode(q);
     if (!mounted) return;
     if (product == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -333,6 +346,90 @@ class _PosTabState extends ConsumerState<PosTab> {
                 '${Strings.stokTidakCukup} ${product.name}')),
       );
     }
+  }
+
+  /// Cari member dari kode kartu. Hanya member approved yang diterima.
+  Future<void> _findMember(String code) async {
+    final customer = await ref
+        .read(adminRepositoryProvider)
+        .findCustomerByMemberCode(code);
+    if (!mounted) return;
+    if (customer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Kode member tidak dikenal.')),
+      );
+      return;
+    }
+    if (!customer.isApproved) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                'Member ${customer.name} belum disetujui.')),
+      );
+      return;
+    }
+    ref.read(posMemberProvider.notifier).state = customer;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text('Member: ${customer.name}')),
+    );
+  }
+
+  /// Hapus member dari transaksi berjalan.
+  void _clearMember() {
+    ref.read(posMemberProvider.notifier).state = null;
+    // Keranjang juga dikosongkan agar tidak tercampur.
+    ref.read(posCartProvider.notifier).clear();
+  }
+
+  /// Banner member aktif di atas keranjang kasir.
+  Widget _memberBanner(BuildContext context) {
+    final member = ref.watch(posMemberProvider);
+    if (member == null) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.orange.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+            color: AppColors.orange.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.badge_outlined,
+              color: AppColors.orange, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  member.name,
+                  style: TextStyle(
+                      color: context.teksUtama,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  member.kodeMember,
+                  style: TextStyle(
+                      color: context.teksRedup, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: _clearMember,
+            child: const Text('Ganti',
+                style: TextStyle(color: AppColors.orange)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _openPay(BuildContext context) {

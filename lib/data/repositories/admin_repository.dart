@@ -459,6 +459,71 @@ class AdminRepository {
     return null;
   }
 
+  /// Cari pelanggan berdasarkan kode member (KQ-XXXXXXXX).
+  /// Dipakai scanner kasir — cek prefix KQ- dulu sebelum cari produk.
+  Future<Customer?> findCustomerByMemberCode(String code) async {
+    final q = code.trim().toUpperCase();
+    if (q.isEmpty) return null;
+    final db = _db;
+    if (db != null) {
+      try {
+        final snap = await db
+            .collection('customers')
+            .where('memberCode', isEqualTo: q)
+            .limit(1)
+            .get();
+        if (snap.docs.isNotEmpty) {
+          final d = snap.docs.first;
+          final m = Map<String, dynamic>.from(d.data());
+          m['uid'] = d.id;
+          return Customer.fromMap(m);
+        }
+      } catch (_) {}
+    }
+    // Fallback lokal: hitung dari UID (kode deterministik).
+    try {
+      final sq = await AppDatabase.db;
+      final rows = await sq.query('customers', limit: 200);
+      for (final r in rows) {
+        final uid = (r['uid'] as String?) ?? '';
+        if (uid.isEmpty) continue;
+        if (memberCodeFromUid(uid) == q) {
+          return Customer.fromMap(
+              Map<String, dynamic>.from(r));
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Backfill memberCode untuk pelanggan lama yang belum punya.
+  /// Kode deterministik dari UID — aman dijalankan berulang (idempotent).
+  /// Dipanggil sekali saat halaman Data Pelanggan dibuka.
+  Future<int> backfillMemberCodes() async {
+    final db = _db;
+    if (db == null) return 0;
+    var count = 0;
+    try {
+      final snap = await db
+          .collection('customers')
+          .where('approvalStatus', isEqualTo: 'approved')
+          .get();
+      final batch = db.batch();
+      for (final d in snap.docs) {
+        final m = d.data();
+        if (m['memberCode'] == null ||
+            (m['memberCode'] as String).isEmpty) {
+          batch.update(d.reference, {
+            'memberCode': memberCodeFromUid(d.id),
+          });
+          count++;
+        }
+      }
+      if (count > 0) await batch.commit();
+    } catch (_) {}
+    return count;
+  }
+
   /// Simpan produk (baru / ubah). Mengembalikan id.
   Future<String> saveProduct({
     String? id,
@@ -887,9 +952,17 @@ class AdminRepository {
   Future<void> setApproval(String uid, bool approved) async {
     final status = approved ? 'approved' : 'rejected';
     final sq = await AppDatabase.db;
-    await sq.update('customers', {'approvalStatus': status},
+    // Saat disetujui: tulis memberCode (format identik PWA).
+    final localUpdate = {
+      'approvalStatus': status,
+      if (approved) 'memberCode': memberCodeFromUid(uid),
+    };
+    await sq.update('customers', localUpdate,
         where: 'uid = ?', whereArgs: [uid]);
-    final payload = {'approvalStatus': status};
+    final payload = {
+      'approvalStatus': status,
+      if (approved) 'memberCode': memberCodeFromUid(uid),
+    };
     final safe = _queueSafe(payload) as Map<String, dynamic>;
     if (_sync != null) {
       await _sync.enqueue('customers', uid, 'update', safe);
@@ -1088,6 +1161,8 @@ class AdminRepository {
       'note': e.label,
       'refId': e.refId,
       'createdAt': FieldValue.serverTimestamp(),
+      'customerId': e.customerId,
+      'customerName': e.customerName,
     };
   }
 
@@ -1107,6 +1182,8 @@ class AdminRepository {
       kind: kind,
       label: (m['note'] as String?) ?? '',
       amount: signed,
+      customerId: m['customerId'] as String?,
+      customerName: m['customerName'] as String?,
       createdAt: ts is Timestamp
           ? ts.toDate()
           : DateTime.fromMillisecondsSinceEpoch(
@@ -1248,6 +1325,8 @@ class AdminRepository {
     required String label,
     required int amount, // positif = masuk, negatif = keluar
     String? refId, // rujukan: id pesanan / nota / dokumen terkait
+    String? customerId, // member yang dilayani (kasir scan kartu)
+    String? customerName,
   }) async {
     final id = _newId('journal');
     final now = DateTime.now();
@@ -1257,6 +1336,8 @@ class AdminRepository {
       label: label,
       amount: amount,
       refId: refId,
+      customerId: customerId,
+      customerName: customerName,
       createdAt: now,
     );
     await _writeLocalThenQueue(
@@ -1728,6 +1809,8 @@ class AdminRepository {
     required List<OrderItem> items,
     required int total,
     required int received,
+    String? customerId,
+    String? customerName,
   }) async {
     final now = DateTime.now();
     final code =
@@ -1737,6 +1820,8 @@ class AdminRepository {
       label: 'Penjualan Tunai · Kasir ($code)',
       amount: total,
       refId: code,
+      customerId: customerId,
+      customerName: customerName,
     );
     for (final item in items) {
       await adjustStock(item.productId, -item.qty);

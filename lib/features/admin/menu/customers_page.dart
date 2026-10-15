@@ -11,6 +11,11 @@ import '../../../l10n/strings_id.dart';
 import 'customer_notes_sheet.dart';
 import 'report_page.dart';
 
+/// Backfill memberCode — dijalankan sekali, idempotent.
+final _backfillMemberProvider = FutureProvider<int>((ref) async {
+  return ref.watch(adminRepositoryProvider).backfillMemberCodes();
+});
+
 /// Query pencarian pelanggan — StateProvider agar [CustomersPage] tetap
 /// ConsumerWidget tanpa state lokal.
 final _customerSearchProvider = StateProvider<String>((ref) => '');
@@ -27,6 +32,8 @@ class CustomersPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Backfill memberCode sekali per sesi (idempotent, aman).
+    ref.watch(_backfillMemberProvider);
     return Scaffold(
       appBar: AppBar(title: const Text(Strings.modulData)),
       body: ListView(

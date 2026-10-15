@@ -250,6 +250,8 @@ class _PaySheetState extends ConsumerState<PaySheet> {
         items: items,
         total: total,
         received: received,
+        customerId: ref.read(posMemberProvider)?.uid,
+        customerName: ref.read(posMemberProvider)?.name,
       );
       // Salinan untuk struk (keranjang dikosongkan setelahnya).
       _lastLines = lines;
@@ -266,6 +268,8 @@ class _PaySheetState extends ConsumerState<PaySheet> {
       );
       unawaited(simpanStrukTerakhir(struk));
       ref.read(posCartProvider.notifier).clear();
+      // Reset member setelah transaksi selesai.
+      ref.read(posMemberProvider.notifier).state = null;
       if (mounted) setState(() => _doneCode = code);
     } catch (e) {
       if (mounted) {

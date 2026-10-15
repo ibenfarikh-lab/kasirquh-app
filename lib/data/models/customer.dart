@@ -1,5 +1,17 @@
 /// Model Pelanggan — mirror koleksi Firestore `customers`.
 /// approvalStatus: pending | approved | rejected
+///
+/// Kode member: 'KQ-' + 8 karakter pertama UID (uppercase).
+/// Format IDENTIK dengan PWA — jangan diubah sepihak.
+String memberCodeFromUid(String uid) {
+  final bersih =
+      uid.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
+  final potong = bersih.length >= 8
+      ? bersih.substring(0, 8)
+      : bersih.padRight(8, '0');
+  return 'KQ-$potong';
+}
+
 class Customer {
   final String uid;
   final String name;
@@ -7,6 +19,7 @@ class Customer {
   final String? wa; // nomor WA opsional (skema)
   final String approvalStatus;
   final int coins;
+  final String? memberCode;
   final DateTime createdAt;
 
   const Customer({
@@ -16,10 +29,14 @@ class Customer {
     this.wa,
     required this.approvalStatus,
     this.coins = 0,
+    this.memberCode,
     required this.createdAt,
   });
 
   bool get isApproved => approvalStatus == 'approved';
+
+  /// Kode member — dari field DB, fallback hitung dari UID.
+  String get kodeMember => memberCode ?? memberCodeFromUid(uid);
 
   Map<String, dynamic> toMap() => {
         'uid': uid,
@@ -28,6 +45,7 @@ class Customer {
         'wa': wa,
         'approvalStatus': approvalStatus,
         'coins': coins,
+        'memberCode': memberCode,
         'createdAt': createdAt.millisecondsSinceEpoch,
       };
 
@@ -38,6 +56,7 @@ class Customer {
         wa: m['wa'] as String?,
         approvalStatus: m['approvalStatus'] as String? ?? 'pending',
         coins: (m['coins'] as num?)?.toInt() ?? 0,
+        memberCode: m['memberCode'] as String?,
         createdAt: DateTime.fromMillisecondsSinceEpoch(
             (m['createdAt'] as num?)?.toInt() ?? 0),
       );
@@ -47,6 +66,7 @@ class Customer {
         'email': email,
         'approvalStatus': approvalStatus,
         'coins': coins,
+        'memberCode': memberCode,
         'createdAt': createdAt,
       };
 }
