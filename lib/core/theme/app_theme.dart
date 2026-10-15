@@ -147,13 +147,13 @@ class AppTheme {
   /// Varian gelap Mode Pelanggan — FULL BLACK AMOLED (keputusan user 2026-10-12).
   /// Background #000000 murni, kartu #0a0a0a + border abu tipis,
   /// teks putih, aksen orange kontras. Tidak ada background warna
-  /// apapun selain hitam.
+  /// apapun selain hitam. Token selaras PWA ?v=20261017s (freeze).
   static ThemeData customerDarkTheme() {
     const bg = Color(0xFF000000);
-    const kartu = Color(0xFF0A0A0A);
+    const kartu = Color(0xFF0A0908);
     const garis = Color(0xFF2A2A2A);
     const orangeKontras = Color(0xFFFF9B3E);
-    const teks = Color(0xFFF5F0E8);
+    const teks = Color(0xFFFFFFFF);
     const teksRedup = Color(0xFF9A9A9A);
     final scheme = const ColorScheme.dark(
       primary: orangeKontras,

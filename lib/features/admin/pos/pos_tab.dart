@@ -187,11 +187,16 @@ class _PosTabState extends ConsumerState<PosTab> {
           ),
         ),
         // Panel Transaksi Aktif — selalu tampil (ala PWA).
+        // Border #2a2a2a selaras PWA ?v=20261017s (dark).
         Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           decoration: BoxDecoration(
             color: context.permukaanKartu,
-            border: Border(top: BorderSide(color: AppColors.adminLine)),
+            border: Border(
+                top: BorderSide(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF2A2A2A)
+                        : AppColors.adminLine)),
           ),
           child: SafeArea(
             top: false,
@@ -354,6 +359,10 @@ class _ProductRow extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: AppCard(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        // Border kartu kasir selaras PWA ?v=20261017s: 1px #d4d4d4 (dark).
+        borderSide: Theme.of(context).brightness == Brightness.dark
+            ? const BorderSide(color: Color(0xFFD4D4D4), width: 1)
+            : null,
         child: Row(
           children: [
             ProductPhoto(

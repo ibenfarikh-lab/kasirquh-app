@@ -29,14 +29,35 @@ class AdminShell extends ConsumerWidget {
     // tidak perlu Theme lokal (agar halaman push ikut tema).
     return Scaffold(
         appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          // Header admin oranye selaras PWA ?v=20261017s (sebelumnya gelap).
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFFF9B3E), Color(0xFFF49A24)],
+              ),
+              borderRadius:
+                  BorderRadius.vertical(bottom: Radius.circular(22)),
+            ),
+          ),
+          shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.vertical(bottom: Radius.circular(22)),
+          ),
           title: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.storefront, color: AppColors.orange),
+              Icon(Icons.storefront, color: Colors.white),
               SizedBox(width: 8),
               Text(
                 Strings.appName,
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+                style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                    color: Colors.white),
               ),
             ],
           ),

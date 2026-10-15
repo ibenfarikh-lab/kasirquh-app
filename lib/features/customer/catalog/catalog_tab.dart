@@ -335,7 +335,7 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
     // Aturan tema: selected = border orange saja (bukan bg terang).
     // Background ikut tema (tidak hardcoded terang/gelap).
     final bg = Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF0A0A0A)
+        ? const Color(0xFF0A0908)
         : Colors.white;
     return Padding(
       padding: const EdgeInsets.only(right: 10),

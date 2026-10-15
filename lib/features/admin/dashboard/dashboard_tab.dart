@@ -432,8 +432,15 @@ class _PwaMetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isPrimary ? AppColors.orange : context.permukaanKartu;
-    final muted = isPrimary ? Colors.black54 : context.teksRedup;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    // Selaras PWA ?v=20261017s (dark): kartu omzet warm #0a0908
+    // (bukan oranye), judul & nilai putih, teks kecil oranye terang.
+    final bg = isPrimary
+        ? (dark ? const Color(0xFF0A0908) : AppColors.orange)
+        : context.permukaanKartu;
+    final muted = isPrimary
+        ? (dark ? const Color(0xFFFFC276) : Colors.black54)
+        : context.teksRedup;
     // Kartu tall (OMZET) punya min-height agar span 2 baris.
     final cardContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -455,7 +462,10 @@ class _PwaMetricCard extends StatelessWidget {
             maxLines: tall ? 3 : 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: isPrimary ? Colors.black87 : AppColors.orange,
+              // Dark: nilai omzet putih (PWA ?v=20261017s).
+              color: isPrimary
+                  ? (dark ? Colors.white : Colors.black87)
+                  : AppColors.orange,
               fontSize: isPrimary ? 20 : 22,
               fontWeight: FontWeight.w800,
             ),

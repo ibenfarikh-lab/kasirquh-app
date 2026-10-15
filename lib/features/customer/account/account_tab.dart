@@ -118,7 +118,7 @@ class AccountTab extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: Theme.of(context).brightness ==
                             Brightness.dark
-                        ? const Color(0xFF0A0A0A)
+                        ? const Color(0xFF0A0908)
                         : const Color(0xFFFFF0C8),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -143,7 +143,7 @@ class AccountTab extends ConsumerWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF0A0A0A)
+                ? const Color(0xFF0A0908)
                 : const Color(0xFFFFF2DF),
             border: Border.all(
                 color: Theme.of(context).brightness == Brightness.dark
