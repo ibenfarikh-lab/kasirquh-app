@@ -17,6 +17,7 @@ import '../../../data/models/order.dart';
 import '../../../data/models/product.dart';
 import '../../../data/models/recipe.dart';
 import '../../../data/repositories/admin_repository.dart';
+import '../../../data/models/paket_belanja.dart';
 import '../../../data/repositories/home_stock_repository.dart';
 import '../../../data/repositories/order_repository.dart';
 import '../../../data/repositories/product_repository.dart';
@@ -937,20 +938,37 @@ class HomeTab extends ConsumerWidget {
                 _sheetHeader(sheetCtx2, 'Tak perlu mengingat ulang',
                     'Belanja Rutin'),
                 const SizedBox(height: 12),
-                _paketCard(
-                  sheetCtx2,
-                  'Paket dapur',
-                  'Minyak, mi, kopi',
-                  () => _masukkanPaket(context, ref,
-                      ['minyak', 'mie', 'kopi'], 'Paket dapur'),
-                ),
-                const SizedBox(height: 8),
-                _paketCard(
-                  sheetCtx2,
-                  'Paket minum',
-                  'Aqua, teh, kopi',
-                  () => _masukkanPaket(context, ref,
-                      ['aqua', 'teh', 'kopi'], 'Paket minum'),
+                // Paket dari DB (ikut PWA renderRutinPackages).
+                Consumer(
+                  builder: (ctx, ref2, _) {
+                    final paket =
+                        ref2.watch(rutinPackagesProvider).valueOrNull ??
+                            const <PaketBelanja>[];
+                    if (paket.isEmpty) {
+                      return Text(
+                        'Belum ada paket rutin dari warung.',
+                        style: TextStyle(
+                            color: sheetCtx2.teksRedup,
+                            fontSize: 13),
+                      );
+                    }
+                    return Column(
+                      children: [
+                        for (final p in paket) ...[
+                          _paketCard(
+                            sheetCtx2,
+                            p.name,
+                            p.description.isEmpty
+                                ? '${p.items.length} produk'
+                                : p.description,
+                            () => _masukkanPaketDb(
+                                context, ref, p),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 const Text('Jadwal belanjaku',
@@ -1102,20 +1120,36 @@ class HomeTab extends ConsumerWidget {
             _sheetHeader(
                 sheetCtx, 'Belanja acara lebih tenang', 'Paket Hajatan'),
             const SizedBox(height: 12),
-            _paketCard(
-              sheetCtx,
-              'Paket suguhan 20 tamu',
-              'Snack & minuman kemasan',
-              () => _masukkanPaket(context, ref,
-                  ['snack', 'minuman'], 'Paket suguhan 20 tamu'),
-            ),
-            const SizedBox(height: 8),
-            _paketCard(
-              sheetCtx,
-              'Paket dapur acara',
-              'Mi, minyak, minuman',
-              () => _masukkanPaket(context, ref,
-                  ['mie', 'minyak', 'aqua'], 'Paket dapur acara'),
+            // Paket dari DB (ikut PWA renderHajatanPackages).
+            Consumer(
+              builder: (ctx, ref2, _) {
+                final paket =
+                    ref2.watch(hajatanPackagesProvider).valueOrNull ??
+                        const <PaketBelanja>[];
+                if (paket.isEmpty) {
+                  return Text(
+                    'Belum ada paket hajatan dari warung.',
+                    style: TextStyle(
+                        color: sheetCtx.teksRedup, fontSize: 13),
+                  );
+                }
+                return Column(
+                  children: [
+                    for (final p in paket) ...[
+                      _paketCard(
+                        sheetCtx,
+                        p.name,
+                        p.description.isEmpty
+                            ? '${p.items.length} produk'
+                            : p.description,
+                        () => _masukkanPaketDb(
+                            context, ref, p),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 12),
             Text(
@@ -1163,19 +1197,19 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  /// Cari produk per keyword (stok > 0, maks 2 per keyword) → keranjang.
-  Future<void> _masukkanPaket(BuildContext context, WidgetRef ref,
-      List<String> keywords, String namaPaket) async {
+
+  /// Masukkan paket dari DB ke keranjang (productId langsung, ikut PWA).
+  /// Menggantikan keyword-matching yang rentan salah cocok.
+  Future<void> _masukkanPaketDb(BuildContext context, WidgetRef ref,
+      PaketBelanja paket) async {
     final products =
         ref.read(productsProvider).valueOrNull ?? const <Product>[];
+    final byId = {for (final p in products) p.id: p};
     var count = 0;
-    for (final kw in keywords) {
-      final cocok = products
-          .where((p) =>
-              p.stock > 0 &&
-              p.name.toLowerCase().contains(kw.toLowerCase()))
-          .take(2);
-      for (final p in cocok) {
+    for (final it in paket.items) {
+      final p = byId[it.productId];
+      if (p == null || p.stock <= 0) continue;
+      for (var i = 0; i < it.qty; i++) {
         ref.read(cartProvider.notifier).add(p);
         count++;
       }
@@ -1185,11 +1219,10 @@ class HomeTab extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content: Text(count == 0
-              ? '$namaPaket: tidak ada produk cocok yang tersedia.'
-              : '$count barang $namaPaket masuk keranjang.')),
+              ? '${paket.name}: produk tidak tersedia.'
+              : '$count barang ${paket.name} masuk keranjang.')),
     );
   }
-
 
   /// Daftar pantau harga dari SharedPreferences ala PWA.
   Future<void> _pantauHargaSheet(BuildContext context, WidgetRef ref) async {

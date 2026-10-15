@@ -18,6 +18,7 @@ import 'customer_home_sheet.dart';
 import 'customers_page.dart';
 import 'ledger_page.dart';
 import 'online_orders_page.dart';
+import 'paket_editor_page.dart';
 import 'patungan_page.dart';
 import 'products_page.dart';
 import 'receipt_page.dart';
@@ -114,7 +115,7 @@ class MenuTab extends ConsumerWidget {
         ),
       ];
 
-  /// LACI ALAT — 9 modul (urutan PWA).
+  /// LACI ALAT — 11 modul (urutan PWA).
   List<_Module> _laciAlat(BuildContext context) => [
         _Module(
           Strings.modulKalkulator,
@@ -157,6 +158,24 @@ class MenuTab extends ConsumerWidget {
           Strings.descKonfirmasiTransfer,
           Icons.receipt_long_outlined,
           () => _openPage(context, const TransferOrdersPage()),
+        ),
+        _Module(
+          Strings.menuPaketRutin,
+          Strings.descPaketRutin,
+          Icons.inventory_2_outlined,
+          () => _openPage(
+              context,
+              const PaketEditorPage(
+                  jenis: JenisPaket.rutin)),
+        ),
+        _Module(
+          Strings.menuPaketHajatan,
+          Strings.descPaketHajatan,
+          Icons.inventory_2_outlined,
+          () => _openPage(
+              context,
+              const PaketEditorPage(
+                  jenis: JenisPaket.hajatan)),
         ),
         _Module(
           Strings.menuPatunganWarga,

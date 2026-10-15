@@ -14,6 +14,7 @@ import '../../data/models/journal_entry.dart';
 import '../../data/models/order.dart';
 import '../../data/models/titip_request.dart';
 import '../../data/models/patungan.dart';
+import '../../data/models/paket_belanja.dart';
 import '../../data/models/product.dart';
 import '../../data/models/stock_note.dart';
 import '../../data/models/store_note.dart';
@@ -303,6 +304,74 @@ class AdminRepository {
       });
     });
   }
+
+  // ============ PAKET RUTIN & HAJATAN ============
+  // Skema SAMA PERSIS dengan PWA (koleksi rutinPackages/hajatanPackages).
+  // Publik baca yang isActive==true; hapus = soft delete.
+
+  Stream<List<PaketBelanja>> _watchPaket(String koleksi) async* {
+    final db = _db;
+    if (db == null) {
+      yield const [];
+      return;
+    }
+    yield* db
+        .collection(koleksi)
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => PaketBelanja.fromDoc(d.id, d.data()))
+            .toList());
+  }
+
+  Stream<List<PaketBelanja>> watchRutinPackages() =>
+      _watchPaket('rutinPackages');
+
+  Stream<List<PaketBelanja>> watchHajatanPackages() =>
+      _watchPaket('hajatanPackages');
+
+  Future<void> _savePaket(
+      String koleksi, String? id, String name, String desc,
+      List<PaketItem> items) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet');
+    final base = {
+      'name': name,
+      'description': desc,
+      'items': items.map((e) => e.toMap()).toList(),
+      'isActive': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (id != null && id.isNotEmpty) {
+      await db.collection(koleksi).doc(id).update(base);
+    } else {
+      base['createdAt'] = FieldValue.serverTimestamp();
+      await db.collection(koleksi).add(base);
+    }
+  }
+
+  Future<void> saveRutinPackage(String? id, String name, String desc,
+          List<PaketItem> items) =>
+      _savePaket('rutinPackages', id, name, desc, items);
+
+  Future<void> saveHajatanPackage(String? id, String name, String desc,
+          List<PaketItem> items) =>
+      _savePaket('hajatanPackages', id, name, desc, items);
+
+  Future<void> _deletePaket(String koleksi, String id) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet');
+    await db.collection(koleksi).doc(id).update({
+      'isActive': false,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> deleteRutinPackage(String id) =>
+      _deletePaket('rutinPackages', id);
+
+  Future<void> deleteHajatanPackage(String id) =>
+      _deletePaket('hajatanPackages', id);
 
   // ============ PRODUK ============
 
@@ -1702,6 +1771,17 @@ final titipRequestsProvider =
 /// Skema SAMA PERSIS dengan PWA.
 final patunganListProvider = StreamProvider<List<Patungan>>((ref) {
   return ref.watch(adminRepositoryProvider).watchPatungan();
+});
+
+/// Paket Rutin & Hajatan — live dari DB (isActive==true), ikut PWA.
+final rutinPackagesProvider =
+    StreamProvider<List<PaketBelanja>>((ref) {
+  return ref.watch(adminRepositoryProvider).watchRutinPackages();
+});
+
+final hajatanPackagesProvider =
+    StreamProvider<List<PaketBelanja>>((ref) {
+  return ref.watch(adminRepositoryProvider).watchHajatanPackages();
 });
 
 final adminOrdersProvider = StreamProvider<List<Order>>((ref) {

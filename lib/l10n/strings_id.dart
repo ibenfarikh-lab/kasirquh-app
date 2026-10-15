@@ -328,6 +328,10 @@ class Strings {
   static const descPembukuan = 'Ringkasan kas & jurnal transaksi';
   static const menuKonfirmasiTransfer = 'Konfirmasi Transfer';
   static const descKonfirmasiTransfer = 'Verifikasi pembayaran';
+  static const menuPaketRutin = 'Paket Rutin';
+  static const descPaketRutin = 'Buat & kelola paket';
+  static const menuPaketHajatan = 'Paket Hajatan';
+  static const descPaketHajatan = 'Buat & kelola paket';
   static const menuPatunganWarga = 'Patungan Warga';
   static const descPatunganWarga = 'Buat & kelola patungan';
   static const descStruk58mm = 'Transaksi terakhir';
@@ -464,7 +468,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.72+86';
+  static const versiApp = 'KasirQuh v3.6.73+87';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';
