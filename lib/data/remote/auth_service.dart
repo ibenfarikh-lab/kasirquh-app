@@ -88,6 +88,9 @@ class AuthService {
   Future<bool> isCurrentUserAdmin() =>
       _hasAdminClaim(_auth.currentUser);
 
+  /// Apakah user tertentu adalah admin (untuk session).
+  Future<bool> isAdmin(User? user) => _hasAdminClaim(user);
+
   Future<void> signOut() => _auth.signOut();
 }
 

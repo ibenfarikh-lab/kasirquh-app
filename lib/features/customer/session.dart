@@ -9,6 +9,7 @@ import '../../data/remote/firestore_service.dart';
 /// memang langsung signOut pendaftar yang belum disetujui.
 class Session {
   final bool isGuest;
+  final bool isAdmin;
   final User? user;
   final String name;
   final String email;
@@ -16,6 +17,7 @@ class Session {
 
   const Session.guest()
       : isGuest = true,
+        isAdmin = false,
         user = null,
         name = '',
         email = '',
@@ -26,11 +28,21 @@ class Session {
     required this.name,
     required this.email,
     required this.coins,
-  }) : isGuest = false;
+  })  : isGuest = false,
+        isAdmin = false;
+
+  const Session.admin({
+    required this.user,
+    required this.email,
+  })  : isGuest = false,
+        isAdmin = true,
+        name = 'Admin',
+        coins = 0;
 }
 
 /// Stream sesi: authState + dokumen customers/{uid}.
 /// Non-approved → tamu (aman untuk guard).
+/// Admin (claim admin:true) → session admin (bukan tamu).
 final sessionProvider = StreamProvider<Session>((ref) async* {
   final auth = ref.watch(authServiceProvider);
   final db = ref.watch(firestoreOrNullProvider);
@@ -41,6 +53,11 @@ final sessionProvider = StreamProvider<Session>((ref) async* {
   await for (final user in auth.authState()) {
     if (user == null) {
       yield const Session.guest();
+      continue;
+    }
+    // Admin yang buka Mode Pelanggan → tampil sebagai Admin, bukan Tamu.
+    if (await auth.isAdmin(user)) {
+      yield Session.admin(user: user, email: user.email ?? '');
       continue;
     }
     // Anti-gagal-diam-diam: error baca dokumen DITERUSKAN (bukan jadi tamu).
@@ -64,6 +81,9 @@ final sessionProvider = StreamProvider<Session>((ref) async* {
 String? memberUid(Session s) =>
     s.isGuest ? null : s.user?.uid;
 
-/// Nama tampilan: nama member, atau 'Tamu'.
-String displayName(Session s) =>
-    s.isGuest ? 'Tamu' : (s.name.isEmpty ? (s.email) : s.name);
+/// Nama tampilan: nama member, "Admin" untuk admin, atau 'Tamu'.
+String displayName(Session s) {
+  if (s.isGuest) return 'Tamu';
+  if (s.isAdmin) return 'Admin';
+  return s.name.isEmpty ? s.email : s.name;
+}
