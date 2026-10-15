@@ -12,6 +12,7 @@ import '../../../data/models/product.dart';
 import '../../../data/models/customer.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/product_repository.dart';
+import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../../customer/cart/cart_provider.dart';
 import 'pay_sheet.dart';
@@ -387,6 +388,14 @@ class _PosTabState extends ConsumerState<PosTab> {
   Widget _memberBanner(BuildContext context) {
     final member = ref.watch(posMemberProvider);
     if (member == null) return const SizedBox.shrink();
+    // Hitung koin yang akan didapat dari keranjang saat ini.
+    final settings =
+        ref.watch(coinSettingsProvider).valueOrNull ??
+            const CoinSettings();
+    final total = ref.watch(posCartProvider.notifier).total;
+    final akanDapat = settings.enabled && total > 0
+        ? (total ~/ settings.spendRule) * settings.spendReward
+        : 0;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -415,7 +424,7 @@ class _PosTabState extends ConsumerState<PosTab> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  member.kodeMember,
+                  'Saldo: ${member.coins} koin · Akan dapat: $akanDapat koin',
                   style: TextStyle(
                       color: context.teksRedup, fontSize: 11),
                 ),

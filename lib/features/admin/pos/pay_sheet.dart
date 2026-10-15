@@ -10,7 +10,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/models/order.dart';
+import '../../../data/models/customer.dart';
 import '../../../data/repositories/admin_repository.dart';
+import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../../customer/cart/cart_provider.dart';
 import 'pos_tab.dart';
@@ -43,6 +45,10 @@ String buildReceipt({
   required List<CartLine> lines,
   required int total,
   required int received,
+  String? memberName,
+  String? memberCode,
+  int koinDipakai = 0,
+  int koinDidapat = 0,
 }) {
   const w = 32;
   final b = StringBuffer();
@@ -73,6 +79,22 @@ String buildReceipt({
   b.writeln(row('Total', formatRp(total)));
   b.writeln(row('Tunai', formatRp(received)));
   b.writeln(row('Kembali', formatRp(kembalian(received, total))));
+  // Info member & koin (Opsi B) — ikut PWA.
+  if (memberName != null && memberName.isNotEmpty) {
+    b.writeln('-' * w);
+    b.writeln(center('Member: $memberName'));
+    if (memberCode != null && memberCode.isNotEmpty) {
+      b.writeln(center('($memberCode)'));
+    }
+  }
+  if (koinDipakai > 0) {
+    b.writeln(row(
+        'Koin dipakai: $koinDipakai',
+        '(-${formatRp(koinDipakai)})'));
+  }
+  if (koinDidapat > 0) {
+    b.writeln(row('Koin didapat:', '$koinDidapat'));
+  }
   b.writeln('-' * w);
   b.writeln(center(Strings.terimaKasih));
   return b.toString();
@@ -94,6 +116,8 @@ class _PaySheetState extends ConsumerState<PaySheet> {
   final _received = TextEditingController();
   bool _busy = false;
   String? _doneCode;
+  bool _pakaiKoin = false;
+  int _saldoKoin = 0;
 
   @override
   void dispose() {
@@ -101,7 +125,59 @@ class _PaySheetState extends ConsumerState<PaySheet> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    // Muat saldo koin member terkini (untuk toggle Pakai Koin).
+    final member = ref.read(posMemberProvider);
+    if (member != null) {
+      _saldoKoin = member.coins;
+      // Refresh dari DB agar tidak basi.
+      ref
+          .read(adminRepositoryProvider)
+          .findCustomerByMemberCode(member.kodeMember)
+          .then((c) {
+        if (mounted && c != null) {
+          setState(() => _saldoKoin = c.coins);
+        }
+      });
+    }
+  }
+
   int get _total => ref.read(posCartProvider.notifier).total;
+
+  /// Koin maksimal yang bisa dipakai = min(saldo, total × redeemLimit%).
+  /// Ikut aturan yang sama dengan belanja online.
+  int _koinMaksimal(int total) {
+    final settings =
+        ref.read(coinSettingsProvider).valueOrNull ??
+            const CoinSettings();
+    if (!settings.enabled || _saldoKoin <= 0) return 0;
+    final maksimal = (total * settings.redeemLimit ~/ 100);
+    return _saldoKoin < maksimal ? _saldoKoin : maksimal;
+  }
+
+  /// Koin yang dipakai (0 jika toggle mati).
+  int _koinDipakai(int total) =>
+      _pakaiKoin ? _koinMaksimal(total) : 0;
+
+  /// Total setelah potongan koin (1 koin = Rp1, ikut coinRate).
+  int _totalSetelahKoin(int total) {
+    final settings =
+        ref.read(coinSettingsProvider).valueOrNull ??
+            const CoinSettings();
+    return total - (_koinDipakai(total) * settings.coinRate);
+  }
+
+  /// Koin yang akan didapat dari belanja ini.
+  int _koinDidapat(int total) {
+    final settings =
+        ref.read(coinSettingsProvider).valueOrNull ??
+            const CoinSettings();
+    if (!settings.enabled || total <= 0) return 0;
+    return (total ~/ settings.spendRule) *
+        settings.spendReward;
+  }
 
   int get _receivedInt =>
       int.tryParse(_received.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
@@ -109,11 +185,13 @@ class _PaySheetState extends ConsumerState<PaySheet> {
   @override
   Widget build(BuildContext context) {
     final lines = ref.watch(posCartProvider);
-    final change = kembalian(_receivedInt, _total);
+    // Total yang harus dibayar (setelah potongan koin jika dipakai).
+    final totalBayar = _totalSetelahKoin(_total);
+    final change = kembalian(_receivedInt, totalBayar);
     final canPay = _doneCode == null &&
         lines.isNotEmpty &&
-        _receivedInt >= _total &&
-        _total > 0;
+        _receivedInt >= totalBayar &&
+        totalBayar > 0;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -160,22 +238,10 @@ class _PaySheetState extends ConsumerState<PaySheet> {
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(Strings.totalBayar,
-                style: TextStyle(color: context.teksRedup)),
-            Text(
-              formatRp(_total),
-              style: const TextStyle(
-                color: AppColors.orange,
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
+        _rincianTotal(),
         const SizedBox(height: 16),
+        // Toggle Pakai Koin — hanya jika ada member aktif.
+        _koinToggle(),
         TextField(
           controller: _received,
           keyboardType: TextInputType.number,
@@ -231,6 +297,139 @@ class _PaySheetState extends ConsumerState<PaySheet> {
     );
   }
 
+  /// Rincian total: tampilkan potongan koin jika dipakai.
+  Widget _rincianTotal() {
+    final total = _total;
+    final koinDipakai = _koinDipakai(total);
+    final settings =
+        ref.watch(coinSettingsProvider).valueOrNull ??
+            const CoinSettings();
+    final potongan = koinDipakai * settings.coinRate;
+    final totalBayar = total - potongan;
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(Strings.totalBayar,
+                style: TextStyle(color: context.teksRedup)),
+            Text(
+              formatRp(total),
+              style: TextStyle(
+                color: context.teksRedup,
+                fontSize: koinDipakai > 0 ? 14 : 24,
+                fontWeight: FontWeight.w800,
+                decoration: koinDipakai > 0
+                    ? TextDecoration.lineThrough
+                    : null,
+              ),
+            ),
+          ],
+        ),
+        if (koinDipakai > 0) ...[
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Potongan koin ($koinDipakai)',
+                  style: TextStyle(
+                      color: context.teksRedup, fontSize: 13)),
+              Text('-${formatRp(potongan)}',
+                  style: const TextStyle(
+                      color: AppColors.ok,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Total bayar',
+                  style: TextStyle(
+                      color: context.teksUtama,
+                      fontWeight: FontWeight.w700)),
+              Text(
+                formatRp(totalBayar),
+                style: const TextStyle(
+                  color: AppColors.orange,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Toggle "Pakai Koin" — tampil hanya jika ada member + saldo > 0.
+  /// Switch ON = pakai MAKSIMAL yang diizinkan (tanpa konfirmasi tambahan).
+  Widget _koinToggle() {
+    final member = ref.watch(posMemberProvider);
+    if (member == null) return const SizedBox.shrink();
+    final settings =
+        ref.watch(coinSettingsProvider).valueOrNull ??
+            const CoinSettings();
+    if (!settings.enabled || _saldoKoin <= 0) {
+      return const SizedBox.shrink();
+    }
+    final maksimal = _koinMaksimal(_total);
+    if (maksimal <= 0) return const SizedBox.shrink();
+    final potongan = maksimal * settings.coinRate;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF0A0908)
+            : const Color(0xFFFFF0C8),
+        border: Border.all(
+            color: isDark
+                ? AppColors.orange.withValues(alpha: 0.5)
+                : const Color(0xFFECCB9E)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.monetization_on,
+              color: Color(0xFF8B5910)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Pakai Koin',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w800)),
+                Text(
+                  'Pakai $maksimal koin (${formatRp(potongan)})',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF8B5910)),
+                ),
+                Text(
+                  'Saldo: $_saldoKoin koin',
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: context.teksRedup),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _pakaiKoin,
+            onChanged: (v) =>
+                setState(() => _pakaiKoin = v),
+            activeThumbColor: AppColors.orange,
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _pay() async {
     setState(() => _busy = true);
     try {
@@ -238,6 +437,12 @@ class _PaySheetState extends ConsumerState<PaySheet> {
       final lines = ref.read(posCartProvider).toList();
       final received = _receivedInt;
       final total = _total;
+      final member = ref.read(posMemberProvider);
+      // Koin: hitung sebelum bayar.
+      final koinDipakai = _koinDipakai(total);
+      final totalBayar = _totalSetelahKoin(total);
+      final koinDidapat =
+          member != null ? _koinDidapat(total) : 0;
       final items = lines
           .map((l) => OrderItem(
                 productId: l.product.id,
@@ -246,25 +451,43 @@ class _PaySheetState extends ConsumerState<PaySheet> {
                 price: l.product.price,
               ))
           .toList();
+      // 1. Tukar koin dulu (jika dipakai) — potong saldo + beban promosi.
+      if (member != null && koinDipakai > 0) {
+        await repo.adjustCoins(
+            member.uid, -koinDipakai, 'tukar');
+      }
+      // 2. Catat penjualan (total setelah potongan koin).
       final code = await repo.recordCashSale(
         items: items,
-        total: total,
+        total: totalBayar,
         received: received,
-        customerId: ref.read(posMemberProvider)?.uid,
-        customerName: ref.read(posMemberProvider)?.name,
+        customerId: member?.uid,
+        customerName: member?.name,
       );
+      // 3. Beri koin perolehan (otomatis, ikut aturan spendRule).
+      if (member != null && koinDidapat > 0) {
+        await repo.adjustCoins(
+            member.uid, koinDidapat, 'belanja');
+      }
       // Salinan untuk struk (keranjang dikosongkan setelahnya).
       _lastLines = lines;
-      _lastTotal = total;
+      _lastTotal = totalBayar;
       _lastReceived = received;
+      _lastKoinDipakai = koinDipakai;
+      _lastKoinDidapat = koinDidapat;
+      _lastMember = member;
       // Simpan struk terakhir — bisa dibuka ulang dari modul Struk.
       final struk = buildReceipt(
         storeName: Strings.appName,
         code: code,
         date: DateTime.now(),
         lines: lines,
-        total: total,
+        total: totalBayar,
         received: received,
+        memberName: member?.name,
+        memberCode: member?.kodeMember,
+        koinDipakai: koinDipakai,
+        koinDidapat: koinDidapat,
       );
       unawaited(simpanStrukTerakhir(struk));
       ref.read(posCartProvider.notifier).clear();
@@ -331,6 +554,10 @@ class _PaySheetState extends ConsumerState<PaySheet> {
               lines: _lastLines,
               total: _lastTotal,
               received: _lastReceived,
+              memberName: _lastMember?.name,
+              memberCode: _lastMember?.kodeMember,
+              koinDipakai: _lastKoinDipakai,
+              koinDidapat: _lastKoinDidapat,
             ),
             style: TextStyle(
               fontFamily: 'monospace',
@@ -355,4 +582,7 @@ class _PaySheetState extends ConsumerState<PaySheet> {
   List<CartLine> _lastLines = const [];
   int _lastTotal = 0;
   int _lastReceived = 0;
+  int _lastKoinDipakai = 0;
+  int _lastKoinDidapat = 0;
+  Customer? _lastMember;
 }
