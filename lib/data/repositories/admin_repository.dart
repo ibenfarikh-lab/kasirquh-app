@@ -555,6 +555,13 @@ class AdminRepository {
       createdAt: ts is Timestamp
           ? ts.toDate()
           : DateTime.fromMillisecondsSinceEpoch(0),
+      transferReference: (m['transferReference'] as String?) ?? '',
+      transferStatus: (m['transferStatus'] as String?) ?? '',
+      transferRejectReason: (m['transferRejectReason'] as String?) ?? '',
+      coinUsed: (m['coinUsed'] as num?)?.toInt() ?? 0,
+      coinValue: (m['coinValue'] as num?)?.toInt() ?? 0,
+      earnedCoins: (m['earnedCoins'] as num?)?.toInt() ?? 0,
+      fulfillment: (m['fulfillment'] as String?) ?? 'pickup',
     );
   }
 
@@ -578,6 +585,179 @@ class AdminRepository {
         'createdAt': DateTime.now().millisecondsSinceEpoch,
       });
     }
+  }
+
+  /// Selesaikan pesanan online → status 'selesai' + tulis jurnal Pembukuan.
+  /// Mengikuti PWA `settleOrder` (store.js): jurnal "Penjualan · Online"
+  /// + beban penukaran koin bila ada. Prinsip anti-keuangan-siluman:
+  /// uang masuk HARUS tercatat.
+  Future<void> settleOrder(String orderId) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet');
+    await db.runTransaction((t) async {
+      final ref = db.collection('orders').doc(orderId);
+      final snap = await t.get(ref);
+      if (!snap.exists) throw StateError('Pesanan tidak ditemukan');
+      final d = snap.data() ?? {};
+      final st = (d['status'] as String?) ?? 'menunggu';
+      if (st == 'selesai') return;
+      if (st != 'menunggu' && st != 'dikemas' && st != 'dikirim') {
+        throw StateError('Pesanan tidak dapat diselesaikan');
+      }
+      // Laba: harga jual − modal saat ini, per item.
+      var profit = 0;
+      var itemCount = 0;
+      for (final it in (d['items'] as List? ?? [])) {
+        final m = (it as Map<String, dynamic>? ?? {});
+        final qty = (m['qty'] as num?)?.toInt() ?? 0;
+        itemCount += qty;
+        var cost = 0;
+        final pid = (m['productId'] as String?) ?? '';
+        if (pid.isNotEmpty) {
+          final pSnap =
+              await t.get(db.collection('products').doc(pid));
+          if (pSnap.exists) {
+            cost = ((pSnap.data()?['costPrice'] as num?)?.toInt() ?? 0);
+            if (cost < 0) cost = 0;
+          }
+        }
+        final price = (m['price'] as num?)?.toInt() ?? 0;
+        final labaItem = price - cost;
+        if (labaItem > 0) profit += labaItem * qty;
+      }
+      t.update(ref, {
+        'status': 'selesai',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      final total = (d['total'] as num?)?.toInt() ?? 0;
+      final code = (d['code'] as String?) ?? orderId;
+      final payMethod = (d['paymentMethod'] as String?) ?? 'cod';
+      final fulfillment = (d['fulfillment'] as String?) ?? 'pickup';
+      final method = payMethod == 'transfer'
+          ? 'Transfer'
+          : (fulfillment == 'delivery' ? 'COD' : 'Bayar di warung');
+      t.set(db.collection('journal').doc(), {
+        'type': 'pemasukan',
+        'category': 'penjualan',
+        'amount': total,
+        'note': 'Penjualan · Online',
+        'refId': code,
+        'method': method,
+        'profit': profit,
+        'itemCount': itemCount,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      final coinValue = (d['coinValue'] as num?)?.toInt() ?? 0;
+      if (coinValue > 0) {
+        t.set(db.collection('journal').doc(), {
+          'type': 'pengeluaran',
+          'category': 'beban_promosi',
+          'amount': coinValue,
+          'note': 'Penukaran koin · $code',
+          'refId': code,
+          'method': 'Koin Warga',
+          'profit': 0,
+          'itemCount': 0,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+    });
+  }
+
+  /// Batalkan pesanan: kembalikan stok + koin, tulis coin_ledger.
+  /// Mengikuti PWA `cancelOrder` (store.js). Hanya dari status menunggu.
+  Future<void> cancelOrder(String orderId) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet');
+    await db.runTransaction((t) async {
+      final ref = db.collection('orders').doc(orderId);
+      final snap = await t.get(ref);
+      if (!snap.exists) throw StateError('Pesanan tidak ditemukan');
+      final d = snap.data() ?? {};
+      if ((d['status'] as String?) != 'menunggu') {
+        throw StateError('Pesanan sudah diproses, tidak dapat dibatalkan');
+      }
+      for (final it in (d['items'] as List? ?? [])) {
+        final m = (it as Map<String, dynamic>? ?? {});
+        final pid = (m['productId'] as String?) ?? '';
+        final qty = (m['qty'] as num?)?.toDouble() ?? 0;
+        if (pid.isNotEmpty && qty > 0) {
+          t.update(db.collection('products').doc(pid), {
+            'stock': FieldValue.increment(qty),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+      final customerId = (d['customerId'] as String?) ?? '';
+      final coinUsed = (d['coinUsed'] as num?)?.toInt() ?? 0;
+      final earnedCoins = (d['earnedCoins'] as num?)?.toInt() ?? 0;
+      final coinBack = coinUsed - earnedCoins;
+      final code = (d['code'] as String?) ?? '';
+      if (coinBack != 0 && customerId.isNotEmpty) {
+        t.update(db.collection('customers').doc(customerId), {
+          'coins': FieldValue.increment(coinBack),
+        });
+      }
+      if (coinUsed > 0 && customerId.isNotEmpty) {
+        t.set(db.collection('coin_ledger').doc(), {
+          'customerId': customerId,
+          'amount': coinUsed,
+          'reason': 'tukar',
+          'label': 'Koin kembali · #$code',
+          'detail': 'Pesanan dibatalkan',
+          'orderId': ref.id,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      if (earnedCoins > 0 && customerId.isNotEmpty) {
+        t.set(db.collection('coin_ledger').doc(), {
+          'customerId': customerId,
+          'amount': -earnedCoins,
+          'reason': 'belanja',
+          'label': 'Bonus dibatalkan · #$code',
+          'detail': 'Pesanan dibatalkan',
+          'orderId': ref.id,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      t.update(ref, {
+        'status': 'dibatalkan',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  /// Tolak bukti transfer: status penolakan persisten agar kartu
+  /// tidak hilang dari pantauan. Mengikuti PWA `rejectTransfer`.
+  Future<void> rejectTransfer(String orderId, String reason) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet');
+    final ref = db.collection('orders').doc(orderId);
+    final snap = await ref.get();
+    if (!snap.exists) throw StateError('Pesanan tidak ditemukan');
+    if ((snap.data()?['status'] as String?) == 'selesai') {
+      throw StateError('Pesanan sudah lunas, tidak dapat ditolak');
+    }
+    await ref.update({
+      'transferStatus': 'rejected',
+      'transferRejectedAt': FieldValue.serverTimestamp(),
+      'transferRejectReason': reason,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Verifikasi ulang transfer yang ditolak: hapus status penolakan
+  /// lalu lanjut ke status yang diminta (ikut PWA).
+  Future<void> clearTransferRejection(
+      String orderId, OrderStatus lanjut) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet');
+    await db.collection('orders').doc(orderId).update({
+      'transferStatus': '',
+      'transferRejectReason': '',
+      'status': lanjut.name,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   // ============ PERSETUJUAN & PELANGGAN ============

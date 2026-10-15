@@ -209,6 +209,54 @@ class OnlineOrdersPage extends ConsumerWidget {
                     ),
                   ],
                 ),
+                // Aksi keuangan (ikut PWA): Selesaikan → masuk Pembukuan;
+                // Batalkan → kembalikan stok + koin.
+                if (order.status != OrderStatus.selesai &&
+                    order.status != OrderStatus.dibatalkan) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          icon: const Icon(
+                              Icons.check_circle_outline,
+                              size: 18),
+                          label: const Text('Selesaikan'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.ok,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () => _settle(
+                              context,
+                              ref,
+                              dialogContext,
+                              order),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (order.status ==
+                          OrderStatus.menunggu)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(
+                                Icons.cancel_outlined,
+                                size: 18),
+                            label:
+                                const Text('Batalkan'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor:
+                                  AppColors.danger,
+                            ),
+                            onPressed: () => _batal(
+                                context,
+                                ref,
+                                dialogContext,
+                                order),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -220,5 +268,95 @@ class OnlineOrdersPage extends ConsumerWidget {
           ],
         ),
     );
+  }
+
+  /// Selesaikan pesanan → masuk Pembukuan (ikut PWA settleOrder).
+  Future<void> _settle(BuildContext context, WidgetRef ref,
+      BuildContext dialogContext, Order order) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Selesaikan pesanan?'),
+        content: Text(
+          '${order.customerName} · ${formatRp(order.total)}\n'
+          'Pesanan ditandai selesai dan masuk Pembukuan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(Strings.batal),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Selesaikan',
+                style: TextStyle(color: AppColors.ok)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(adminRepositoryProvider).settleOrder(order.id);
+      if (dialogContext.mounted) {
+        Navigator.of(dialogContext).pop();
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Pesanan selesai, masuk Pembukuan.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal: $e')),
+        );
+      }
+    }
+  }
+
+  /// Batalkan pesanan → kembalikan stok + koin (ikut PWA cancelOrder).
+  Future<void> _batal(BuildContext context, WidgetRef ref,
+      BuildContext dialogContext, Order order) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Batalkan pesanan?'),
+        content: Text(
+          '${order.customerName} · ${formatRp(order.total)}\n'
+          'Stok dan koin dikembalikan ke pelanggan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(Strings.batal),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Batalkan',
+                style: TextStyle(color: AppColors.danger)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(adminRepositoryProvider).cancelOrder(order.id);
+      if (dialogContext.mounted) {
+        Navigator.of(dialogContext).pop();
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Pesanan dibatalkan.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal: $e')),
+        );
+      }
+    }
   }
 }

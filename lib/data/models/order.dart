@@ -6,6 +6,7 @@ OrderStatus orderStatusFrom(String s) =>
         orElse: () => OrderStatus.menunggu);
 
 /// Model Pesanan — mirror koleksi Firestore `orders`.
+/// Field transfer & koin mengikuti skema PWA (settle/cancel butuh data ini).
 class Order {
   final String id;
   final String customerId;
@@ -16,6 +17,15 @@ class Order {
   final OrderStatus status;
   final String payment; // cod | transfer — selaras skema (tunai hanya di kasir admin, tanpa dokumen order)
   final DateTime createdAt;
+  // Transfer (PWA: transferStatus 'rejected' persisten agar kartu tak hilang).
+  final String transferReference;
+  final String transferStatus; // '' | 'rejected'
+  final String transferRejectReason;
+  // Koin (PWA: coinUsed/earnedCoins untuk pengembalian saat batal).
+  final int coinUsed;
+  final int coinValue;
+  final int earnedCoins;
+  final String fulfillment; // 'pickup' | 'delivery'
 
   const Order({
     required this.id,
@@ -27,6 +37,13 @@ class Order {
     required this.status,
     required this.payment,
     required this.createdAt,
+    this.transferReference = '',
+    this.transferStatus = '',
+    this.transferRejectReason = '',
+    this.coinUsed = 0,
+    this.coinValue = 0,
+    this.earnedCoins = 0,
+    this.fulfillment = 'pickup',
   });
 
   Map<String, dynamic> toMap() => {
