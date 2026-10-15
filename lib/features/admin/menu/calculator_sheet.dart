@@ -155,9 +155,11 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        // Aturan 1&3: ikut bottomSheetTheme (adaptif).
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        // Warna dari bottomSheetTheme (adaptif terang/gelap).
+        color: Theme.of(context).bottomSheetTheme.backgroundColor,
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.all(24),
       child: Column(

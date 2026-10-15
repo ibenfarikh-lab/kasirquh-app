@@ -40,9 +40,12 @@ class ProductsPage extends ConsumerWidget {
         minChildSize: 0.5,
         expand: false,
         builder: (ctx, scrollController) => Container(
-          decoration: const BoxDecoration(
-            // Aturan 1&3: ikut bottomSheetTheme (adaptif).
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            // Warna dari bottomSheetTheme (adaptif terang/gelap).
+            color:
+                Theme.of(ctx).bottomSheetTheme.backgroundColor,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: ProductFormSheet(
             existing: existing,

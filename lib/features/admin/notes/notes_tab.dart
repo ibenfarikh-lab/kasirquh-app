@@ -371,9 +371,11 @@ class _NoteDetailSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final date = DateTime.tryParse(note.date);
     return Container(
-      decoration: const BoxDecoration(
-        // Aturan 1&3: ikut bottomSheetTheme (adaptif).
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        // Warna dari bottomSheetTheme (adaptif terang/gelap).
+        color: Theme.of(context).bottomSheetTheme.backgroundColor,
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -732,9 +734,13 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
       minChildSize: 0.5,
       expand: false,
       builder: (_, controller) => Container(
-        decoration: const BoxDecoration(
-          // Aturan 1&3: ikut bottomSheetTheme (adaptif).
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          // Warna dari bottomSheetTheme (adaptif terang/gelap).
+          color: Theme.of(context)
+              .bottomSheetTheme
+              .backgroundColor,
+          borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(28)),
         ),
         child: ListView(
           controller: controller,

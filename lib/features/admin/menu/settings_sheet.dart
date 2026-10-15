@@ -111,9 +111,11 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
       expand: false,
       builder: (context, controller) {
         return Container(
-          decoration: const BoxDecoration(
-            // Aturan 1&3: ikut bottomSheetTheme (adaptif).
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            // Warna dari bottomSheetTheme (adaptif terang/gelap).
+            color: Theme.of(context).bottomSheetTheme.backgroundColor,
+            borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28)),
           ),
           child: ListView(
             controller: controller,
