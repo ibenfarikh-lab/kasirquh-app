@@ -140,7 +140,7 @@ class AdminRepository {
   // ============ TITIP BELANJA (Domain B) ============
 
   /// Daftar titipan live dari `titip_requests`, urut terbaru.
-  /// Skema SAMA PERSIS dengan PWA. Manajemen status DITUNDA.
+  /// Skema SAMA PERSIS dengan PWA.
   Stream<List<TitipRequest>> watchTitipRequests({int limit = 50}) async* {
     final db = _db;
     if (db == null) {
@@ -155,6 +155,17 @@ class AdminRepository {
         .map((snap) => snap.docs
             .map((d) => TitipRequest.fromDoc(d.id, d.data()))
             .toList());
+  }
+
+  /// Ubah status titipan (keputusan user: ADMIN MANUAL).
+  /// Alur: baru → dicari → tersedia → selesai (+ ditolak).
+  Future<void> setTitipStatus(String id, String status) async {
+    final db = _db;
+    if (db == null) throw StateError('butuh internet');
+    await db.collection('titip_requests').doc(id).update({
+      'status': status,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   // ============ PATUNGAN WARGA ============
@@ -239,6 +250,8 @@ class AdminRepository {
         'name': customerName.isEmpty ? 'Warga' : customerName,
         'slots': want,
         'joinedAt': DateTime.now().toIso8601String(),
+        // Keputusan user: ikut patungan → status "menunggu bayar".
+        'paymentStatus': 'menunggu',
       });
       t.update(ref, {
         'participants': parts,
@@ -256,6 +269,38 @@ class AdminRepository {
     await db.collection('patungan').doc(id).update({
       'status': status,
       'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Konfirmasi pembayaran peserta patungan (admin).
+  /// Keputusan user: bayar tunai saat ambil barang atau transfer,
+  /// admin yang konfirmasi lunas. [lunas]=true → 'lunas'.
+  Future<void> setPatunganPayment(
+      String patunganId, String customerId, bool lunas) async {
+    final db = _db;
+    if (db == null) throw StateError('Firestore belum siap');
+    final ref = db.collection('patungan').doc(patunganId);
+    await db.runTransaction((t) async {
+      final snap = await t.get(ref);
+      if (!snap.exists) throw StateError('Patungan tidak ditemukan');
+      final d = snap.data() ?? {};
+      final parts = d['participants'] is List
+          ? List<Map<String, dynamic>>.from(
+              (d['participants'] as List).whereType<Map<String, dynamic>>())
+          : <Map<String, dynamic>>[];
+      var ketemu = false;
+      for (final p in parts) {
+        if (p['customerId'] == customerId) {
+          p['paymentStatus'] = lunas ? 'lunas' : 'menunggu';
+          ketemu = true;
+          break;
+        }
+      }
+      if (!ketemu) throw StateError('Peserta tidak ditemukan');
+      t.update(ref, {
+        'participants': parts,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     });
   }
 

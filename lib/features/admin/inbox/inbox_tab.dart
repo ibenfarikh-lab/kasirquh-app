@@ -8,6 +8,7 @@ import '../../../core/utils/currency.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/customer.dart';
 import '../../../data/models/order.dart';
+import '../../../data/models/titip_request.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../menu/chat_page.dart';
@@ -182,6 +183,16 @@ class InboxTab extends ConsumerWidget {
                           style: TextStyle(
                               color: context.teksRedup),
                         ),
+                        trailing: Chip(
+                          label: Text(
+                            _namaStatusTitipan(t.status),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 12),
+                          ),
+                          backgroundColor: AppColors.orange,
+                        ),
+                        onTap: () =>
+                            _ubahStatusTitipan(context, ref, t),
                       ))
                   .toList(),
             ),
@@ -192,6 +203,50 @@ class InboxTab extends ConsumerWidget {
 
   void _open(BuildContext context, Widget page) {
     openAdminPage(context, page);
+  }
+
+  /// Label status titipan (keputusan user: Baru → Dicari → Tersedia →
+  /// Selesai, + Ditolak bila barang tak ketemu).
+  String _namaStatusTitipan(String status) => switch (status) {
+        'dicari' => Strings.statusTitipanDicari,
+        'tersedia' => Strings.statusTitipanTersedia,
+        'selesai' => Strings.statusTitipanSelesai,
+        'ditolak' => Strings.statusTitipanDitolak,
+        _ => Strings.statusTitipanBaru,
+      };
+
+  /// Dialog ubah status titipan — keputusan user: ADMIN MANUAL.
+  Future<void> _ubahStatusTitipan(
+      BuildContext context, WidgetRef ref, TitipRequest t) async {
+    const opsi = ['baru', 'dicari', 'tersedia', 'selesai', 'ditolak'];
+    final pilih = await showDialog<String>(
+      context: context,
+      builder: (d) => SimpleDialog(
+        title: const Text(Strings.ubahStatusTitipan),
+        children: [
+          for (final s in opsi)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(d).pop(s),
+              child: Text(_namaStatusTitipan(s)),
+            ),
+        ],
+      ),
+    );
+    if (pilih == null || pilih == t.status || !context.mounted) return;
+    try {
+      await ref.read(adminRepositoryProvider).setTitipStatus(t.id, pilih);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.berhasilDisimpan)),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.butuhInternetAdmin)),
+        );
+      }
+    }
   }
 
   /// "Tandai semua dibaca" (ikut PWA): nol-kan unread semua thread chat.

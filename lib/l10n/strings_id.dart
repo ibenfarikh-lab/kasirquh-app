@@ -245,6 +245,12 @@ class Strings {
   static const sudahDibacaSemua = 'Semua sudah dibaca.';
   static const titipan = 'Titipan';
   static const titipanKosong = 'Belum ada titipan';
+  static const statusTitipanBaru = 'Baru';
+  static const statusTitipanDicari = 'Dicari';
+  static const statusTitipanTersedia = 'Tersedia';
+  static const statusTitipanSelesai = 'Selesai';
+  static const statusTitipanDitolak = 'Ditolak';
+  static const ubahStatusTitipan = 'Ubah status titipan';
   static const persetujuanPendaftar = 'Persetujuan pendaftar';
   static const pesananBaru = 'Pesanan baru';
   static const chatBelumDibaca = 'Chat belum dibaca';
@@ -432,8 +438,6 @@ class Strings {
   static const laba = 'Laba';
   static const grafikOmzet = 'Omzet 7 hari';
   static const laporanKosong = 'Belum ada transaksi pada periode ini';
-  static const salinCsv = 'Salin CSV';
-  static const csvDisalin = 'CSV disalin.';
   static const transaksi = 'Transaksi';
 
   // Admin — Belanja Stok
@@ -460,7 +464,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.70+84';
+  static const versiApp = 'KasirQuh v3.6.71+85';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';

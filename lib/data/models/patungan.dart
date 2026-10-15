@@ -1,17 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Peserta patungan — skema SAMA PERSIS dengan PWA.
+/// paymentStatus: 'menunggu' | 'lunas' (keputusan user: bayar tunai saat
+/// ambil barang atau transfer, admin konfirmasi lunas).
 class PatunganParticipant {
   final String customerId;
   final String name;
   final int slots;
   final DateTime joinedAt;
+  final String paymentStatus;
 
   const PatunganParticipant({
     required this.customerId,
     required this.name,
     required this.slots,
     required this.joinedAt,
+    this.paymentStatus = 'menunggu',
   });
 
   factory PatunganParticipant.fromMap(Map<String, dynamic> m) {
@@ -29,6 +33,7 @@ class PatunganParticipant {
       name: (m['name'] as String?) ?? 'Warga',
       slots: (m['slots'] as num?)?.toInt() ?? 1,
       joinedAt: parsed,
+      paymentStatus: (m['paymentStatus'] as String?) ?? 'menunggu',
     );
   }
 
@@ -37,6 +42,7 @@ class PatunganParticipant {
         'name': name,
         'slots': slots,
         'joinedAt': joinedAt.toIso8601String(),
+        'paymentStatus': paymentStatus,
       };
 }
 

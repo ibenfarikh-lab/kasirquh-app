@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kasirquh_app/data/models/journal_entry.dart';
 import 'package:kasirquh_app/data/models/product.dart';
 import 'package:kasirquh_app/features/admin/menu/report_page.dart'
-    show buildCsv, omzetPerHari;
+    show omzetPerHari;
 import 'package:kasirquh_app/features/admin/menu/stock_shopping_sheet.dart'
     show saranHargaJual;
 import 'package:kasirquh_app/features/admin/pos/pay_sheet.dart'
@@ -116,24 +116,6 @@ void main() {
       expect(hasil[5], 25000); // kemarin
       expect(hasil.sublist(0, 5).every((e) => e == 0), true);
       expect(hasil.reduce((a, b) => a + b), 75000);
-    });
-  });
-
-  group('buildCsv', () {
-    test('header + baris, label berkoma dikutip', () {
-      final entries = [
-        _jurnal('penjualan', 'Kasir', 50000, DateTime(2026, 10, 6, 10)),
-        _jurnal('kulakan', 'Kulakan, Belanja Stok', -30000,
-            DateTime(2026, 10, 6, 9)),
-      ];
-      final csv = buildCsv(entries);
-      final baris = csv.split('\n');
-      expect(baris.first, 'tanggal,jenis,keterangan,nominal');
-      expect(baris.length, 3);
-      expect(baris[1].contains('2026-10-06'), true);
-      expect(baris[1].contains('penjualan'), true);
-      expect(baris[2].contains('"Kulakan, Belanja Stok"'), true);
-      expect(baris[2].endsWith('-30000'), true);
     });
   });
 

@@ -229,13 +229,37 @@ class _PatunganAdminCard extends ConsumerWidget {
                     style: const TextStyle(fontSize: 13)),
               ),
             const SizedBox(height: 6),
-            Text(
-              p.participants.isEmpty
-                  ? 'Belum ada peserta'
-                  : 'Peserta: ${p.participants.map((x) => '${x.name} (${x.slots})').join(', ')}',
-              style:
-                  TextStyle(color: context.teksRedup, fontSize: 13),
-            ),
+            // Daftar peserta + status bayar (keputusan user: admin
+            // konfirmasi lunas manual setelah tunai/transfer).
+            if (p.participants.isEmpty)
+              Text(
+                'Belum ada peserta',
+                style:
+                    TextStyle(color: context.teksRedup, fontSize: 13),
+              )
+            else
+              for (final ps in p.participants)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${ps.name} (${ps.slots} slot)',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                      _bayarPill(ps.paymentStatus),
+                      const SizedBox(width: 8),
+                      if (ps.paymentStatus != 'lunas')
+                        TextButton(
+                          onPressed: () => _konfirmasiBayar(
+                              context, ref, p.id, ps),
+                          child: const Text('Konfirmasi Lunas'),
+                        ),
+                    ],
+                  ),
+                ),
             const SizedBox(height: 10),
             // Progress bar ala PWA.
             ClipRRect(
@@ -305,6 +329,63 @@ class _PatunganAdminCard extends ConsumerWidget {
             color: color, fontSize: 12, fontWeight: FontWeight.w700),
       ),
     );
+  }
+
+  Widget _bayarPill(String paymentStatus) {
+    final lunas = paymentStatus == 'lunas';
+    final color = lunas ? AppColors.ok : AppColors.orange;
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        lunas ? 'Lunas' : 'Menunggu bayar',
+        style: TextStyle(
+            color: color, fontSize: 12, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  Future<void> _konfirmasiBayar(BuildContext context, WidgetRef ref,
+      String patunganId, PatunganParticipant ps) async {
+    final ya = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Konfirmasi pembayaran'),
+        content: Text(
+            'Tandai ${ps.name} (${ps.slots} slot) sudah lunas?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(d).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(d).pop(true),
+            child: const Text('Ya, Lunas'),
+          ),
+        ],
+      ),
+    );
+    if (ya != true || !context.mounted) return;
+    try {
+      await ref
+          .read(adminRepositoryProvider)
+          .setPatunganPayment(patunganId, ps.customerId, true);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Pembayaran ditandai lunas')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Gagal: $e')));
+      }
+    }
   }
 
   Future<void> _setStatus(

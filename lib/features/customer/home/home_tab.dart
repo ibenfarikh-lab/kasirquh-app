@@ -357,6 +357,12 @@ class HomeTab extends ConsumerWidget {
     if (flashId == null || flashId.isEmpty) {
       return const SizedBox.shrink();
     }
+    // Keputusan user: promo kilat MATI OTOMATIS saat waktu habis.
+    // Admin menyalakan lagi manual di pengaturan (atur ulang flash).
+    final endsAt = store?.flashEndsAt;
+    if (endsAt != null && endsAt.isBefore(DateTime.now())) {
+      return const SizedBox.shrink();
+    }
     Product? product;
     for (final p in products) {
       if (p.id == flashId) {

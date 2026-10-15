@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency.dart';
-import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/journal_entry.dart';
@@ -34,24 +32,8 @@ List<int> omzetPerHari(List<JournalEntry> entries, DateTime today) {
   });
 }
 
-/// CSV jurnal: header + satu baris per entri.
-/// Label dikutip karena bisa mengandung koma (kutip ganda di-escape).
-/// Fungsi pure — bisa di-unit-test tanpa Flutter.
-String buildCsv(List<JournalEntry> entries) {
-  final buf = StringBuffer('tanggal,jenis,keterangan,nominal');
-  for (final e in entries) {
-    final c = e.createdAt;
-    final date = '${c.year}-'
-        '${c.month.toString().padLeft(2, '0')}-'
-        '${c.day.toString().padLeft(2, '0')}';
-    final label = '"${e.label.replaceAll('"', '""')}"';
-    buf.write('\n$date,${e.kind},$label,${e.amount}');
-  }
-  return buf.toString();
-}
-
 /// Halaman Laporan (Mode Admin): ringkasan 7 hari terakhir + grafik
-/// omzet + salin CSV. Tanpa data contoh — kosong berarti belum ada
+/// omzet. Tanpa data contoh — kosong berarti belum ada
 /// transaksi pada periode ini.
 class ReportPage extends ConsumerWidget {
   const ReportPage({super.key});
@@ -150,20 +132,6 @@ class ReportPage extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              AppButton(
-                kind: AppButtonKind.secondary,
-                label: Strings.salinCsv,
-                onPressed: () async {
-                  await Clipboard.setData(
-                    ClipboardData(text: buildCsv(last7)),
-                  );
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text(Strings.csvDisalin)),
-                    );
-                  }
-                },
-              ),
             ],
           );
         },

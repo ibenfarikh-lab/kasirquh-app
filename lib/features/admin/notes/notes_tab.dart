@@ -54,6 +54,10 @@ class NotesTab extends ConsumerStatefulWidget {
 class _NotesTabState extends ConsumerState<NotesTab> {
   DateTime _tanggal = DateTime.now();
 
+  // Keputusan user: catatan stok TIDAK auto-load (hemat kuota).
+  // Admin menekan tombol refresh untuk memuat.
+  bool _dimuat = false;
+
   String get _kunci => kunciTanggal(_tanggal);
 
   void _geserHari(int delta) {
@@ -81,7 +85,10 @@ class _NotesTabState extends ConsumerState<NotesTab> {
 
   @override
   Widget build(BuildContext context) {
-    final notes = ref.watch(stockNotesProvider).valueOrNull ?? const [];
+    // Tidak auto-load: hanya watch setelah admin menekan tombol muat.
+    final notes = _dimuat
+        ? ref.watch(stockNotesProvider).valueOrNull ?? const <StockNote>[]
+        : const <StockNote>[];
     // NILAI STOK dihitung dari SEMUA produk tanpa filter isActive
     // (ikut PWA) — jalur baca khusus, bukan productsProvider.
     final products = ref.watch(allProductsProvider).valueOrNull ?? const [];
@@ -128,7 +135,8 @@ class _NotesTabState extends ConsumerState<NotesTab> {
           const SizedBox(height: 16),
           _NilaiStokCard(nilai: nilaiStokModal(products)),
           const SizedBox(height: 16),
-          // Navigator tanggal: ‹ tanggal ›
+          // Navigator tanggal: ‹ tanggal › + tombol refresh
+          // (keputusan user: tidak auto-load, muat manual per tanggal).
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -152,6 +160,15 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                 icon: Icon(Icons.chevron_right,
                     color: context.teksUtama),
               ),
+              IconButton(
+                tooltip: 'Muat ulang catatan',
+                onPressed: () {
+                  ref.invalidate(stockNotesProvider);
+                  setState(() => _dimuat = true);
+                },
+                icon: Icon(Icons.refresh,
+                    color: context.teksUtama),
+              ),
             ],
           ),
           // Header hari: tanggal + "N catatan · total RpX".
@@ -170,7 +187,22 @@ class _NotesTabState extends ConsumerState<NotesTab> {
                 color: context.teksRedup, fontSize: 12),
           ),
           const SizedBox(height: 8),
-          if (hariIni.isEmpty)
+          if (!_dimuat)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: FilledButton.icon(
+                  onPressed: () => setState(() => _dimuat = true),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Muat Catatan'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.orange,
+                    foregroundColor: Colors.black87,
+                  ),
+                ),
+              ),
+            )
+          else if (hariIni.isEmpty)
             const EmptyState(
               icon: Icons.note_alt_outlined,
               title: Strings.belumAdaCatatanTanggal,

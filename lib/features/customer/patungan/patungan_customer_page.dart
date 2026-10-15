@@ -139,19 +139,33 @@ class _PatunganCustomerCard extends ConsumerWidget {
               ),
             const SizedBox(height: 10),
             if (joined)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.ok.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Sudah ikut',
-                  style: TextStyle(
-                      color: AppColors.ok,
-                      fontWeight: FontWeight.w700),
-                ),
+              Builder(
+                builder: (context) {
+                  final saya = p.participants.firstWhere(
+                    (x) => x.customerId == customerId,
+                    orElse: () => p.participants.first,
+                  );
+                  final lunas = saya.paymentStatus == 'lunas';
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: (lunas ? AppColors.ok : AppColors.orange)
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      lunas
+                          ? 'Sudah ikut · Lunas'
+                          : 'Sudah ikut · Menunggu bayar '
+                              '(tunai/transfer, konfirmasi admin)',
+                      style: TextStyle(
+                          color:
+                              lunas ? AppColors.ok : AppColors.orange,
+                          fontWeight: FontWeight.w700),
+                    ),
+                  );
+                },
               )
             else if (isFull)
               const Text(
