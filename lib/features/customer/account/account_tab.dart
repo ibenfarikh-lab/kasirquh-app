@@ -1,3 +1,4 @@
+import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -138,6 +139,9 @@ class AccountTab extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
+        // Kartu member barcode (Code39) ala PWA — sync all-in-one.
+        if (uid != null) _MemberBarcodeCard(uid: uid, nama: nama),
+        if (uid != null) const SizedBox(height: 12),
         // Kartu Bonus Harian ala PWA (background ikut tema).
         Container(
           padding: const EdgeInsets.all(12),
@@ -1021,6 +1025,85 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
   }
 }
 
+
+/// Kartu member dengan barcode Code39 ala PWA (sync all-in-one).
+/// "Tunjukkan kode ini untuk membuka Warunge Mimi".
+class _MemberBarcodeCard extends StatelessWidget {
+  final String uid;
+  final String nama;
+
+  const _MemberBarcodeCard({required this.uid, required this.nama});
+
+  /// Kode member: 8 karakter alfanumerik dari UID (Code39-friendly).
+  String get kodeMember {
+    final bersih =
+        uid.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
+    final potong =
+        bersih.length >= 8 ? bersih.substring(0, 8) : bersih.padRight(8, '0');
+    return 'KQ-$potong';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return AppCard(
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.storefront,
+                  color: AppColors.orange, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Warunge Mimi',
+                style:
+                    TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+              ),
+              const Spacer(),
+              Text(
+                'Kartu Member',
+                style: TextStyle(
+                    color: context.teksRedup, fontSize: 11),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: dark ? Colors.white : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: BarcodeWidget(
+              barcode: Barcode.code39(),
+              data: kodeMember,
+              width: double.infinity,
+              height: 64,
+              color: Colors.black,
+              backgroundColor: Colors.white,
+              drawText: false,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            kodeMember,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Tunjukkan kode ini di kasir',
+            style:
+                TextStyle(color: context.teksRedup, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 /// Kartu Bonus Harian — bisa diklaim 1x sehari (ikut PWA).
 class _BonusHarianCard extends ConsumerStatefulWidget {
