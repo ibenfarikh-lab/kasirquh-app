@@ -249,16 +249,13 @@ class InboxTab extends ConsumerWidget {
     }
   }
 
-  /// "Tandai semua dibaca" (ikut PWA): nol-kan unread semua thread chat.
-  /// Notifikasi lain (persetujuan/pesanan/stok/titipan) adalah status live,
-  /// bukan arsip yang bisa ditandai — ikut perilaku PWA.
+  /// "Tandai semua dibaca" (ikut PWA): tandai semua item inbox saat ini.
+  /// Badge = item yang belum dibaca, jadi setelah ini badge = 0.
+  /// Item baru (pesanan/stok/chat baru) otomatis belum dibaca.
   Future<void> _tandaiSemuaDibaca(
       BuildContext context, WidgetRef ref) async {
-    final threads =
-        ref.read(chatThreadsProvider).valueOrNull ?? const [];
-    final unread =
-        threads.where((t) => t.unreadAdmin > 0).toList();
-    if (unread.isEmpty) {
+    final ids = collectInboxIds(ref as Ref);
+    if (ids.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -267,10 +264,17 @@ class InboxTab extends ConsumerWidget {
       }
       return;
     }
+    // Tetap nol-kan unread chat (perilaku lama, untuk konsistensi).
+    final threads =
+        ref.read(chatThreadsProvider).valueOrNull ?? const [];
+    final unread =
+        threads.where((t) => t.unreadAdmin > 0).toList();
     final repo = ref.read(adminRepositoryProvider);
     for (final t in unread) {
       await repo.markThreadRead(t.id);
     }
+    // Tandai semua item inbox sebagai dibaca → badge = 0.
+    await ref.read(inboxReadProvider.notifier).markRead(ids);
     ref.invalidate(chatThreadsProvider);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

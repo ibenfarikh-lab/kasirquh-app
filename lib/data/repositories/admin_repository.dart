@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
@@ -1918,20 +1919,80 @@ final lowStockProductsProvider = Provider<List<Product>>((ref) {
 });
 
 /// Badge Inbox: persetujuan + pesanan menunggu + chat belum dibaca + stok menipis.
-final inboxBadgeProvider = Provider<int>((ref) {
+/// Badge Inbox — ikut PWA: hanya hitung item yang BELUM DIBACA.
+/// Status dibaca disimpan per ID item (persist di SharedPreferences).
+/// "Tandai semua dibaca" → semua ID saat ini ditandai → badge = 0.
+/// Item baru (ID baru) otomatis belum dibaca → badge bertambah lagi.
+class InboxReadNotifier extends StateNotifier<Set<String>> {
+  static const _key = 'inbox_read_ids';
+
+  InboxReadNotifier() : super(const {}) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final ids = prefs.getStringList(_key) ?? const [];
+      state = Set<String>.from(ids);
+    } catch (_) {}
+  }
+
+  Future<void> _save() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Batasi 200 ID terakhir (ikut PWA).
+      final ids = state.take(200).toList();
+      await prefs.setStringList(_key, ids);
+    } catch (_) {}
+  }
+
+  /// Tandai daftar ID sebagai dibaca.
+  Future<void> markRead(Iterable<String> ids) async {
+    state = {...state, ...ids};
+    await _save();
+  }
+
+  bool isRead(String id) => state.contains(id);
+}
+
+final inboxReadProvider =
+    StateNotifierProvider<InboxReadNotifier, Set<String>>((ref) {
+  return InboxReadNotifier();
+});
+
+/// Kumpulkan semua ID item inbox saat ini (untuk badge & tandai dibaca).
+/// Format ID ikut pola PWA: {jenis}-{id}.
+Set<String> collectInboxIds(Ref ref) {
+  final ids = <String>{};
   final approvals =
-      ref.watch(pendingApprovalsProvider).valueOrNull?.length ?? 0;
-  final waiting = ref
-          .watch(adminOrdersProvider)
-          .valueOrNull
-          ?.where((o) => o.status == OrderStatus.menunggu)
-          .length ??
-      0;
-  final unread = ref
-          .watch(chatThreadsProvider)
-          .valueOrNull
-          ?.fold<int>(0, (s, t) => s + t.unreadAdmin) ??
-      0;
-  final low = ref.watch(lowStockProductsProvider).length;
-  return approvals + waiting + unread + low;
+      ref.read(pendingApprovalsProvider).valueOrNull ?? const [];
+  for (final c in approvals) {
+    ids.add('approval-${c.uid}');
+  }
+  final orders =
+      ref.read(adminOrdersProvider).valueOrNull ?? const [];
+  for (final o in orders.where((o) => o.status == OrderStatus.menunggu)) {
+    ids.add('order-${o.id}');
+  }
+  final threads =
+      ref.read(chatThreadsProvider).valueOrNull ?? const [];
+  for (final t in threads.where((t) => t.unreadAdmin > 0)) {
+    ids.add('chat-${t.id}');
+  }
+  for (final p in ref.read(lowStockProductsProvider)) {
+    ids.add('stock-${p.id}');
+  }
+  final titipan = ref.read(titipRequestsProvider).valueOrNull ?? const [];
+  for (final t in titipan.where((t) => t.status == 'baru')) {
+    ids.add('titip-${t.id}');
+  }
+  return ids;
+}
+
+final inboxBadgeProvider = Provider<int>((ref) {
+  final readIds = ref.watch(inboxReadProvider);
+  final allIds = collectInboxIds(ref);
+  // Badge = item yang belum dibaca.
+  return allIds.where((id) => !readIds.contains(id)).length;
 });
