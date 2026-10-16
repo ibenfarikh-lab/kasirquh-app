@@ -121,14 +121,16 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
           // kartu member muncul untuk admin.)
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (!mounted || _navigated) return;
+            // Ambil semua yang butuh context/ref SEBELUM await.
             final authService = ref.read(authServiceProvider);
+            final modeNotifier = ref.read(modeAktifProvider.notifier);
+            final nav = Navigator.of(context);
             final isAdmin =
                 await authService?.isAdmin(user) ?? false;
             if (!mounted) return;
-            final nav = Navigator.of(context);
             if (isAdmin) {
               _navigated = true;
-              ref.read(modeAktifProvider.notifier).state = 'admin';
+              modeNotifier.state = 'admin';
               nav.pushReplacement(
                 MaterialPageRoute(builder: (_) => const AdminShell()),
               );
