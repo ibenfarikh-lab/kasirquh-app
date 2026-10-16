@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/mode_provider.dart';
 import '../../../core/theme/theme_settings.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/utils/error_log.dart';
@@ -14,6 +15,7 @@ import '../../../data/remote/auth_service.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
+import '../../gateway/gateway_screen.dart';
 import '../../admin/admin_session.dart';
 import '../../auth/biometric_messages.dart';
 import '../../auth/login_cepat_toggle.dart';
@@ -504,7 +506,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
   }
 
   Future<void> _konfirmasiKeluar(BuildContext context, WidgetRef ref) async {
-    final navigator = Navigator.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -534,7 +535,13 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     if (ok != true) return;
     final auth = ref.read(authServiceProvider);
     await auth?.signOut();
-    navigator.popUntil((r) => r.isFirst);
+    if (!context.mounted) return;
+    // Keluar → kembali ke gateway (perintah user 2026-10-17).
+    ref.read(modeAktifProvider.notifier).state = 'gateway';
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const GatewayScreen()),
+      (_) => false,
+    );
   }
 }
 
