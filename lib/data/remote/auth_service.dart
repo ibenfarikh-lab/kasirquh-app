@@ -44,7 +44,12 @@ class AuthService {
       email: email,
       password: password,
     );
-    if (await _hasAdminClaim(cred.user)) return; // admin lolos
+    // Pola Web (2026-10-17): admin yang login via pintu pelanggan DITOLAK.
+    // "Ini akun admin — masuk lewat pintu admin"
+    if (await _hasAdminClaim(cred.user)) {
+      await _auth.signOut();
+      throw const AdminWrongDoor();
+    }
     final doc = await _firestore
         .collection('customers')
         .doc(cred.user!.uid)
@@ -102,6 +107,12 @@ class AdminNotAuthorized implements Exception {
 /// Dilempar saat login tapi akun belum disetujui admin.
 class AuthPendingApproval implements Exception {
   const AuthPendingApproval();
+}
+
+/// Dilempar saat akun admin login via pintu/form pelanggan.
+/// Pola Web: "Ini akun admin — masuk lewat pintu admin".
+class AdminWrongDoor implements Exception {
+  const AdminWrongDoor();
 }
 
 /// Provider auth — NULLABLE: null berarti Firebase tidak tersedia

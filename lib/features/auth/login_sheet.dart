@@ -83,6 +83,9 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
       if (mounted) Navigator.of(context).pop(true);
     } on AuthPendingApproval {
       setState(() => _error = Strings.belumDisetujui);
+    } on AdminWrongDoor {
+      setState(() => _error =
+          'Ini akun admin — masuk lewat pintu admin (ketuk logo toko 5x)');
     } catch (_) {
       setState(() => _error = Strings.masukGagal);
     } finally {
@@ -263,6 +266,12 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
                       .read(biometricCredentialServiceProvider)
                       .delete('customer');
                   setState(() => _error = Strings.masukGagal);
+                } on AdminWrongDoor {
+                  await ref
+                      .read(biometricCredentialServiceProvider)
+                      .delete('customer');
+                  setState(() => _error =
+                      'Ini akun admin — masuk lewat pintu admin (ketuk logo toko 5x)');
                 } catch (_) {
                   setState(() => _error = Strings.masukGagal);
                 } finally {
