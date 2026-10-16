@@ -1956,6 +1956,33 @@ class HomeTab extends ConsumerWidget {
                   icon: const Icon(Icons.add),
                   label: const Text('Tambah bahan'),
                 ),
+                const SizedBox(height: 4),
+                // Ringkasan live ala PWA: "N bahan · perkiraan total RpX".
+                Builder(
+                  builder: (_) {
+                    final hargaById = {
+                      for (final p in products) p.id: p.price
+                    };
+                    var total = 0;
+                    var jumlah = 0;
+                    for (final b in bahan) {
+                      final pid = b['productId'] as String;
+                      if (pid.isEmpty) continue;
+                      jumlah++;
+                      total += ((hargaById[pid] ?? 0) *
+                              (b['qty'] as int))
+                          .toInt();
+                    }
+                    return Text(
+                      '$jumlah bahan · perkiraan total ${formatRp(total)}',
+                      style: TextStyle(
+                        color: context.teksRedup,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  },
+                ),
                 const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,

@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/recipe.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/store_repository.dart';
@@ -367,124 +370,193 @@ class _SectionOrderSection extends ConsumerWidget {
   }
 }
 
-/// Blok "Promo Carousel": tambah promo (judul + isi + badge) + daftar.
+/// Blok "Carousel Beranda (5 slot tetap)" — selaras PWA.
+/// Admin edit Judul/Isi/Badge per slot. Disimpan di store_settings.carouselSlots.
 class _PromoCarouselSection extends ConsumerWidget {
   const _PromoCarouselSection();
 
+  static const _slots = [
+    ('flash', 'Promo Kilat', 'Diskon spesial tiap hari, stok terbatas!', 'KILAT'),
+    ('coin', 'Koin Warga', 'Kumpulkan koin tiap belanja, tukarkan dengan potongan harga!', 'KOIN'),
+    ('recipe', 'Ide Masak Warga', 'Inspirasi masak dari warga, langsung masukkan bahan ke keranjang!', 'RESEP'),
+    ('budget', 'Mode Anggaran', 'Belanja hemat sesuai budget harianmu!', 'HEMAT'),
+    ('hajatan', 'Paket Hajatan', 'Paket lengkap untuk acara dan hajatan!', 'PAKET'),
+  ];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final promosAsync = ref.watch(adminPromosProvider);
+    final store = ref.watch(storeInfoProvider).valueOrNull;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _blockTitle(context, 'Promo Carousel'),
-        const SizedBox(height: 8),
-        promosAsync.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(
-              child: CircularProgressIndicator(color: AppColors.orange),
-            ),
+        _blockTitle(context, 'Carousel Beranda (5 slot tetap)'),
+        Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 8),
+          child: Text(
+            'Ubah judul, isi, dan badge tiap slide.',
+            style: TextStyle(color: context.teksRedup, fontSize: 12),
           ),
-          error: (_, __) => const SizedBox.shrink(),
-          data: (promos) {
-            if (promos.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  'Belum ada promo carousel.',
-                  style: TextStyle(color: context.teksRedup),
-                ),
-              );
-            }
-            return Column(
-              children: [for (final p in promos) _PromoTile(promo: p)],
-            );
-          },
         ),
-        const SizedBox(height: 8),
-        AppButton(
-          label: '+ Tambah promo',
-          onPressed: () => _tambahPromoDialog(context, ref),
-        ),
+        for (var i = 0; i < _slots.length; i++)
+          _SlotEditor(
+            nomor: i + 1,
+            slotKey: _slots[i].$1,
+            defTitle: _slots[i].$2,
+            defCopy: _slots[i].$3,
+            defBadge: _slots[i].$4,
+            titleAwal: store?.slotText(_slots[i].$1, 'Title', _slots[i].$2) ?? _slots[i].$2,
+            copyAwal: store?.slotText(_slots[i].$1, 'Copy', _slots[i].$3) ?? _slots[i].$3,
+            badgeAwal: store?.slotText(_slots[i].$1, 'Badge', _slots[i].$4) ?? _slots[i].$4,
+          ),
       ],
     );
   }
+}
 
-  Future<void> _tambahPromoDialog(BuildContext context, WidgetRef ref) async {
+/// Editor satu slot carousel: Judul + Isi + Badge.
+class _SlotEditor extends ConsumerStatefulWidget {
+  final int nomor;
+  final String slotKey;
+  final String defTitle;
+  final String defCopy;
+  final String defBadge;
+  final String titleAwal;
+  final String copyAwal;
+  final String badgeAwal;
+
+  const _SlotEditor({
+    required this.nomor,
+    required this.slotKey,
+    required this.defTitle,
+    required this.defCopy,
+    required this.defBadge,
+    required this.titleAwal,
+    required this.copyAwal,
+    required this.badgeAwal,
+  });
+
+  @override
+  ConsumerState<_SlotEditor> createState() => _SlotEditorState();
+}
+
+class _SlotEditorState extends ConsumerState<_SlotEditor> {
+  late TextEditingController _judul;
+  late TextEditingController _isi;
+  late TextEditingController _badge;
+  bool _menyimpan = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _judul = TextEditingController(text: widget.titleAwal);
+    _isi = TextEditingController(text: widget.copyAwal);
+    _badge = TextEditingController(text: widget.badgeAwal);
+  }
+
+  @override
+  void dispose() {
+    _judul.dispose();
+    _isi.dispose();
+    _badge.dispose();
+    super.dispose();
+  }
+
+  Future<void> _simpan() async {
+    setState(() => _menyimpan = true);
     final messenger = ScaffoldMessenger.of(context);
-    final judul = TextEditingController();
-    final isi = TextEditingController();
-    final badge = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title:
-            Text('Tambah promo', style: TextStyle(color: context.teksUtama)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: judul,
-              autofocus: true,
-              maxLength: 64,
-              style: TextStyle(color: context.teksUtama),
-              decoration: _dekorasi(context, 'Judul promo'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: isi,
-              maxLength: 110,
-              maxLines: 2,
-              style: TextStyle(color: context.teksUtama),
-              decoration: _dekorasi(context, 'Isi promo'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: badge,
-              maxLength: 12,
-              style: TextStyle(color: context.teksUtama),
-              decoration: _dekorasi(context, 'Label badge (cth: PROMO)'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(Strings.batal,
-                style: TextStyle(color: context.teksRedup)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text(Strings.simpan,
-                style: TextStyle(color: AppColors.orange)),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    final t = judul.text.trim();
-    if (t.isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Isi judul promo dulu')),
-      );
-      return;
-    }
     try {
-      await ref.read(adminRepositoryProvider).savePromo({
-        'title': t,
-        'copy': isi.text.trim(),
-        'badge': badge.text.trim().isEmpty ? 'PROMO' : badge.text.trim(),
-        'isActive': true,
-      });
+      final store = ref.read(storeInfoProvider).valueOrNull;
+      final next = Map<String, String>.from(store?.carouselSlots ?? {});
+      next['${widget.slotKey}Title'] = _judul.text.trim();
+      next['${widget.slotKey}Copy'] = _isi.text.trim();
+      next['${widget.slotKey}Badge'] = _badge.text.trim();
+      await ref
+          .read(adminRepositoryProvider)
+          .saveStoreSettings({'carouselSlots': next});
+      if (!mounted) return;
       messenger.showSnackBar(
-        const SnackBar(content: Text('Promo ditambahkan ke carousel')),
+        SnackBar(content: Text('Slide "${widget.slotKey}" diperbarui')),
       );
     } catch (_) {
+      if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(content: Text(Strings.butuhInternetAdmin)),
       );
+    } finally {
+      if (mounted) setState(() => _menyimpan = false);
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${widget.nomor}',
+                    style: const TextStyle(
+                      color: AppColors.orange,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  widget.defTitle,
+                  style: TextStyle(
+                    color: context.teksUtama,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _judul,
+              maxLength: 64,
+              style: TextStyle(color: context.teksUtama),
+              decoration: _dekorasi(context, 'Judul'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _isi,
+              maxLength: 110,
+              style: TextStyle(color: context.teksUtama),
+              decoration: _dekorasi(context, 'Isi'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _badge,
+              maxLength: 12,
+              style: TextStyle(color: context.teksUtama),
+              decoration: _dekorasi(context, 'Badge'),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _menyimpan ? null : _simpan,
+                child: Text(_menyimpan ? 'Menyimpan...' : 'Simpan slide'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -556,6 +628,7 @@ class _IdeMasakSection extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     final nama = TextEditingController(text: existing?.nama ?? '');
     final desc = TextEditingController(text: existing?.desc ?? '');
+    String? foto = existing?.foto.isNotEmpty == true ? existing!.foto : null;
     final products =
         ref.read(adminProductsProvider).valueOrNull ?? const [];
     final bahan = <Map<String, dynamic>>[
@@ -592,6 +665,55 @@ class _IdeMasakSection extends ConsumerWidget {
                     maxLines: 3,
                     style: TextStyle(color: context.teksUtama),
                     decoration: _dekorasi(context, 'Deskripsi'),
+                  ),
+                  const SizedBox(height: 12),
+                  // Foto resep (opsional) — selaras PWA.
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Foto (opsional)',
+                      style: TextStyle(
+                        color: context.teksUtama,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      if (foto != null)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.memory(
+                            base64Decode(foto!.split(',').last),
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.image, size: 64),
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final hasil = await pickProductPhoto();
+                          if (hasil != null) {
+                            setState(() => foto = hasil);
+                          }
+                        },
+                        icon: const Icon(Icons.photo_camera_outlined,
+                            size: 18),
+                        label: Text(foto == null
+                            ? 'Pilih foto'
+                            : 'Ganti foto'),
+                      ),
+                      if (foto != null)
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 20),
+                          onPressed: () =>
+                              setState(() => foto = null),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Align(
@@ -711,7 +833,7 @@ class _IdeMasakSection extends ConsumerWidget {
         {
           'nama': n,
           'desc': desc.text.trim(),
-          'foto': existing?.foto ?? '',
+          'foto': foto ?? '',
           'items': items,
         },
         id: existing?.id,
@@ -733,102 +855,6 @@ class _IdeMasakSection extends ConsumerWidget {
   }
 }
 
-/// Tile promo carousel: judul + toggle aktif + hapus.
-class _PromoTile extends ConsumerWidget {
-  final Promo promo;
-
-  const _PromoTile({required this.promo});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Text(
-          promo.title,
-          style: TextStyle(
-            color: context.teksUtama,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: (promo.subtitle ?? '').isNotEmpty
-            ? Text(
-                promo.subtitle!,
-                style: TextStyle(color: context.teksRedup),
-              )
-            : null,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Switch(
-              value: promo.isActive,
-              activeThumbColor: AppColors.orange,
-              onChanged: (v) async {
-                final messenger = ScaffoldMessenger.of(context);
-                try {
-                  await ref
-                      .read(adminRepositoryProvider)
-                      .savePromo({'isActive': v}, id: promo.id);
-                } catch (_) {
-                  messenger.showSnackBar(
-                    SnackBar(content: Text(Strings.butuhInternetAdmin)),
-                  );
-                }
-              },
-            ),
-            IconButton(
-              icon:
-                  const Icon(Icons.delete_outline, color: AppColors.danger),
-              tooltip: 'Hapus promo',
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                final ok = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: Text(Strings.hapus,
-                        style: TextStyle(color: context.teksUtama)),
-                    content: Text(
-                      'Hapus "${promo.title}" dari carousel?',
-                      style: TextStyle(color: context.teksRedup),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: Text(Strings.batal,
-                            style:
-                                TextStyle(color: context.teksRedup)),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(true),
-                        child: const Text(Strings.hapus,
-                            style: TextStyle(color: AppColors.danger)),
-                      ),
-                    ],
-                  ),
-                );
-                if (ok != true) return;
-                try {
-                  await ref
-                      .read(adminRepositoryProvider)
-                      .deletePromo(promo.id);
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Promo dihapus')),
-                  );
-                } catch (_) {
-                  messenger.showSnackBar(
-                    SnackBar(content: Text(Strings.butuhInternetAdmin)),
-                  );
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Tile resep: nama + jumlah bahan + ubah/hapus.
 class _RecipeTile extends ConsumerWidget {
   final Recipe recipe;
 
