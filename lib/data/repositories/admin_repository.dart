@@ -1802,6 +1802,53 @@ class AdminRepository {
     await db.collection('recipes').doc(id).delete();
   }
 
+  /// Simpan "Ide Masakku" pelanggan ke subkoleksi `customers/{uid}/my_recipes`.
+  /// Selaras PWA `saveMyRecipe` (2026-10-16).
+  Future<String> saveMyRecipe(String uid, Map<String, dynamic> data) async {
+    final db = _db;
+    if (db == null) {
+      throw StateError('Butuh internet untuk menyimpan resep.');
+    }
+    if (uid.isEmpty) throw StateError('Masuk dulu sebagai pelanggan.');
+    final nama = (data['nama'] as String? ?? '').trim();
+    if (nama.isEmpty) throw StateError('Isi nama resep dulu.');
+    final items = ((data['items'] as List?) ?? [])
+        .whereType<Map<String, dynamic>>()
+        .where((it) => (it['productId'] as String? ?? '').isNotEmpty)
+        .toList();
+    if (items.isEmpty) throw StateError('Isi bahan resep dulu.');
+    final payload = {
+      'nama': nama.length > 54 ? nama.substring(0, 54) : nama,
+      'desc': ((data['desc'] as String? ?? '').trim().isEmpty)
+          ? 'Racikan pilihanku untuk dibagikan ke warga.'
+          : (data['desc'] as String).trim(),
+      'foto': (data['foto'] as String? ?? '').trim(),
+      'items': items,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    final doc = await db
+        .collection('customers')
+        .doc(uid)
+        .collection('my_recipes')
+        .add(payload);
+    return doc.id;
+  }
+
+  /// Hapus "Ide Masakku" pelanggan.
+  Future<void> deleteMyRecipe(String uid, String id) async {
+    final db = _db;
+    if (db == null) {
+      throw StateError('Butuh internet untuk menghapus resep.');
+    }
+    await db
+        .collection('customers')
+        .doc(uid)
+        .collection('my_recipes')
+        .doc(id)
+        .delete();
+  }
+
   // ============ KASIR (POS) ============
 
   /// Catat penjualan tunai: jurnal + kurangi stok.

@@ -309,6 +309,29 @@ class StoreRepository {
       yield const [];
     }
   }
+
+  /// Langganan "Ide Masakku" pelanggan — subkoleksi `customers/{uid}/my_recipes`.
+  /// Selaras PWA (2026-10-16).
+  Stream<List<Recipe>> watchMyRecipes(String uid) async* {
+    if (_db == null || uid.isEmpty) {
+      yield const [];
+      return;
+    }
+    try {
+      yield* _db
+          .collection('customers')
+          .doc(uid)
+          .collection('my_recipes')
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snap) => snap.docs
+              .map((d) => Recipe.fromDoc(d.id, d.data()))
+              .where((r) => r.nama.isNotEmpty)
+              .toList());
+    } catch (_) {
+      yield const [];
+    }
+  }
 }
 
 final storeRepositoryProvider = Provider<StoreRepository>((ref) {
@@ -326,6 +349,12 @@ final promosProvider = StreamProvider<List<Promo>>((ref) {
 /// Daftar resep Ide Masak Warga (publik, permanen) — selaras PWA.
 final recipesProvider = StreamProvider<List<Recipe>>((ref) {
   return ref.watch(storeRepositoryProvider).watchRecipes();
+});
+
+/// Daftar "Ide Masakku" milik pelanggan yang login — selaras PWA.
+final myRecipesProvider =
+    StreamProvider.family<List<Recipe>, String>((ref, uid) {
+  return ref.watch(storeRepositoryProvider).watchMyRecipes(uid);
 });
 
 /// Pengaturan Koin Warga — mirror `store_settings/main` (ikut PWA).

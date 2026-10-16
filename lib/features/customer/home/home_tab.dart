@@ -1818,9 +1818,21 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  /// "Buat Ide Masakku" ala PWA: form resep sederhana (nama + bahan).
+  /// "Buat Ide Masakku" ala PWA: form resep (nama + foto + bahan).
+  /// Selaras PWA: guest ditolak, simpan ke `customers/{uid}/my_recipes`.
   Future<void> _buatIdeMasakSheet(
       BuildContext context, WidgetRef ref) async {
+    // Selaras PWA: guest tidak bisa buat Ide Masakku.
+    final session = ref.read(sessionProvider).valueOrNull;
+    final uid = session == null ? null : memberUid(session);
+    if (uid == null) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Masuk dulu untuk buat Ide Masakku')),
+      );
+      return;
+    }
     final products =
         ref.read(productsProvider).valueOrNull ?? const <Product>[];
     if (products.isEmpty) {
@@ -1830,6 +1842,7 @@ class HomeTab extends ConsumerWidget {
       return;
     }
     final namaCtrl = TextEditingController();
+    String? foto;
     final bahan = <Map<String, dynamic>>[
       {'productId': products.first.id, 'qty': 1}
     ];
@@ -1862,6 +1875,43 @@ class HomeTab extends ConsumerWidget {
                     labelText: 'Nama masakan',
                     border: OutlineInputBorder(),
                   ),
+                ),
+                const SizedBox(height: 12),
+                // Foto resep (opsional) — selaras PWA.
+                const Text('Foto resep (opsional)',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (foto != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.memory(
+                          base64Decode(foto!.split(',').last),
+                          width: 64,
+                          height: 64,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.image, size: 64),
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final hasil = await pickProductPhoto();
+                        if (hasil != null) setSt(() => foto = hasil);
+                      },
+                      icon: const Icon(Icons.photo_camera_outlined),
+                      label: Text(foto == null
+                          ? 'Pilih dari HP'
+                          : 'Ganti foto'),
+                    ),
+                    if (foto != null)
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => setSt(() => foto = null),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 const Text('Bahan',
@@ -1936,21 +1986,21 @@ class HomeTab extends ConsumerWidget {
       return;
     }
     try {
-      await ref.read(adminRepositoryProvider).saveRecipe({
+      // Selaras PWA: simpan ke `customers/{uid}/my_recipes`.
+      await ref.read(adminRepositoryProvider).saveMyRecipe(uid, {
         'nama': n,
-        'desc': '',
-        'foto': '',
+        'foto': foto ?? '',
         'items': items,
       });
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Resep ditambahkan ke Beranda pelanggan')),
+            content: Text('Resepku tampil di Ide Masak Warga')),
       );
-    } catch (_) {
+    } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Simpan resep gagal')),
+        SnackBar(content: Text(e.toString().replaceFirst('StateError: ', ''))),
       );
     }
   }
