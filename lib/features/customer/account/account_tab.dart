@@ -920,6 +920,30 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
             ),
           ],
         ),
+        const SizedBox(height: 24),
+        const Divider(),
+        const SizedBox(height: 8),
+        // Tentang — info versi aplikasi (perintah user via Tim Utama).
+        const Text('Tentang',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        const SizedBox(height: 8),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(
+            Icons.storefront,
+            size: 40,
+            color: AppColors.orange,
+          ),
+          title: const Text(
+            'KasirQuh',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+          subtitle: Text(
+            '${Strings.versiApp}\nWarunge Mimi · Powered by KasirQuh',
+            style: TextStyle(color: context.teksRedup),
+          ),
+          isThreeLine: true,
+        ),
       ],
     );
   }
