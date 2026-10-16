@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_settings.dart';
 import '../../../core/utils/currency.dart';
+import '../../../core/utils/error_log.dart';
 import '../../../core/widgets/theme_picker.dart';
 import '../../../data/remote/auth_service.dart';
 import '../../../data/repositories/admin_repository.dart';
@@ -191,6 +192,21 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                     color: context.teksRedup,
                   ),
                   onTap: () => _dialogInfoSesi(context, ref),
+                ),
+                ListTile(
+                  title: Text(
+                    Strings.logError,
+                    style: TextStyle(color: context.teksUtama),
+                  ),
+                  subtitle: Text(
+                    '${ErrorLog.entries.length} tercatat',
+                    style: TextStyle(color: context.teksRedup),
+                  ),
+                  trailing: Icon(
+                    Icons.chevron_right,
+                    color: context.teksRedup,
+                  ),
+                  onTap: () => _dialogLogError(context),
                 ),
                 ListTile(
                   title: Text(
@@ -405,6 +421,14 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     );
   }
 
+  /// Dialog Log Error ala PWA: 50 galat terakhir, terbaru dulu.
+  void _dialogLogError(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => _LogErrorDialog(parentContext: context),
+    );
+  }
+
   Future<void> _dialogAngka(
     BuildContext context,
     WidgetRef ref, {
@@ -511,5 +535,107 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     final auth = ref.read(authServiceProvider);
     await auth?.signOut();
     navigator.popUntil((r) => r.isFirst);
+  }
+}
+
+/// Dialog Log Error ala PWA: 50 galat terakhir, terbaru dulu + tombol hapus.
+class _LogErrorDialog extends StatefulWidget {
+  final BuildContext parentContext;
+
+  const _LogErrorDialog({required this.parentContext});
+
+  @override
+  State<_LogErrorDialog> createState() => _LogErrorDialogState();
+}
+
+class _LogErrorDialogState extends State<_LogErrorDialog> {
+  @override
+  Widget build(BuildContext context) {
+    final logs = ErrorLog.entries.reversed.toList();
+    return AlertDialog(
+      title: Text(
+        Strings.logError,
+        style: TextStyle(color: widget.parentContext.teksUtama),
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 400,
+        child: logs.isEmpty
+            ? Center(
+                child: Text(
+                  Strings.belumAdaError,
+                  style: TextStyle(
+                      color: widget.parentContext.teksRedup),
+                  textAlign: TextAlign.center,
+                ),
+              )
+            : ListView.builder(
+                itemCount: logs.length,
+                itemBuilder: (ctx, i) {
+                  final e = logs[i];
+                  final waktu =
+                      '${e.at.day}/${e.at.month}/${e.at.year} '
+                      '${e.at.hour.toString().padLeft(2, '0')}:'
+                      '${e.at.minute.toString().padLeft(2, '0')}';
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      title: Text(
+                        e.source,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 13),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text(
+                            e.message,
+                            style: TextStyle(
+                              color: widget.parentContext.teksRedup,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            waktu,
+                            style: TextStyle(
+                              color: widget.parentContext.teksRedup
+                                  .withValues(alpha: 0.7),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      isThreeLine: true,
+                    ),
+                  );
+                },
+              ),
+      ),
+      actions: [
+        if (logs.isNotEmpty)
+          TextButton(
+            onPressed: () {
+              setState(() => ErrorLog.clear());
+              ScaffoldMessenger.of(widget.parentContext).showSnackBar(
+                const SnackBar(
+                    content: Text('Log error dihapus')),
+              );
+            },
+            child: Text(
+              Strings.hapusLog,
+              style: const TextStyle(color: AppColors.danger),
+            ),
+          ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text(
+            Strings.tutup,
+            style: TextStyle(color: AppColors.orange),
+          ),
+        ),
+      ],
+    );
   }
 }

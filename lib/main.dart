@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
+import 'core/utils/error_log.dart';
 import 'core/utils/startup_report.dart';
 import 'core/widgets/notify.dart';
 import 'data/local/app_database.dart';
@@ -20,6 +21,23 @@ import 'firebase_options.dart';
 /// di StartupReport dan aplikasi lanjut mode lokal (offline-first).
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Pencatat error global ala PWA (2026-10-16).
+  // Flutter framework errors → ErrorLog.
+  FlutterError.onError = (details) {
+    try {
+      ErrorLog.log('flutter', details.exception, details.stack);
+    } catch (_) {}
+    // Tetap teruskan ke handler bawaan agar terlihat di console.
+    FlutterError.presentError(details);
+  };
+  // Async errors di luar zone Flutter → ErrorLog.
+  WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+    try {
+      ErrorLog.log('async', error, stack);
+    } catch (_) {}
+    return true; // sudah ditangani
+  };
 
   try {
     await initializeDateFormatting('id_ID');

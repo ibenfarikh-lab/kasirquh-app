@@ -468,7 +468,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.79+93';
+  static const versiApp = 'KasirQuh v3.6.80+94';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';
@@ -494,6 +494,9 @@ class Strings {
   static const grupTentang = 'Tentang';
   static const grupAkun = 'Akun';
   static const infoSesi = 'Info sesi';
+  static const logError = 'Log Error';
+  static const hapusLog = 'Hapus Log';
+  static const belumAdaError = 'Belum ada galat tercatat. Bagus!';
   static const keluarAdmin = 'Keluar dari Mode Admin';
   static const notifPesananBaru = 'Pesanan baru';
   static const notifChat = 'Chat masuk';
