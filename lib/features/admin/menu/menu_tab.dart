@@ -7,8 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/mode_provider.dart';
 import '../../../data/remote/auth_service.dart';
 import '../../../l10n/strings_id.dart';
-import '../../auth/biometric_credential_service.dart';
-import '../../customer/customer_shell.dart';
+import '../../gateway/gateway_screen.dart';
 import '../pos/scanner_sheet.dart';
 import 'ai_admin_sheet.dart';
 import 'calculator_sheet.dart';
@@ -221,50 +220,22 @@ class MenuTab extends ConsumerWidget {
     );
   }
 
-  /// Ganti ke Mode Pelanggan via sidik jari.
-  /// Alur: biometric → baca kredensial pelanggan → signOut → signIn → CustomerShell.
+  /// Ganti ke Mode Pelanggan — ikut pola Web (2026-10-17).
+  /// Alur: signOut admin → gateway (dashboard guest).
+  /// Keputusan user: admin TIDAK BOLEH jadi pelanggan (pembukuan rapih).
+  /// Yang mau jadi pelanggan wajib login sebagai akun pelanggan terpisah.
   Future<void> _gantiKeModePelanggan(
       BuildContext context, WidgetRef ref) async {
-    final svc = ref.read(biometricCredentialServiceProvider);
-    // 1. Verifikasi biometric.
-    final ok = await svc.verifyBiometric(Strings.alasanVerifikasiSidikJari);
-    if (!ok || !context.mounted) return;
-    // 2. Baca kredensial pelanggan tersimpan.
-    final cred = await svc.read('customer');
-    if (cred == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Belum ada akun pelanggan tersimpan. '
-                'Masuk sebagai pelanggan dulu lalu aktifkan login cepat.'),
-          ),
-        );
-      }
-      return;
-    }
-    // 3. Sign out admin, sign in sebagai pelanggan.
     final auth = ref.read(authServiceProvider);
     if (auth == null) return;
-    try {
-      await auth.signOut();
-      await auth.signIn(email: cred.email, password: cred.password);
-      if (context.mounted) {
-        // Kembali ke mode pelanggan → tema pelanggan berlaku global.
-        ref.read(modeAktifProvider.notifier).state = 'pelanggan';
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const CustomerShell()),
-          (_) => false,
-        );
-      }
-    } catch (_) {
-      // Kredensial basi → hapus, minta login manual.
-      await svc.delete('customer');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(Strings.masukGagal)),
-        );
-      }
-    }
+    await auth.signOut();
+    if (!context.mounted) return;
+    // Keluar → gateway (mode tamu), ikut pola Web.
+    ref.read(modeAktifProvider.notifier).state = 'gateway';
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const GatewayScreen()),
+      (_) => false,
+    );
   }
 }
 
