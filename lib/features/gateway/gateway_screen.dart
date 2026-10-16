@@ -11,6 +11,7 @@ import '../../data/remote/auth_service.dart';
 import '../../data/repositories/store_repository.dart';
 import '../../l10n/strings_id.dart';
 import '../auth/pin_screen.dart';
+import '../admin/admin_shell.dart';
 import '../customer/customer_shell.dart';
 import 'hidden_hotspot.dart';
 
@@ -111,9 +112,30 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
     return StreamBuilder(
       stream: auth?.authState() ?? Stream<User?>.value(null),
       builder: (context, snap) {
-        if (snap.data != null) {
+        final user = snap.data;
+        if (user != null) {
           // Sudah login → skip gateway.
-          WidgetsBinding.instance.addPostFrameCallback((_) => _enterAsGuest());
+          // ROOT CAUSE FIX (2026-10-17): admin yang sudah login JANGAN
+          // di-skip ke CustomerShell sebagai guest — arahkan ke AdminShell.
+          // (Sebelumnya admin masuk ke mode pelanggan → chat error,
+          // kartu member muncul untuk admin.)
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (!mounted || _navigated) return;
+            final authService = ref.read(authServiceProvider);
+            final isAdmin =
+                await authService?.isAdmin(user) ?? false;
+            if (!mounted) return;
+            final nav = Navigator.of(context);
+            if (isAdmin) {
+              _navigated = true;
+              ref.read(modeAktifProvider.notifier).state = 'admin';
+              nav.pushReplacement(
+                MaterialPageRoute(builder: (_) => const AdminShell()),
+              );
+            } else {
+              _enterAsGuest();
+            }
+          });
         }
         return Scaffold(
           // Full black selaras tema gelap (keputusan user 2026-10-12).
