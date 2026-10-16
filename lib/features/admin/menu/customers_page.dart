@@ -287,12 +287,7 @@ class _CustomerListCard extends ConsumerWidget {
   }
 
   void _openNotesSheet(BuildContext context, Customer customer) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => CustomerNotesSheet(customer: customer),
-    );
+    openAdminPage(context, CustomerNotesSheet(customer: customer));
   }
 }
 

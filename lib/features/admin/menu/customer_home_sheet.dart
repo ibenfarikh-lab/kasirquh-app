@@ -21,72 +21,15 @@ class CustomerHomeSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      maxChildSize: 0.95,
-      minChildSize: 0.5,
-      expand: false,
-      builder: (context, controller) {
-        return Container(
-          decoration: BoxDecoration(
-            // Warna dari bottomSheetTheme (adaptif terang/gelap).
-            color: Theme.of(context).bottomSheetTheme.backgroundColor,
-            borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28)),
-          ),
-          child: ListView(
-            controller: controller,
-            padding: const EdgeInsets.all(24),
-            children: [
-              Center(
-                child: Container(
-                  width: 48,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.adminLine,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Header ala PWA: kicker + judul + tombol tutup.
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Toko',
-                          style: TextStyle(
-                            color: AppColors.orange,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.08,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Pusat Kendali Beranda',
-                          style: TextStyle(
-                            color: context.teksUtama,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    color: context.teksRedup,
-                    tooltip: 'Tutup',
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Intro ala PWA.
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Pusat Kendali Beranda'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          const SizedBox(height: 12),
+          // Intro ala PWA.
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -135,8 +78,6 @@ class CustomerHomeSheet extends ConsumerWidget {
             ],
           ),
         );
-      },
-    );
   }
 }
 

@@ -80,46 +80,14 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
       _terisi = true;
     }
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      maxChildSize: 0.95,
-      minChildSize: 0.5,
-      expand: false,
-      builder: (context, controller) {
-        return Container(
-          decoration: BoxDecoration(
-            // Warna dari bottomSheetTheme (adaptif terang/gelap).
-            color: Theme.of(context)
-                .bottomSheetTheme
-                .backgroundColor,
-            borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28)),
-          ),
-          child: ListView(
-            controller: controller,
-            padding: const EdgeInsets.all(24),
-            children: [
-              Center(
-                child: Container(
-                  width: 48,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.adminLine,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                Strings.modulProfilToko,
-                style: TextStyle(
-                  color: context.teksUtama,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (store == null)
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(Strings.modulProfilToko),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          if (store == null)
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(32),
@@ -150,8 +118,6 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
             ],
           ),
         );
-      },
-    );
   }
 
   Widget _field(

@@ -40,42 +40,13 @@ class _ScannerSheetState extends State<ScannerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      maxChildSize: 0.95,
-      minChildSize: 0.5,
-      expand: false,
-      builder: (_, controller) => Container(
-        decoration: BoxDecoration(
-          // Warna dari bottomSheetTheme (adaptif terang/gelap).
-          color: Theme.of(context).bottomSheetTheme.backgroundColor,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: ListView(
-          controller: controller,
-          padding: const EdgeInsets.all(24),
-          children: [
-            Center(
-              child: Container(
-                width: 48,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: AppColors.adminLine,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              Strings.pindaiBarcode,
-              style: TextStyle(
-                color: context.teksUtama,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 16),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(Strings.pindaiBarcode),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
               child: SizedBox(
@@ -132,7 +103,6 @@ class _ScannerSheetState extends State<ScannerSheet> {
             ),
           ],
         ),
-      ),
     );
   }
 }

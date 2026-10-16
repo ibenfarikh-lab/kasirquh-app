@@ -80,19 +80,19 @@ class MenuTab extends ConsumerWidget {
           Strings.modulProfilToko,
           Strings.descProfilToko,
           Icons.store_outlined,
-          () => _openSheet(context, const StoreProfileSheet()),
+          () => _openPage(context, const StoreProfileSheet()),
         ),
         _Module(
           Strings.modulBerandaPelanggan,
           Strings.descBerandaPelanggan,
           Icons.home_outlined,
-          () => _openSheet(context, const CustomerHomeSheet()),
+          () => _openPage(context, const CustomerHomeSheet()),
         ),
         _Module(
           Strings.modulKoin,
           Strings.descKoinWarga,
           Icons.toll_outlined,
-          () => _openSheet(context, const CoinsSheet()),
+          () => _openPage(context, const CoinsSheet()),
         ),
         _Module(
           Strings.modulKasirOnline,
@@ -120,31 +120,31 @@ class MenuTab extends ConsumerWidget {
           Strings.modulKalkulator,
           Strings.descKalkulator,
           Icons.calculate_outlined,
-          () => _openSheet(context, const CalculatorSheet()),
+          () => _openPage(context, const CalculatorSheet()),
         ),
         _Module(
           Strings.menuPemindaiBarcode,
           Strings.descPemindaiBarcode,
           Icons.qr_code_scanner,
-          () => _openSheet(context, const ScannerSheet()),
+          () => _openPage(context, const ScannerSheet()),
         ),
         _Module(
           Strings.modulCatatanToko,
           Strings.descCatatanToko,
           Icons.note_alt_outlined,
-          () => _openSheet(context, const StoreNotesSheet()),
+          () => _openPage(context, const StoreNotesSheet()),
         ),
         _Module(
           Strings.modulBelanjaStok,
           Strings.descBelanjaStok,
           Icons.shopping_cart_outlined,
-          () => _openSheet(context, const StockShoppingSheet()),
+          () => _openPage(context, const StockShoppingSheet()),
         ),
         _Module(
           Strings.modulAiAdmin,
           Strings.descAiAdmin,
           Icons.psychology_outlined,
-          () => _openSheet(context, const AiAdminSheet()),
+          () => _openPage(context, const AiAdminSheet()),
         ),
         _Module(
           Strings.modulPembukuan,
@@ -203,21 +203,12 @@ class MenuTab extends ConsumerWidget {
           Strings.menuPengaturanGlobal,
           Strings.descPengaturanGlobal,
           Icons.settings_outlined,
-          () => _openSheet(context, const SettingsSheet()),
+          () => _openPage(context, const SettingsSheet()),
         ),
       ];
 
   void _openPage(BuildContext context, Widget page) {
     openAdminPage(context, page);
-  }
-
-  void _openSheet(BuildContext context, Widget sheet) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      // Opsi A: hapus backgroundColor transparent — ikut bottomSheetTheme (solid, adaptif).
-      builder: (_) => sheet,
-    );
   }
 
   /// Ganti ke Mode Pelanggan — ikut pola Web (2026-10-17).

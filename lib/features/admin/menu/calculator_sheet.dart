@@ -154,50 +154,16 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        // Warna dari bottomSheetTheme (adaptif terang/gelap).
-        color: Theme.of(context).bottomSheetTheme.backgroundColor,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(28)),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(Strings.modulKalkulator),
       ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Container(
-              width: 48,
-              height: 5,
-              decoration: BoxDecoration(
-                color: AppColors.adminLine,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  Strings.modulKalkulator,
-                  style: TextStyle(
-                    color: context.teksUtama,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: Strings.tutup,
-                icon: Icon(Icons.close, color: context.teksRedup),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
             decoration: BoxDecoration(
               color: context.permukaanKartu, // Aturan 1&3: adaptif.
               borderRadius: BorderRadius.circular(16),
@@ -242,7 +208,8 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
             Row(
               children: row.map((l) => _CalcButton(label: l, onTap: () => _press(l))).toList(),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

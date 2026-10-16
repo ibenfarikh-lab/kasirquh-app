@@ -191,50 +191,18 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
     final batas = storeInfo?.lowStockDefault ?? 5;
     _sinkronRows(products, batas);
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      maxChildSize: 0.95,
-      minChildSize: 0.5,
-      expand: false,
-      builder: (context, controller) {
-        return Container(
-          decoration: BoxDecoration(
-            // Warna dari bottomSheetTheme (adaptif terang/gelap).
-            color: Theme.of(context)
-                .bottomSheetTheme
-                .backgroundColor,
-            borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28)),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(Strings.modulBelanjaStok),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          TextField(
+            controller: _supplier,
+            style: TextStyle(color: context.teksUtama),
+            decoration: _dekorasi('Supplier'),
           ),
-          child: ListView(
-            controller: controller,
-            padding: const EdgeInsets.all(24),
-            children: [
-              Center(
-                child: Container(
-                  width: 48,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.adminLine,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                Strings.modulBelanjaStok,
-                style: TextStyle(
-                  color: context.teksUtama,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _supplier,
-                style: TextStyle(color: context.teksUtama),
-                decoration: _dekorasi('Supplier'),
-              ),
               const SizedBox(height: 20),
               Text(
                 Strings.perluDikulak,
@@ -262,8 +230,6 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
             ],
           ),
         );
-      },
-    );
   }
 
   Widget _kartuProduk(Product p) {

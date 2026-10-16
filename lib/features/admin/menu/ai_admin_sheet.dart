@@ -77,74 +77,35 @@ class AiAdminSheet extends ConsumerWidget {
     final orders = ref.watch(adminOrdersProvider).valueOrNull ?? const [];
     final lowStock = ref.watch(lowStockProductsProvider);
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      maxChildSize: 0.95,
-      minChildSize: 0.5,
-      expand: false,
-      builder: (_, controller) => Container(
-        decoration: BoxDecoration(
-          // Warna dari bottomSheetTheme (adaptif terang/gelap).
-          color: Theme.of(context)
-              .bottomSheetTheme
-              .backgroundColor,
-          borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(28)),
-        ),
-        child: ListView(
-          controller: controller,
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          children: [
-            Center(
-              child: Container(
-                width: 48,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: AppColors.adminLine,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('AI Admin'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        children: [
+          Text(
+            'Ringkasan & saran dari data tokomu. Tanpa data → tanpa klaim.',
+            style: TextStyle(
+                color: context.teksRedup, fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+          journalAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(
+                  child: CircularProgressIndicator(
+                      color: AppColors.orange)),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Icon(Icons.psychology_outlined,
-                    color: AppColors.orange, size: 28),
-                SizedBox(width: 10),
-                Text(
-                  'AI Admin',
-                  style: TextStyle(
-                    color: context.teksUtama,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
+            error: (_, __) => const EmptyState(
+              icon: Icons.psychology_outlined,
+              title: Strings.belumAdaData,
+              hint: Strings.periksaKoneksi,
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Ringkasan & saran dari data tokomu. Tanpa data → tanpa klaim.',
-              style: TextStyle(
-                  color: context.teksRedup, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            journalAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(
-                    child: CircularProgressIndicator(
-                        color: AppColors.orange)),
-              ),
-              error: (_, __) => const EmptyState(
-                icon: Icons.psychology_outlined,
-                title: Strings.belumAdaData,
-                hint: Strings.periksaKoneksi,
-              ),
-              data: (entries) =>
-                  _isi(context, entries, orders, lowStock),
-            ),
-          ],
-        ),
+            data: (entries) =>
+                _isi(context, entries, orders, lowStock),
+          ),
+        ],
       ),
     );
   }

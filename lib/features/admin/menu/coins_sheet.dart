@@ -330,55 +330,20 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
   @override
   Widget build(BuildContext context) {
     final customersAsync = ref.watch(adminCustomersProvider);
-    return Container(
-      decoration: BoxDecoration(
-        // Warna dari bottomSheetTheme (adaptif terang/gelap).
-        color: Theme.of(context).bottomSheetTheme.backgroundColor,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(28)),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(Strings.modulKoin),
       ),
-      padding: EdgeInsets.fromLTRB(
-        24,
-        24,
-        24,
-        24 + MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SingleChildScrollView(
+      body: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          24 + MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 48,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: AppColors.adminLine,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    Strings.modulKoin,
-                    style: TextStyle(
-                      color: context.teksUtama,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: Strings.tutup,
-                  icon:
-                      Icon(Icons.close, color: context.teksRedup),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
             Text(
               Strings.koinWargaHint,
               style: TextStyle(color: context.teksRedup, fontSize: 12),

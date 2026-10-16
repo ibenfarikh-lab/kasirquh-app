@@ -107,35 +107,14 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      maxChildSize: 0.95,
-      minChildSize: 0.5,
-      expand: false,
-      builder: (context, controller) {
-        return Container(
-          decoration: BoxDecoration(
-            // Warna dari bottomSheetTheme (adaptif terang/gelap).
-            color: Theme.of(context).bottomSheetTheme.backgroundColor,
-            borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28)),
-          ),
-          child: ListView(
-            controller: controller,
-            padding: const EdgeInsets.all(24),
-            children: [
-              Center(
-                child: Container(
-                  width: 48,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.adminLine,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              _judulGrup(Strings.grupTampilan),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(Strings.menuPengaturanGlobal),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          _judulGrup(Strings.grupTampilan),
               _kartu([
                 ListTile(
                   title: Text(
@@ -359,8 +338,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
             ],
           ),
         );
-      },
-    );
   }
 
   Widget _judulGrup(String judul) {
