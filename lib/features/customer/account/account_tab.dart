@@ -26,7 +26,7 @@ import '../../auth/biometric_credential_service.dart';
 import '../../auth/login_cepat_toggle.dart';
 import '../../gateway/gateway_screen.dart';
 import '../session.dart';
-import 'coin_history_page.dart';
+import 'dompet_koin_page.dart';
 import 'misi_koin_page.dart';
 
 /// Tab Akun — bergembok untuk tamu.
@@ -107,9 +107,11 @@ class AccountTab extends ConsumerWidget {
                 onTap: uid == null
                     ? null
                     : () {
+                        // Perintah user 2026-10-18: chip koin → Dompet Koin
+                        // (riwayat koin ada di dalam dompet).
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => CoinHistoryPage(uid: uid),
+                            builder: (_) => const DompetKoinPage(),
                           ),
                         );
                       },

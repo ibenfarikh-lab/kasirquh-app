@@ -9,7 +9,7 @@ import '../../data/repositories/store_repository.dart';
 import '../../l10n/strings_id.dart';
 import '../gateway/hidden_hotspot.dart';
 import 'account/account_tab.dart';
-import 'account/coin_history_page.dart';
+import 'account/dompet_koin_page.dart';
 import 'cart/cart_provider.dart';
 import 'cart/cart_tab.dart';
 import 'catalog/catalog_tab.dart';
@@ -185,10 +185,10 @@ class CustomerShell extends ConsumerWidget {
         requireLogin(context, ref, () async {});
         return;
       }
-      final uid = memberUid(session);
-      if (uid == null) return;
+      // Perintah user 2026-10-18: chip koin header → Dompet Koin
+      // (riwayat koin ada di dalam dompet), bukan langsung ke riwayat.
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => CoinHistoryPage(uid: uid)),
+        MaterialPageRoute(builder: (_) => const DompetKoinPage()),
       );
     }
 
