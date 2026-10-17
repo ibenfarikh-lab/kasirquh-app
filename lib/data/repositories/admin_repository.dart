@@ -1086,6 +1086,10 @@ class AdminRepository {
       'customerId': uid,
       'amount': delta,
       'reason': reason,
+      // Selaras Web (2026-10-17): label & detail agar riwayat koin
+      // pelanggan tampil konsisten dari kedua pintu.
+      'label': 'Koreksi admin',
+      'detail': reason,
       'createdAt': FieldValue.serverTimestamp(),
     });
     batch.update(db.collection('customers').doc(uid), {
@@ -1133,6 +1137,10 @@ class AdminRepository {
         'customerId': doc.id,
         'amount': amount,
         'reason': reason,
+        // Selaras Web (2026-10-17): label & detail agar riwayat koin
+        // pelanggan tampil konsisten dari kedua pintu.
+        'label': 'Bonus event',
+        'detail': reason,
         'createdAt': FieldValue.serverTimestamp(),
       });
       batch.update(db.collection('customers').doc(doc.id), {

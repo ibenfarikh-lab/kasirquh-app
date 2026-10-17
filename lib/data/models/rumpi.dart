@@ -69,6 +69,8 @@ class CoinEntry {
   final String customerId;
   final int amount;
   final String reason;
+  final String label;
+  final String detail;
   final String? orderId;
   final DateTime createdAt;
 
@@ -77,6 +79,8 @@ class CoinEntry {
     this.customerId = '',
     required this.amount,
     required this.reason,
+    this.label = '',
+    this.detail = '',
     this.orderId,
     required this.createdAt,
   });
@@ -88,6 +92,8 @@ class CoinEntry {
       customerId: (m['customerId'] as String?) ?? '',
       amount: (m['amount'] as num?)?.toInt() ?? 0,
       reason: (m['reason'] as String?) ?? '',
+      label: (m['label'] as String?) ?? '',
+      detail: (m['detail'] as String?) ?? '',
       orderId: m['orderId'] as String?,
       createdAt: ts is Timestamp
           ? ts.toDate()

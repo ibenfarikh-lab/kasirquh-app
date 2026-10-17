@@ -71,11 +71,15 @@ class _CoinTile extends StatelessWidget {
         ),
       ),
       title: Text(
-        labelAlasanKoin(entry.reason),
+        // Selaras Web (2026-10-17): pakai label dari ledger bila ada,
+        // fallback ke label turunan untuk entri lama.
+        entry.label.isNotEmpty
+            ? entry.label
+            : labelAlasanKoin(entry.reason),
         style: const TextStyle(fontWeight: FontWeight.w700),
       ),
       subtitle: Text(
-        date,
+        entry.detail.isNotEmpty ? '${entry.detail} · $date' : date,
         style: TextStyle(color: context.teksRedup, fontSize: 12),
       ),
       trailing: Text(
