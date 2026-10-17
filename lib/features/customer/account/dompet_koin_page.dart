@@ -11,7 +11,6 @@ import '../../../l10n/strings_id.dart';
 import '../session.dart';
 import 'coin_history_page.dart';
 import 'misi_koin_page.dart';
-import 'tebak_harga_page.dart';
 
 /// Dompet Koin Warga — satu pintu masuk koin ala PWA (coinModal).
 /// Tampil: saldo + nilai Rp, aturan program, shortcut Misi Koin
@@ -101,18 +100,6 @@ class DompetKoinPage extends ConsumerWidget {
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
                         builder: (_) => const MisiKoinPage()),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _shortcut(
-                  context,
-                  icon: Icons.help_outline,
-                  label: 'Tebak Harga',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const TebakHargaPage()),
                   ),
                 ),
               ),

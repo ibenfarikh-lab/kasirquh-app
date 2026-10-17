@@ -13,6 +13,7 @@ import '../../../data/repositories/social_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../game/game_webview_page.dart';
+import 'tebak_harga_page.dart';
 import '../session.dart';
 
 /// Definisi misi — id stabil untuk penanda klaim lokal.
@@ -251,6 +252,55 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
           gameBuruDiskon,
           Icons.shopping_basket_outlined,
           'Tangkap barang jatuh dengan keranjang. 1000 poin = 1 koin.',
+        ),
+        const SizedBox(height: 8),
+        // Tebak Harga — ikut Web: akses hanya dari Misi Koin.
+        AppCard(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const TebakHargaPage(),
+              ),
+            );
+          },
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.orange.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                    Icons.help_outline, color: AppColors.orange, size: 28),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tebak Harga',
+                      style: TextStyle(
+                        color: context.teksUtama,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      'Tebak harga produk, dapat koin.',
+                      style: TextStyle(
+                        color: context.teksRedup,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.orange),
+            ],
+          ),
         ),
       ],
     );
