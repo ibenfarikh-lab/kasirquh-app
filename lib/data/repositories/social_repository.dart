@@ -241,6 +241,73 @@ class SocialRepository {
       yield const [];
     }
   }
+
+  // ============ GAME (Misi Koin) ============
+
+  /// Hasil klaim koin game.
+  /// Ikut pola Web (Store.grantGameCoins): transaction atomik,
+  /// kuota 500 koin/hari DIPISAH per game (via dateField/todayField).
+  Future<({int granted, bool capped})> grantGameCoins(
+    String uid,
+    int requestedCoins, {
+    required int points,
+    required String reason,
+    required String label,
+    required String dateField,
+    required String todayField,
+  }) async {
+    final db = _db;
+    requestedCoins = requestedCoins.clamp(0, 100000);
+    if (db == null || uid.isEmpty || requestedCoins <= 0) {
+      return (granted: 0, capped: false);
+    }
+    const maxPerDay = 500;
+    final now = DateTime.now();
+    final today =
+        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    return db.runTransaction((tx) async {
+      final ref = db.collection('customers').doc(uid);
+      final snap = await tx.get(ref);
+      final data = snap.data() ?? {};
+      final already = (data[dateField] == today)
+          ? ((data[todayField] as num?)?.toInt() ?? 0).clamp(0, 100000)
+          : 0;
+      final grant = (requestedCoins).clamp(0, maxPerDay - already);
+      if (grant <= 0) return (granted: 0, capped: true);
+      tx.update(ref, {
+        'coins': FieldValue.increment(grant),
+        dateField: today,
+        todayField: already + grant,
+      });
+      tx.set(db.collection('coin_ledger').doc(), {
+        'customerId': uid,
+        'amount': grant,
+        'reason': reason,
+        'label': label,
+        'detail': '$points poin',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      return (granted: grant, capped: grant < requestedCoins);
+    });
+  }
+
+  /// Progres koin game hari ini (untuk tile progres).
+  Future<int> gameCoinsToday(
+      String uid, String dateField, String todayField) async {
+    final db = _db;
+    if (db == null || uid.isEmpty) return 0;
+    final now = DateTime.now();
+    final today =
+        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    try {
+      final doc = await db.collection('customers').doc(uid).get();
+      final data = doc.data();
+      if (data == null || data[dateField] != today) return 0;
+      return ((data[todayField] as num?)?.toInt() ?? 0).clamp(0, 100000);
+    } catch (_) {
+      return 0;
+    }
+  }
 }
 
 final socialRepositoryProvider = Provider<SocialRepository>((ref) {

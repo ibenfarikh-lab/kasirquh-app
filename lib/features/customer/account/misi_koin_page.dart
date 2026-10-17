@@ -9,8 +9,10 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/order.dart';
 import '../../../data/repositories/order_repository.dart';
 import '../../../data/repositories/admin_repository.dart';
+import '../../../data/repositories/social_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
+import '../game/game_webview_page.dart';
 import '../session.dart';
 
 /// Definisi misi — id stabil untuk penanda klaim lokal.
@@ -194,6 +196,10 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
                     TextStyle(color: context.teksRedup, fontSize: 13),
               ),
               const SizedBox(height: 12),
+              // Game — ikut Web (Misi Koin): 2 game, kuota 500 koin/hari
+              // DIPISAH per game.
+              _gameSection(context, uid),
+              const SizedBox(height: 12),
               if (_memuat)
                 const Center(
                     child: Padding(
@@ -213,6 +219,112 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
           );
         },
       ),
+    );
+  }
+
+  /// Section game — 2 tile (Tangkap Diskon, Buru Diskon) + progres harian.
+  /// Ikut Web: 1000 poin = 1 koin, kuota 500/hari DIPISAH per game.
+  Widget _gameSection(BuildContext context, String uid) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Game Berhadiah',
+          style: TextStyle(
+            color: context.teksUtama,
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _gameTile(
+          context,
+          uid,
+          gameTangkapDiskon,
+          Icons.touch_app_outlined,
+          'Tangkap barang berlabel diskon. 1000 poin = 1 koin.',
+        ),
+        const SizedBox(height: 8),
+        _gameTile(
+          context,
+          uid,
+          gameBuruDiskon,
+          Icons.shopping_basket_outlined,
+          'Tangkap barang jatuh dengan keranjang. 1000 poin = 1 koin.',
+        ),
+      ],
+    );
+  }
+
+  Widget _gameTile(
+    BuildContext context,
+    String uid,
+    GameConfig config,
+    IconData icon,
+    String desc,
+  ) {
+    return FutureBuilder<int>(
+      future: ref
+          .read(socialRepositoryProvider)
+          .gameCoinsToday(uid, config.dateField, config.todayField),
+      builder: (context, snap) {
+        final got = snap.data ?? 0;
+        return AppCard(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => GameWebViewPage(config: config),
+              ),
+            );
+          },
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.orange.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: AppColors.orange, size: 28),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      config.title,
+                      style: TextStyle(
+                        color: context.teksUtama,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      desc,
+                      style: TextStyle(
+                        color: context.teksRedup,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Hari ini: $got/500 koin',
+                      style: const TextStyle(
+                        color: AppColors.orange,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.orange),
+            ],
+          ),
+        );
+      },
     );
   }
 
