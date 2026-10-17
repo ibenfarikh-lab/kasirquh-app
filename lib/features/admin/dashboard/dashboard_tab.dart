@@ -10,7 +10,6 @@ import '../../../core/utils/currency.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/order.dart';
 import '../../../data/repositories/admin_repository.dart';
-import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../menu/ledger_page.dart';
 import '../menu/online_orders_page.dart';
@@ -107,7 +106,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     final waiting =
         orders.where((o) => o.status == OrderStatus.menunggu).length;
     final lowStock = ref.watch(lowStockProductsProvider);
-    final store = ref.watch(storeInfoProvider).valueOrNull;
     final todayStr =
         DateFormat('d MMMM yyyy', 'id_ID').format(DateTime.now());
 
@@ -120,23 +118,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Header: nama warung.
-          Row(
-            children: [
-              const Icon(Icons.storefront_outlined,
-                  color: AppColors.orange, size: 28),
-              const SizedBox(width: 10),
-              Text(
-                store?.storeName ?? 'Warunge Mimi',
-                style: const TextStyle(
-                  color: AppColors.orange,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           // Lead: Ringkasan operasional / Hari ini + tanggal.
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
