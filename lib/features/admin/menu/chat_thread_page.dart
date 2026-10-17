@@ -108,8 +108,14 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
                         margin: const EdgeInsets.symmetric(vertical: 4),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          // Aturan 3: bubble ≈ kartu = L2.
-                          color: mine ? AppColors.orange : AppColors.panel,
+                          // Aturan 3: bubble ≈ kartu = L2. Ikut tema
+                          // (fix 2026-10-17: sebelumnya AppColors.panel
+                          // hardcoded gelap → melanggar aturan di theme light).
+                          color: mine
+                              ? AppColors.orange
+                              : (context.temaGelap
+                                  ? AppColors.panel
+                                  : AppColors.card),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Text(
