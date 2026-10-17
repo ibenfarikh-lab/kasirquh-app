@@ -255,6 +255,7 @@ class SocialRepository {
     required String label,
     required String dateField,
     required String todayField,
+    required String eventKey, // 'tangkapDiskon' atau 'buruDiskon'
   }) async {
     final db = _db;
     requestedCoins = requestedCoins.clamp(0, 100000);
@@ -266,6 +267,20 @@ class SocialRepository {
     final today =
         '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     return db.runTransaction((tx) async {
+      // Cek program koin & event aktif — selaras Web.
+      final settingsSnap =
+          await tx.get(db.collection('store_settings').doc('main'));
+      final settings = settingsSnap.data() ?? {};
+      final programOn = settings['coinProgramEnabled'] != false;
+      final events =
+          (settings['coinEvents'] as Map? ?? {}).map(
+        (k, v) => MapEntry(k.toString(), v == true),
+      );
+      final eventOn = events[eventKey] ?? true;
+      if (!programOn || !eventOn) {
+        throw StateError('Program koin sedang dimatikan admin');
+      }
+
       final ref = db.collection('customers').doc(uid);
       final snap = await tx.get(ref);
       final data = snap.data() ?? {};

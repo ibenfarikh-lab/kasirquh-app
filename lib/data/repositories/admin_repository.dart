@@ -1144,6 +1144,29 @@ class AdminRepository {
     return count;
   }
 
+  /// Simpan pengaturan Koin Warga — selaras Web (?v=20261020ai).
+  /// Menulis ke store_settings/main: coinProgramEnabled, coinRedeemLimit,
+  /// coinEvents (map), coinRewards (map), coinSpendRule, coinRule.
+  Future<void> updateCoinSettings({
+    required bool enabled,
+    required int redeemLimit,
+    required Map<String, bool> events,
+    required Map<String, int> rewards,
+    required int spendRule,
+    required String rule,
+  }) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet untuk simpan pengaturan.');
+    await db.collection('store_settings').doc('main').set({
+      'coinProgramEnabled': enabled,
+      'coinRedeemLimit': redeemLimit,
+      'coinEvents': events,
+      'coinRewards': rewards,
+      'coinSpendRule': spendRule,
+      'coinRule': rule,
+    }, SetOptions(merge: true));
+  }
+
   // ============ JURNAL / PEMBUKUAN ============
 
   /// kind lokal: penjualan | kulakan | beban | modal

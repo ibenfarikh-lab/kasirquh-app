@@ -9,6 +9,7 @@ import '../../../data/models/customer.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
+import 'coin_settings_page.dart';
 
 /// Sheet Koin Warga: panel cepat ubah saldo koin pelanggan (butuh internet).
 class CoinsSheet extends ConsumerStatefulWidget {
@@ -333,6 +334,19 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
     return Scaffold(
       appBar: AppBar(
         title: Text(Strings.modulKoin),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Pengaturan Koin',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const CoinSettingsPage(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(

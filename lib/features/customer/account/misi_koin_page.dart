@@ -225,7 +225,19 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
 
   /// Section game — 2 tile (Tangkap Diskon, Buru Diskon) + progres harian.
   /// Ikut Web: 1000 poin = 1 koin, kuota 500/hari DIPISAH per game.
+  /// Tile disembunyikan jika program koin mati atau event-nya dimatikan.
   Widget _gameSection(BuildContext context, String uid) {
+    final settings = ref.watch(coinSettingsProvider).valueOrNull;
+    final programOn = settings?.enabled ?? true;
+    final tangkapOn = settings?.events['tangkapDiskon'] ?? true;
+    final buruOn = settings?.events['buruDiskon'] ?? true;
+    final guessOn = settings?.events['guess'] ?? true;
+
+    // Jika semua game mati, sembunyikan section.
+    if (!programOn || (!tangkapOn && !buruOn && !guessOn)) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -237,71 +249,77 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 8),
-        _gameTile(
-          context,
-          uid,
-          gameTangkapDiskon,
-          Icons.touch_app_outlined,
-          'Tangkap barang berlabel diskon. 1000 poin = 1 koin.',
-        ),
-        const SizedBox(height: 8),
-        _gameTile(
-          context,
-          uid,
-          gameBuruDiskon,
-          Icons.shopping_basket_outlined,
-          'Tangkap barang jatuh dengan keranjang. 1000 poin = 1 koin.',
-        ),
-        const SizedBox(height: 8),
-        // Tebak Harga — ikut Web: akses hanya dari Misi Koin.
-        AppCard(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const TebakHargaPage(),
-              ),
-            );
-          },
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.orange.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                    Icons.help_outline, color: AppColors.orange, size: 28),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tebak Harga',
-                      style: TextStyle(
-                        color: context.teksUtama,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                    Text(
-                      'Tebak harga produk, dapat koin.',
-                      style: TextStyle(
-                        color: context.teksRedup,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: AppColors.orange),
-            ],
+        if (tangkapOn) ...[
+          const SizedBox(height: 8),
+          _gameTile(
+            context,
+            uid,
+            gameTangkapDiskon,
+            Icons.touch_app_outlined,
+            'Tangkap barang berlabel diskon. 1000 poin = 1 koin.',
           ),
-        ),
+        ],
+        if (buruOn) ...[
+          const SizedBox(height: 8),
+          _gameTile(
+            context,
+            uid,
+            gameBuruDiskon,
+            Icons.shopping_basket_outlined,
+            'Tangkap barang jatuh dengan keranjang. 1000 poin = 1 koin.',
+          ),
+        ],
+        if (guessOn) ...[
+          const SizedBox(height: 8),
+          // Tebak Harga — ikut Web: akses hanya dari Misi Koin.
+          AppCard(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const TebakHargaPage(),
+                ),
+              );
+            },
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                      Icons.help_outline, color: AppColors.orange, size: 28),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tebak Harga',
+                        style: TextStyle(
+                          color: context.teksUtama,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                      Text(
+                        'Tebak harga produk, dapat koin.',
+                        style: TextStyle(
+                          color: context.teksRedup,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.orange),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

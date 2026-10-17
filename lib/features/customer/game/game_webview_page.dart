@@ -186,6 +186,9 @@ class _GameWebViewPageState extends ConsumerState<GameWebViewPage> {
                 label: widget.config.label,
                 dateField: widget.config.dateField,
                 todayField: widget.config.todayField,
+                eventKey: widget.config.id == 'tangkap_diskon'
+                    ? 'tangkapDiskon'
+                    : 'buruDiskon',
               );
       if (!mounted) return;
       setState(() {
