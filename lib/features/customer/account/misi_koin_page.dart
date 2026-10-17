@@ -401,6 +401,10 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
     final tuntas = capaian >= misi.target;
     final diminta = _diminta.contains(misi.id);
     final pct = (capaian / misi.target).clamp(0.0, 1.0);
+    // Fix 2026-10-18 (ACC user): badge ikut settingan live seperti Web,
+    // biar jujur dengan yang diterima pelanggan (sebelumnya hardcoded).
+    final reward = ref.watch(coinSettingsProvider).valueOrNull?.rewards['mission'] ??
+        misi.hadiahKoin;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: AppCard(
@@ -425,7 +429,7 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '+${misi.hadiahKoin} koin',
+                    '+$reward koin',
                     style: const TextStyle(
                       color: AppColors.orange,
                       fontWeight: FontWeight.w700,
