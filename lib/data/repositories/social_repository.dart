@@ -242,6 +242,29 @@ class SocialRepository {
     }
   }
 
+  // ============ PROFIL PELANGGAN ============
+
+  /// Update profil sendiri: nama, No. WA, alamat, foto.
+  /// Selaras Web ?v=20261020ar + foto profil (2026-10-18).
+  Future<void> updateProfil({
+    required String uid,
+    String? name,
+    String? wa,
+    String? address,
+    String? photoURL,
+  }) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet untuk simpan profil.');
+    if (uid.isEmpty) throw ArgumentError('UID kosong.');
+    final data = <String, dynamic>{};
+    if (name != null) data['name'] = name.trim();
+    if (wa != null) data['wa'] = wa.trim();
+    if (address != null) data['address'] = address.trim();
+    if (photoURL != null) data['photoURL'] = photoURL;
+    if (data.isEmpty) return;
+    await db.collection('customers').doc(uid).update(data);
+  }
+
   // ============ GAME (Misi Koin) ============
 
   /// Hasil klaim koin game.

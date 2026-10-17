@@ -17,6 +17,8 @@ class Customer {
   final String name;
   final String email;
   final String? wa; // nomor WA opsional (skema)
+  final String? address; // alamat opsional — selaras Web ?v=20261020ar
+  final String? photoURL; // foto profil base64 — selaras Web (2026-10-18)
   final String approvalStatus;
   final int coins;
   final String? memberCode;
@@ -27,6 +29,8 @@ class Customer {
     required this.name,
     required this.email,
     this.wa,
+    this.address,
+    this.photoURL,
     required this.approvalStatus,
     this.coins = 0,
     this.memberCode,
@@ -43,6 +47,8 @@ class Customer {
         'name': name,
         'email': email,
         'wa': wa,
+        'address': address,
+        'photoURL': photoURL,
         'approvalStatus': approvalStatus,
         'coins': coins,
         'memberCode': memberCode,
@@ -54,6 +60,8 @@ class Customer {
         name: m['name'] as String? ?? '',
         email: m['email'] as String? ?? '',
         wa: m['wa'] as String?,
+        address: m['address'] as String?,
+        photoURL: m['photoURL'] as String?,
         approvalStatus: m['approvalStatus'] as String? ?? 'pending',
         coins: (m['coins'] as num?)?.toInt() ?? 0,
         memberCode: m['memberCode'] as String?,
@@ -64,6 +72,9 @@ class Customer {
   Map<String, dynamic> toFirestore() => {
         'name': name,
         'email': email,
+        'wa': wa,
+        'address': address,
+        'photoURL': photoURL,
         'approvalStatus': approvalStatus,
         'coins': coins,
         'memberCode': memberCode,

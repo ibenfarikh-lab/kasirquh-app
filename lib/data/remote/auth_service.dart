@@ -18,6 +18,7 @@ class AuthService {
     required String name,
     required String email,
     required String password,
+    String? address, // opsional — selaras Web ?v=20261020ar
   }) async {
     final cred = await _auth.createUserWithEmailAndPassword(
       email: email,
@@ -27,6 +28,8 @@ class AuthService {
     await _firestore.collection('customers').doc(uid).set({
       'name': name,
       'email': email,
+      if (address != null && address.trim().isNotEmpty)
+        'address': address.trim(),
       'approvalStatus': 'pending',
       'coins': 0,
       'createdAt': FieldValue.serverTimestamp(),

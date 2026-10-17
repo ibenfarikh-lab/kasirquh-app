@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -13,13 +15,64 @@ import 'coin_history_page.dart';
 import 'misi_koin_page.dart';
 
 /// Dompet Koin Warga — satu pintu masuk koin ala PWA (coinModal).
-/// Tampil: saldo + nilai Rp, aturan program, shortcut Misi Koin
-/// & Tebak Harga, tautan Riwayat Koin.
-class DompetKoinPage extends ConsumerWidget {
+/// Tampil: tagline + saldo + nilai Rp, banner promo bergantian,
+/// aturan program, shortcut Misi Koin, tautan Riwayat Koin.
+/// Selaras Web ?v=20261020ap (2026-10-18).
+class DompetKoinPage extends ConsumerStatefulWidget {
   const DompetKoinPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DompetKoinPage> createState() => _DompetKoinPageState();
+}
+
+class _DompetKoinPageState extends ConsumerState<DompetKoinPage> {
+  Timer? _bannerTimer;
+  int _bannerIdx = 0;
+  List<String> _bannerMsgs = [];
+
+  @override
+  void dispose() {
+    _bannerTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Susun pesan banner dari event game yang AKTIF (jujur ikut settingan).
+  /// Ikut Web renderCoinBanner: rotasi tiap 4 detik, sembunyi bila kosong.
+  void _updateBanner(CoinSettings settings) {
+    final msgs = <String>[];
+    if (settings.enabled) {
+      if (settings.events['tangkapDiskon'] ?? true) {
+        msgs.add('Sudah main Tangkap Diskon hari ini? 500 koin menanti!');
+      }
+      if (settings.events['buruDiskon'] ?? true) {
+        msgs.add('Sudah main Buru Diskon hari ini? 500 koin menanti!');
+      }
+      if (settings.events['guess'] ?? true) {
+        final reward = settings.rewards['guess'] ?? 100;
+        final fmt = NumberFormat('#,###', 'id_ID');
+        msgs.add(
+            'Sudah tebak harga hari ini? +${fmt.format(reward)} koin menanti!');
+      }
+    }
+    _bannerTimer?.cancel();
+    _bannerTimer = null;
+    // Reset bila daftar berubah.
+    if (msgs.join('|') != _bannerMsgs.join('|')) {
+      _bannerMsgs = msgs;
+      _bannerIdx = 0;
+    }
+    if (_bannerMsgs.length > 1 && mounted) {
+      _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+        if (!mounted) return;
+        setState(() {
+          _bannerIdx = (_bannerIdx + 1) % _bannerMsgs.length;
+        });
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider).valueOrNull;
     final uid = memberUid(session ?? const Session.guest());
     if (uid == null) {
@@ -34,6 +87,10 @@ class DompetKoinPage extends ConsumerWidget {
     }
     final settings =
         ref.watch(coinSettingsProvider).valueOrNull ?? const CoinSettings();
+    // Update banner setiap build (ikut perubahan settingan).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateBanner(settings);
+    });
     final saldo = session?.coins ?? 0;
     final fmt = NumberFormat('#,###', 'id_ID');
 
@@ -42,6 +99,16 @@ class DompetKoinPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Tagline — selaras Web ?v=20261020ap.
+          Text(
+            'Belanja dapat koin, main game dapat koin — semua jadi diskon!',
+            style: TextStyle(
+                color: context.teksRedup,
+                fontSize: 13,
+                fontStyle: FontStyle.italic),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
           // Kartu saldo.
           AppCard(
             child: Column(
@@ -82,6 +149,34 @@ class DompetKoinPage extends ConsumerWidget {
               ],
             ),
           ),
+          // Banner promo bergantian (hanya event aktif).
+          if (_bannerMsgs.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Container(
+                key: ValueKey(_bannerIdx),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.orange.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: AppColors.orange.withValues(alpha: 0.4)),
+                ),
+                child: Text(
+                  _bannerMsgs[_bannerIdx],
+                  style: const TextStyle(
+                    color: AppColors.orange,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Text('Jalan pintas',
               style: TextStyle(
@@ -89,7 +184,7 @@ class DompetKoinPage extends ConsumerWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
-          // Shortcut: Misi Koin & Tebak Harga (ala PWA).
+          // Shortcut: Misi Koin (ala PWA).
           Row(
             children: [
               Expanded(

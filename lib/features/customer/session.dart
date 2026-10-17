@@ -14,6 +14,8 @@ class Session {
   final String name;
   final String email;
   final int coins;
+  final String? photoURL; // foto profil — selaras Web (2026-10-18)
+  final String? address; // alamat — selaras Web ?v=20261020ar
 
   const Session.guest()
       : isGuest = true,
@@ -21,13 +23,17 @@ class Session {
         user = null,
         name = '',
         email = '',
-        coins = 0;
+        coins = 0,
+        photoURL = null,
+        address = null;
 
   const Session.member({
     required this.user,
     required this.name,
     required this.email,
     required this.coins,
+    this.photoURL,
+    this.address,
   })  : isGuest = false,
         isAdmin = false;
 
@@ -37,7 +43,9 @@ class Session {
   })  : isGuest = false,
         isAdmin = true,
         name = 'Admin',
-        coins = 0;
+        coins = 0,
+        photoURL = null,
+        address = null;
 }
 
 /// Stream sesi: authState + dokumen customers/{uid}.
@@ -70,6 +78,8 @@ final sessionProvider = StreamProvider<Session>((ref) async* {
         name: (data['name'] as String?) ?? '',
         email: (data['email'] as String?) ?? user.email ?? '',
         coins: (data['coins'] as num?)?.toInt() ?? 0,
+        photoURL: data['photoURL'] as String?,
+        address: data['address'] as String?,
       );
     } else {
       yield const Session.guest();

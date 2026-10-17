@@ -28,6 +28,8 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  // Alamat opsional — selaras Web ?v=20261020ar (2026-10-18).
+  final _address = TextEditingController();
   bool _busy = false;
   String? _error;
 
@@ -46,6 +48,7 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
     _name.dispose();
     _email.dispose();
     _password.dispose();
+    _address.dispose();
     super.dispose();
   }
 
@@ -111,6 +114,9 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
             name: _name.text.trim(),
             email: _email.text.trim(),
             password: _password.text,
+            address: _address.text.trim().isEmpty
+                ? null
+                : _address.text.trim(),
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -230,6 +236,18 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
               border: OutlineInputBorder(),
             ),
           ),
+          // Alamat opsional — selaras Web ?v=20261020ar.
+          if (!isLogin) const SizedBox(height: 12),
+          if (!isLogin)
+            TextField(
+              controller: _address,
+              maxLength: 120,
+              decoration: const InputDecoration(
+                labelText: 'Alamat (opsional)',
+                hintText: 'Alamat lengkap',
+                border: OutlineInputBorder(),
+              ),
+            ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 12),

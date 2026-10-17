@@ -941,6 +941,8 @@ class AdminRepository {
       name: (m['name'] as String?) ?? '',
       email: (m['email'] as String?) ?? '',
       wa: m['wa'] as String?,
+      address: m['address'] as String?,
+      photoURL: m['photoURL'] as String?,
       approvalStatus: (m['approvalStatus'] as String?) ?? 'pending',
       coins: (m['coins'] as num?)?.toInt() ?? 0,
       createdAt: ts is Timestamp

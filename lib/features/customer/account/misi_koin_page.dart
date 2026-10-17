@@ -190,6 +190,15 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // Tagline — selaras Web ?v=20261020ap (2026-10-18).
+              Text(
+                'Koinnya bisa dicari sambil main, belanjanya jadi makin murah!',
+                style: TextStyle(
+                    color: context.teksRedup,
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic),
+              ),
+              const SizedBox(height: 12),
               Text(
                 'Selesaikan misi, kumpulkan koin. Koin yang diambil '
                 'langsung masuk ke dompet Koin Warga.',

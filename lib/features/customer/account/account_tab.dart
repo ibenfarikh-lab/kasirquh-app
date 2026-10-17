@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -16,9 +20,11 @@ import '../../../data/models/order.dart';
 import '../../../data/models/customer.dart';
 import '../../../data/models/customer_note.dart';
 import '../../../data/remote/auth_service.dart';
+import '../../../data/remote/firestore_service.dart';
 import '../../../data/repositories/customer_note_repository.dart';
 import '../../../data/repositories/order_repository.dart';
 import '../../../data/repositories/admin_repository.dart';
+import '../../../data/repositories/social_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../../admin/admin_shell.dart';
@@ -71,16 +77,28 @@ class AccountTab extends ConsumerWidget {
                   color: AppColors.orange.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Center(
-                  child: Text(
-                    inisial,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.orange,
-                    ),
-                  ),
-                ),
+                // Foto profil gantikan inisial — selaras Web (2026-10-18).
+                child: session?.photoURL != null &&
+                        session!.photoURL!.isNotEmpty
+                    ? ClipOval(
+                        child: Image.memory(
+                          base64Decode(
+                              session.photoURL!.split(',').last),
+                          fit: BoxFit.cover,
+                          width: 48,
+                          height: 48,
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          inisial,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.orange,
+                          ),
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -780,6 +798,10 @@ class _PengaturanForm extends ConsumerStatefulWidget {
 
 class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
   late TextEditingController _nama;
+  late TextEditingController _wa;
+  late TextEditingController _alamat;
+  String? _photoURL; // base64 — selaras Web (2026-10-18)
+  bool _fotoBusy = false;
   String _tema = 'terang';
   String _density = 'ringkas';
   String _dering = 'bawaan';
@@ -790,18 +812,85 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
     final session = ref.read(sessionProvider).valueOrNull;
     _nama = TextEditingController(
         text: displayName(session ?? const Session.guest()));
+    // Prefill dari database — selaras Web ?v=20261020ar (jangan hardcoded).
+    _wa = TextEditingController();
+    _alamat = TextEditingController(text: session?.address ?? '');
+    _photoURL = session?.photoURL;
     // Map tema provider ke string PWA.
     final t = ref.read(temaPelangganProvider);
     _tema = t.name;
     // Muat density & dering tersimpan.
     _density = ref.read(densityPelangganProvider);
     _dering = ref.read(deringPelangganProvider);
+    // WA dimuat dari dokumen pelanggan.
+    _loadWa();
+  }
+
+  Future<void> _loadWa() async {
+    final session = ref.read(sessionProvider).valueOrNull;
+    final uid = session == null ? null : memberUid(session);
+    if (uid == null) return;
+    try {
+      final db = ref.read(firestoreOrNullProvider);
+      final doc =
+          await db?.collection('customers').doc(uid).get();
+      final wa = doc?.data()?['wa'] as String?;
+      if (mounted && wa != null) setState(() => _wa.text = wa);
+    } catch (_) {}
   }
 
   @override
   void dispose() {
     _nama.dispose();
+    _wa.dispose();
+    _alamat.dispose();
     super.dispose();
+  }
+
+  /// Pilih foto → kompres max 200x200 JPEG → base64.
+  /// Selaras Web (2026-10-18): data URL < 900KB di field photoURL.
+  Future<void> _gantiFoto() async {
+    if (_fotoBusy) return;
+    setState(() => _fotoBusy = true);
+    try {
+      final picker = ImagePicker();
+      final file =
+          await picker.pickImage(source: ImageSource.gallery);
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      final img.Image? decoded = img.decodeImage(bytes);
+      if (decoded == null) throw StateError('Gambar tidak bisa dibaca');
+      // Kompres: max 200x200, JPEG 70 — ikut Web.
+      const maxDim = 200;
+      final scale = maxDim /
+          (decoded.width > decoded.height
+              ? decoded.width
+              : decoded.height);
+      final img.Image resized = scale < 1
+          ? img.copyResize(decoded,
+              width: (decoded.width * scale).round(),
+              height: (decoded.height * scale).round())
+          : decoded;
+      final jpg = img.encodeJpg(resized, quality: 70);
+      final dataUrl =
+          'data:image/jpeg;base64,${base64Encode(jpg)}';
+      if (dataUrl.length > 900000) {
+        throw StateError(
+            'Foto masih terlalu besar, pilih yang lebih kecil');
+      }
+      if (mounted) setState(() => _photoURL = dataUrl);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(e is StateError
+                  ? e.message
+                  : 'Gagal memproses foto')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _fotoBusy = false);
+    }
   }
 
   @override
@@ -822,6 +911,84 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
           controller: _nama,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Foto profil — selaras Web (2026-10-18).
+        const Text('Foto profil',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.orange.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: _photoURL != null && _photoURL!.isNotEmpty
+                  ? ClipOval(
+                      child: Image.memory(
+                        base64Decode(
+                            _photoURL!.split(',').last),
+                        fit: BoxFit.cover,
+                        width: 64,
+                        height: 64,
+                      ),
+                    )
+                  : const Icon(Icons.person,
+                      color: AppColors.orange, size: 32),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  OutlinedButton(
+                    onPressed: _fotoBusy ? null : _gantiFoto,
+                    child: Text(
+                        _fotoBusy ? 'Memproses...' : 'Ganti foto'),
+                  ),
+                  Text(
+                    'Foto dikompres otomatis, tersimpan aman.',
+                    style: TextStyle(
+                        color: context.teksRedup, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Nomor WhatsApp — selaras Web ?v=20261020ar.
+        const Text('Nomor WhatsApp',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _wa,
+          keyboardType: TextInputType.phone,
+          maxLength: 20,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: '08xxxxxxxxxx',
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Alamat — selaras Web ?v=20261020ar.
+        const Text('Alamat',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _alamat,
+          maxLength: 120,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: 'Alamat lengkap',
             contentPadding:
                 EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
@@ -890,9 +1057,16 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
                       : memberUid(session);
                   if (uid != null) {
                     try {
+                      // Selaras Web ?v=20261020ar: nama + WA + alamat + foto.
                       await ref
-                          .read(adminRepositoryProvider)
-                          .updateNamaCustomer(uid, _nama.text);
+                          .read(socialRepositoryProvider)
+                          .updateProfil(
+                            uid: uid,
+                            name: _nama.text,
+                            wa: _wa.text,
+                            address: _alamat.text,
+                            photoURL: _photoURL,
+                          );
                     } catch (_) {}
                   }
                   if (context.mounted) {
