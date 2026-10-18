@@ -67,26 +67,54 @@ class CustomerShell extends ConsumerWidget {
                 ),
                 centerTitle: false,
               ),
-      body: Stack(
-        children: [
-          IndexedStack(
-            index: index,
-            children: const [
-              HomeTab(),
-              CatalogTab(),
-              CartTab(),
-              ChatTab(),
-              AccountTab(),
-            ],
-          ),
-          // Tak kasat mata: izin notifikasi + pantau pesanan/chat.
-          if (uid != null) ...[
-            PushBootstrap(uid: uid),
-            OrderStatusWatcher(uid: uid),
-            TokoUnreadWatcher(uid: uid),
-          ],
-        ],
-      ),
+      body: index == 0
+          ? Stack(
+              children: [
+                IndexedStack(
+                  index: index,
+                  children: const [
+                    HomeTab(),
+                    CatalogTab(),
+                    CartTab(),
+                    ChatTab(),
+                    AccountTab(),
+                  ],
+                ),
+                // Tak kasat mata: izin notifikasi + pantau pesanan/chat.
+                if (uid != null) ...[
+                  PushBootstrap(uid: uid),
+                  OrderStatusWatcher(uid: uid),
+                  TokoUnreadWatcher(uid: uid),
+                ],
+              ],
+            )
+          // Tab Produk–Akun: tanpa AppBar (header di dalam tab),
+          // jadi butuh SafeArea atas agar tak numpuk status bar Android.
+          // (Laporan user 2026-10-18 + screenshot.)
+          : SafeArea(
+              top: true,
+              bottom: false, // bottom ditangani BottomNavigationBar
+              child: Stack(
+                children: [
+                  IndexedStack(
+                    index: index,
+                    children: const [
+                      HomeTab(),
+                      CatalogTab(),
+                      CartTab(),
+                      ChatTab(),
+                      AccountTab(),
+                    ],
+                  ),
+                  // Tak kasat mata: izin notifikasi + pantau pesanan/chat.
+                  if (uid != null) ...[
+                    PushBootstrap(uid: uid),
+                    OrderStatusWatcher(uid: uid),
+                    TokoUnreadWatcher(uid: uid),
+                  ],
+                ],
+              ),
+            ),
       // Teman Belanja ala PWA: FAB kotak hitam + ikon sparkle,
       // hanya di tab Beranda.
       floatingActionButton: index == 0
