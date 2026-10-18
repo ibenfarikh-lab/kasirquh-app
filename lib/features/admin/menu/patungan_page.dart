@@ -8,6 +8,7 @@ import '../../../core/utils/currency.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/patungan.dart';
 import '../../../data/repositories/admin_repository.dart';
+import '../admin_nav.dart';
 
 /// Tab Mode Admin > Modul Patungan Warga: buat + kelola patungan.
 /// Skema & alur SAMA PERSIS dengan PWA (koleksi `patungan`).
@@ -21,7 +22,7 @@ class PatunganPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Patungan Warga')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateSheet(context, ref),
+        onPressed: () => _bukaBuatPatungan(context),
         icon: const Icon(Icons.add),
         label: const Text('Buat Patungan'),
         backgroundColor: AppColors.orange,
@@ -54,104 +55,108 @@ class PatunganPage extends ConsumerWidget {
     );
   }
 
-  /// Bottom sheet form buat patungan — field SAMA PERSIS dengan PWA.
-  void _showCreateSheet(BuildContext context, WidgetRef ref) {
-    final titleC = TextEditingController();
-    final productC = TextEditingController();
-    final priceC = TextEditingController();
-    final slotsC = TextEditingController();
-    final deadlineC = TextEditingController();
-    final noteC = TextEditingController();
+  /// Halaman penuh form buat patungan (migrasi dari bottom sheet).
+  void _bukaBuatPatungan(BuildContext context) {
+    openAdminPage(context, const _BuatPatunganPage());
+  }
+}
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Buat Patungan',
-                style: TextStyle(
-                  color: context.teksUtama,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _field(titleC, 'Nama patungan', 'Contoh: Patungan Minyak Goreng'),
-              _field(productC, 'Produk', 'Contoh: Minyak Goreng 2L'),
-              _field(priceC, 'Harga per slot (Rp)',
-                  'Contoh: 25000',
-                  numeric: true),
-              _field(slotsC, 'Jumlah slot', 'Contoh: 10',
-                  numeric: true),
-              _field(deadlineC, 'Tenggat',
-                  'Contoh: 12 Oktober 2026'),
-              _field(noteC, 'Catatan', 'Opsional', maxLines: 2),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () async {
-                  final title = titleC.text.trim();
-                  final product = productC.text.trim();
-                  final price = int.tryParse(
-                          priceC.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
-                      0;
-                  final slots = int.tryParse(slotsC.text) ?? 0;
-                  if (title.isEmpty ||
-                      product.isEmpty ||
-                      price <= 0 ||
-                      slots < 2) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(
-                          content: Text(
-                              'Lengkapi nama, produk, harga, dan slot (min 2)')),
-                    );
-                    return;
-                  }
-                  try {
-                    await ref
-                        .read(adminRepositoryProvider)
-                        .createPatungan(
-                          title: title,
-                          productName: product,
-                          pricePerSlot: price,
-                          totalSlots: slots,
-                          deadline: deadlineC.text.trim(),
-                          note: noteC.text.trim(),
-                        );
-                    if (ctx.mounted) {
-                      Navigator.of(ctx).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Patungan dibuat')),
-                      );
-                    }
-                  } catch (e) {
-                    if (ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(content: Text('Gagal: $e')),
-                      );
-                    }
-                  }
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.orange,
-                  foregroundColor: Colors.black87,
-                ),
-                child: const Text('Buat Patungan'),
-              ),
-            ],
+/// Halaman penuh "Buat Patungan" — field SAMA PERSIS dengan PWA.
+class _BuatPatunganPage extends ConsumerStatefulWidget {
+  const _BuatPatunganPage();
+
+  @override
+  ConsumerState<_BuatPatunganPage> createState() =>
+      _BuatPatunganPageState();
+}
+
+class _BuatPatunganPageState extends ConsumerState<_BuatPatunganPage> {
+  final _titleC = TextEditingController();
+  final _productC = TextEditingController();
+  final _priceC = TextEditingController();
+  final _slotsC = TextEditingController();
+  final _deadlineC = TextEditingController();
+  final _noteC = TextEditingController();
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _titleC.dispose();
+    _productC.dispose();
+    _priceC.dispose();
+    _slotsC.dispose();
+    _deadlineC.dispose();
+    _noteC.dispose();
+    super.dispose();
+  }
+
+  Future<void> _simpan() async {
+    if (_busy) return;
+    final title = _titleC.text.trim();
+    final product = _productC.text.trim();
+    final price =
+        int.tryParse(_priceC.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    final slots = int.tryParse(_slotsC.text) ?? 0;
+    if (title.isEmpty || product.isEmpty || price <= 0 || slots < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Lengkapi nama, produk, harga, dan slot (min 2)')),
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await ref.read(adminRepositoryProvider).createPatungan(
+            title: title,
+            productName: product,
+            pricePerSlot: price,
+            totalSlots: slots,
+            deadline: _deadlineC.text.trim(),
+            note: _noteC.text.trim(),
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Patungan dibuat')),
+      );
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Buat Patungan')),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _field(_titleC, 'Nama patungan',
+              'Contoh: Patungan Minyak Goreng'),
+          _field(_productC, 'Produk', 'Contoh: Minyak Goreng 2L'),
+          _field(_priceC, 'Harga per slot (Rp)', 'Contoh: 25000',
+              numeric: true),
+          _field(_slotsC, 'Jumlah slot', 'Contoh: 10', numeric: true),
+          _field(
+              _deadlineC, 'Tenggat', 'Contoh: 12 Oktober 2026'),
+          _field(_noteC, 'Catatan', 'Opsional', maxLines: 2),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: _busy ? null : _simpan,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.orange,
+              foregroundColor: Colors.black87,
+            ),
+            child: Text(_busy ? 'Menyimpan...' : 'Buat Patungan'),
           ),
-        ),
+        ],
       ),
     );
   }

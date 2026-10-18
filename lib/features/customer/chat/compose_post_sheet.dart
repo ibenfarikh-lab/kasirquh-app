@@ -11,8 +11,9 @@ import '../../../core/widgets/app_button.dart';
 import '../../../data/repositories/social_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Sheet tulis kabar Rumpi: teks + foto opsional dari HP
+/// Halaman tulis kabar Rumpi: teks + foto opsional dari HP
 /// (di-resize maks 300px, PNG base64 — tanpa Firebase Storage).
+/// Dulu bottom sheet; kini halaman penuh (aturan user 2026-10-18).
 class ComposePostSheet extends ConsumerStatefulWidget {
   final String uid;
   final String nama;
@@ -107,32 +108,14 @@ class _ComposePostSheetState extends ConsumerState<ComposePostSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bawah = MediaQuery.of(context).viewInsets.bottom;
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + bawah),
+    return Scaffold(
+      appBar: AppBar(title: const Text(Strings.tulisKabar)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Center(
-              child: SizedBox(
-                width: 48,
-                height: 5,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppColors.line,
-                    borderRadius: BorderRadius.all(Radius.circular(3)),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              Strings.tulisKabar,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
             TextField(
               controller: _controller,
               maxLines: 4,

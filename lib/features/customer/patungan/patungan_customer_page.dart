@@ -201,115 +201,136 @@ class _PatunganCustomerCard extends ConsumerWidget {
     );
   }
 
-  /// Sheet pilih slot (1-10) + total — ala PWA (openJoinPatungan).
+  /// Halaman pilih slot (1-10) + total — ala PWA (openJoinPatungan).
+  /// Dulu bottom sheet; kini halaman penuh (aturan user 2026-10-18).
   void _showJoinSheet(
       BuildContext context, WidgetRef ref, Patungan p) {
-    int qty = 1;
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) {
-          final total = p.pricePerSlot * qty;
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    p.title.isEmpty ? p.productName : p.title,
-                    style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${p.productName} · ${formatRp(p.pricePerSlot)}/slot',
-                    style: TextStyle(
-                        color: context.teksRedup, fontSize: 13),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        onPressed: qty > 1
-                            ? () => setState(() => qty--)
-                            : null,
-                        icon: const Icon(Icons.remove_circle_outline),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16),
-                        child: Text(
-                          '$qty',
-                          style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: qty < 10 &&
-                                qty < p.remainingSlots
-                            ? () => setState(() => qty++)
-                            : null,
-                        icon:
-                            const Icon(Icons.add_circle_outline),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Total: ${formatRp(total)} untuk $qty slot',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () async {
-                      try {
-                        await ref
-                            .read(adminRepositoryProvider)
-                            .joinPatungan(
-                              patunganId: p.id,
-                              customerId: customerId,
-                              customerName: customerName,
-                              slots: qty,
-                            );
-                        if (ctx.mounted) {
-                          Navigator.of(ctx).pop();
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    'Berhasil ikut patungan')),
-                          );
-                        }
-                      } catch (e) {
-                        if (ctx.mounted) {
-                          final msg = e is StateError
-                              ? e.message
-                              : '$e';
-                          ScaffoldMessenger.of(ctx).showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    'Gagal: $msg')),
-                          );
-                        }
-                      }
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.orange,
-                      foregroundColor: Colors.black87,
-                    ),
-                    child: const Text('Konfirmasi Ikut'),
-                  ),
-                ],
-              ),
-            ),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _JoinPatunganPage(
+          patungan: p,
+          customerId: customerId,
+          customerName: customerName,
+        ),
+      ),
+    );
+  }
+}
+
+/// Halaman konfirmasi ikut patungan: pilih slot + total.
+class _JoinPatunganPage extends ConsumerStatefulWidget {
+  final Patungan patungan;
+  final String customerId;
+  final String customerName;
+
+  const _JoinPatunganPage({
+    required this.patungan,
+    required this.customerId,
+    required this.customerName,
+  });
+
+  @override
+  ConsumerState<_JoinPatunganPage> createState() =>
+      _JoinPatunganPageState();
+}
+
+class _JoinPatunganPageState
+    extends ConsumerState<_JoinPatunganPage> {
+  int _qty = 1;
+
+  Future<void> _konfirmasi(BuildContext context) async {
+    final p = widget.patungan;
+    try {
+      await ref.read(adminRepositoryProvider).joinPatungan(
+            patunganId: p.id,
+            customerId: widget.customerId,
+            customerName: widget.customerName,
+            slots: _qty,
           );
-        },
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Berhasil ikut patungan')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        final msg = e is StateError ? e.message : '$e';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal: $msg')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.patungan;
+    final total = p.pricePerSlot * _qty;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Ikut Patungan')),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              p.title.isEmpty ? p.productName : p.title,
+              style: const TextStyle(
+                  fontSize: 17, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${p.productName} · ${formatRp(p.pricePerSlot)}/slot',
+              style:
+                  TextStyle(color: context.teksRedup, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  onPressed: _qty > 1
+                      ? () => setState(() => _qty--)
+                      : null,
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    '$_qty',
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.w800),
+                  ),
+                ),
+                IconButton(
+                  onPressed:
+                      _qty < 10 && _qty < p.remainingSlots
+                          ? () => setState(() => _qty++)
+                          : null,
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Total: ${formatRp(total)} untuk $_qty slot',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => _konfirmasi(context),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.orange,
+                foregroundColor: Colors.black87,
+              ),
+              child: const Text('Konfirmasi Ikut'),
+            ),
+          ],
+        ),
       ),
     );
   }

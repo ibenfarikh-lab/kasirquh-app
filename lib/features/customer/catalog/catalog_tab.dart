@@ -688,21 +688,13 @@ class ProductDetailSheetState
     final promos = ref.watch(promosProvider).valueOrNull ?? const <Promo>[];
     final harga = hargaJualAktif(p, promos);
     final adaDiskon = harga < p.price;
-    return SafeArea(
-      child: Padding(
+    return Scaffold(
+      appBar: AppBar(title: Text(p.name)),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Tombol Tutup (ala PWA).
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Tutup'),
-              ),
-            ),
             // Foto produk (bila ada) + badge PROMO ala PWA.
             if (p.photoPath != null)
               Center(

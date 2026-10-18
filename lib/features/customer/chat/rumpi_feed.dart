@@ -193,16 +193,14 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
   }
 
   Future<void> _tulis(BuildContext context, WidgetRef ref) async {
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (_) => ComposePostSheet(
-        uid: widget.uid,
-        nama: widget.nama,
-        authorRole: widget.modeAdmin ? 'admin' : 'customer',
+    // Halaman penuh (aturan user: bottom sheet hanya Teman Belanja/AI).
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ComposePostSheet(
+          uid: widget.uid,
+          nama: widget.nama,
+          authorRole: widget.modeAdmin ? 'admin' : 'customer',
+        ),
       ),
     );
   }

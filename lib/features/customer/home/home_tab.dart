@@ -486,15 +486,92 @@ class HomeTab extends ConsumerWidget {
     );
   }
   /// Harga grosir otomatis ala PWA: daftar produk ber-grosir.
-  /// Harga Grosir — HALAMAN PENUH (migrasi dari bottom sheet 2026-10-18).
-  /// Aturan user: bottom sheet HANYA untuk Teman Belanja (AI).
   Future<void> _hargaGrosirSheet(BuildContext context, WidgetRef ref) async {
     final products = ref.read(productsProvider).valueOrNull ?? const <Product>[];
     final grosir = products.where((p) => p.adaGrosir).toList();
     if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _HargaGrosirPage(grosir: grosir),
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetCtx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        builder: (_, scrollCtrl) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sheetHeader(sheetCtx, 'Jumlah naik, harga turun',
+                  'Grosir Otomatis'),
+              const SizedBox(height: 8),
+              Text(
+                'Harga partai langsung aktif di keranjang, tanpa kode promo '
+                'dan tanpa tanya admin.',
+                style:
+                    TextStyle(color: sheetCtx.teksRedup, fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: grosir.isEmpty
+                    ? const AppCard(
+                        child: Text(
+                          'Belum ada harga grosir.',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      )
+                    : ListView.separated(
+                        controller: scrollCtrl,
+                        itemCount: grosir.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: 8),
+                        itemBuilder: (_, i) {
+                          final p = grosir[i];
+                          return AppCard(
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(p.name,
+                                          style: const TextStyle(
+                                              fontWeight:
+                                                  FontWeight.w700,
+                                              fontSize: 14)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'GROSIR: ${p.wholesaleLabel} · '
+                                        '${formatRp(p.wholesalePrice)}/${p.unit}',
+                                        style: const TextStyle(
+                                            color: AppColors.orange,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(formatRp(p.price),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700)),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Jumlah kurang dari satu dus tetap memakai harga satuan.',
+                style:
+                    TextStyle(color: sheetCtx.teksRedup, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -533,41 +610,498 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  /// Mode Anggaran — HALAMAN PENUH (migrasi dari bottom sheet 2026-10-18).
+  /// Mode Anggaran ala PWA: pilih budget → susun rekomendasi ke keranjang.
   Future<void> _modeAnggaranSheet(
       BuildContext context, WidgetRef ref) async {
+    final budgets = [
+      ('Hemat harian', '4 jenis', 50000),
+      ('Isi dapur', '5 jenis', 75000),
+      ('Stok seminggu', '6 jenis', 100000),
+      ('Atur sendiri', 'nominal', 20000),
+    ];
+    int? selected;
+    final nominalCtrl = TextEditingController();
+    var busy = false;
     if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const _ModeAnggaranPage(),
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (sheetCtx2, setSheet) {
+          final nominal = selected == null
+              ? 0
+              : (selected == 3
+                  ? int.tryParse(
+                          nominalCtrl.text.replaceAll(RegExp(r'\D'), '')) ??
+                      0
+                  : budgets[selected!].$3);
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 8,
+              bottom: MediaQuery.of(sheetCtx2).viewInsets.bottom + 24,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sheetHeader(sheetCtx2, 'Belanja tetap terukur',
+                      'Mode Anggaran'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Pilih batas belanja. Kami susun kombinasi kebutuhan '
+                    'rumah tanpa melewati nominal.',
+                    style: TextStyle(
+                        color: sheetCtx2.teksRedup, fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 1.6,
+                    children: List.generate(budgets.length, (i) {
+                      final b = budgets[i];
+                      final active = selected == i;
+                      return AppCard(
+                        onTap: () => setSheet(() => selected = i),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: active
+                                  ? AppColors.orange
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.all(8),
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(b.$1,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13)),
+                              const SizedBox(height: 2),
+                              Text(
+                                i == 3
+                                    ? 'nominal, mulai Rp20.000'
+                                    : '${b.$2}, ≤ ${formatRp(b.$3)}',
+                                style: TextStyle(
+                                    color: sheetCtx2.teksRedup,
+                                    fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  if (selected == 3) ...[
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: nominalCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Nominal budget',
+                        hintText: 'Contoh: 50000',
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (_) => setSheet(() {}),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Pilih budget untuk melihat susunan.',
+                    style: TextStyle(
+                        color: sheetCtx2.teksRedup, fontSize: 12),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: (selected == null ||
+                              nominal < 20000 ||
+                              busy)
+                          ? null
+                          : () async {
+                              setSheet(() => busy = true);
+                              final products = ref
+                                      .read(productsProvider)
+                                      .valueOrNull ??
+                                  const <Product>[];
+                              final murah = products
+                                  .where((p) => p.stock > 0)
+                                  .toList()
+                                ..sort((a, b) =>
+                                    a.price.compareTo(b.price));
+                              var total = 0;
+                              var count = 0;
+                              for (final p in murah) {
+                                if (total + p.price > nominal) continue;
+                                ref.read(cartProvider.notifier).add(p);
+                                total += p.price;
+                                count++;
+                                if (count >= 12) break;
+                              }
+                              if (!sheetCtx2.mounted) return;
+                              Navigator.of(sheetCtx2).pop();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(
+                                  SnackBar(
+                                      content: Text(count == 0
+                                          ? 'Tidak ada produk yang muat dalam budget ini.'
+                                          : '$count barang masuk keranjang · total ${formatRp(total)}')),
+                                );
+                              }
+                            },
+                      child: busy
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2))
+                          : const Text(
+                              'Masukkan rekomendasi ke keranjang'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
+    nominalCtrl.dispose();
   }
 
-  /// Patungan Warga — HALAMAN PENUH (migrasi dari bottom sheet 2026-10-18).
+  /// Patungan Warga ala PWA: daftar patungan aktif dalam sheet.
   Future<void> _patunganSheet(
       BuildContext context, WidgetRef ref, String? uid) async {
     if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const _PatunganPage(),
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetCtx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        builder: (_, scrollCtrl) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sheetHeader(sheetCtx, 'Belanja bareng tetangga',
+                  'Patungan Warga'),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ref.watch(patunganListProvider).when(
+                      loading: () => const Center(
+                          child: CircularProgressIndicator()),
+                      error: (_, __) => const AppCard(
+                        child: Text('Gagal memuat patungan.'),
+                      ),
+                      data: (list) {
+                        if (list.isEmpty) {
+                          return const AppCard(
+                            child: Text(
+                              'Belum ada patungan aktif.',
+                              style: TextStyle(fontSize: 13),
+                            ),
+                          );
+                        }
+                        return ListView.separated(
+                          controller: scrollCtrl,
+                          itemCount: list.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (_, i) {
+                            final pg = list[i];
+                            return AppCard(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(pg.title,
+                                            style: const TextStyle(
+                                                fontWeight:
+                                                    FontWeight.w700,
+                                                fontSize: 14)),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.orange
+                                              .withValues(alpha: 0.15),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          '${pg.filledSlots}/${pg.totalSlots} slot',
+                                          style: const TextStyle(
+                                              color: AppColors.orange,
+                                              fontSize: 11,
+                                              fontWeight:
+                                                  FontWeight.w700),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${pg.productName} · '
+                                    '${formatRp(pg.pricePerSlot)}/slot',
+                                    style: TextStyle(
+                                        color: sheetCtx.teksRedup,
+                                        fontSize: 12),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  LinearProgressIndicator(
+                                    value: pg.totalSlots > 0
+                                        ? pg.filledSlots /
+                                            pg.totalSlots
+                                        : 0,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton(
+                                      onPressed: () {
+                                        Navigator.of(sheetCtx).pop();
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const PatunganCustomerPage(),
+                                          ),
+                                        );
+                                      },
+                                      child:
+                                          const Text('Ikut Patungan'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  /// Belanja Rutin — HALAMAN PENUH (migrasi dari bottom sheet 2026-10-18).
+  /// Belanja Rutin ala PWA: paket cepat + jadwal tersimpan lokal.
   Future<void> _belanjaRutinSheet(
       BuildContext context, WidgetRef ref) async {
     final prefs = await SharedPreferences.getInstance();
+    final jadwal = prefs.getStringList('jadwal_rutin') ?? <String>[];
+    final namaCtrl = TextEditingController();
+    var interval = 'Mingguan';
+    var hari = 'Senin';
     if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _BelanjaRutinPage(
-          prefs: prefs,
-          onMasukkanPaket: (p) => _masukkanPaketDb(context, ref, p),
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (sheetCtx2, setSheet) => Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 8,
+            bottom: MediaQuery.of(sheetCtx2).viewInsets.bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _sheetHeader(sheetCtx2, 'Tak perlu mengingat ulang',
+                    'Belanja Rutin'),
+                const SizedBox(height: 12),
+                // Paket dari DB (ikut PWA renderRutinPackages).
+                Consumer(
+                  builder: (ctx, ref2, _) {
+                    final paket =
+                        ref2.watch(rutinPackagesProvider).valueOrNull ??
+                            const <PaketBelanja>[];
+                    if (paket.isEmpty) {
+                      return Text(
+                        'Belum ada paket rutin dari warung.',
+                        style: TextStyle(
+                            color: sheetCtx2.teksRedup,
+                            fontSize: 13),
+                      );
+                    }
+                    return Column(
+                      children: [
+                        for (final p in paket) ...[
+                          _paketCard(
+                            sheetCtx2,
+                            p.name,
+                            p.description.isEmpty
+                                ? '${p.items.length} produk'
+                                : p.description,
+                            () => _masukkanPaketDb(
+                                context, ref, p),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                const Text('Jadwal belanjaku',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 14)),
+                const SizedBox(height: 4),
+                Text(
+                  'Catatan pengingat di HP ini saja — warung tidak '
+                  'mengirim pengingat otomatis.',
+                  style: TextStyle(
+                      color: sheetCtx2.teksRedup, fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                if (jadwal.isEmpty)
+                  const AppCard(
+                    child: Text(
+                      'Belum ada jadwal rutin.',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                  )
+                else
+                  ...jadwal.asMap().entries.map((e) => Padding(
+                        padding:
+                            const EdgeInsets.only(bottom: 4),
+                        child: AppCard(
+                          child: Row(
+                            children: [
+                              Expanded(
+                                  child: Text(e.value,
+                                      style: const TextStyle(
+                                          fontSize: 13))),
+                              IconButton(
+                                icon: const Icon(
+                                    Icons.delete_outline,
+                                    size: 18),
+                                onPressed: () async {
+                                  final next =
+                                      List<String>.from(jadwal)
+                                        ..removeAt(e.key);
+                                  await prefs.setStringList(
+                                      'jadwal_rutin', next);
+                                  setSheet(() {
+                                    jadwal
+                                      ..clear()
+                                      ..addAll(next);
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      )),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: namaCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama jadwal',
+                    hintText: 'Contoh: Belanja mingguan',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: interval,
+                        decoration: const InputDecoration(
+                          labelText: 'Interval',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const ['Harian', 'Mingguan', 'Bulanan']
+                            .map((v) => DropdownMenuItem(
+                                value: v, child: Text(v)))
+                            .toList(),
+                        onChanged: (v) =>
+                            setSheet(() => interval = v ?? interval),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: hari,
+                        decoration: const InputDecoration(
+                          labelText: 'Hari',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          'Senin',
+                          'Selasa',
+                          'Rabu',
+                          'Kamis',
+                          'Jumat',
+                          'Sabtu',
+                          'Minggu'
+                        ]
+                            .map((v) => DropdownMenuItem(
+                                value: v, child: Text(v)))
+                            .toList(),
+                        onChanged: (v) =>
+                            setSheet(() => hari = v ?? hari),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () async {
+                      final nama = namaCtrl.text.trim();
+                      if (nama.isEmpty) return;
+                      final next = List<String>.from(jadwal)
+                        ..add('$nama · $interval · $hari');
+                      await prefs.setStringList(
+                          'jadwal_rutin', next);
+                      setSheet(() {
+                        jadwal
+                          ..clear()
+                          ..addAll(next);
+                        namaCtrl.clear();
+                      });
+                    },
+                    child: const Text('Simpan jadwal'),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
+    namaCtrl.dispose();
   }
 
   /// Paket Hajatan ala PWA: paket siap acara.
@@ -681,11 +1215,8 @@ class HomeTab extends ConsumerWidget {
       }
     }
     if (!context.mounted) return;
-    // Tangkap messenger SEBELUM pop — aman untuk halaman penuh
-    // (context halaman mati setelah pop).
-    final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).pop();
-    messenger.showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content: Text(count == 0
               ? '${paket.name}: produk tidak tersedia.'
@@ -2585,405 +3116,6 @@ class _KabarCarouselState extends State<_KabarCarousel> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ============ HALAMAN PENUH (migrasi bottom sheet 2026-10-18) ============
-// Aturan user via Tim Utama: bottom sheet HANYA untuk Teman Belanja (AI).
-// Semua sheet di bawah ini dimigrasi jadi halaman penuh.
-
-/// Halaman Harga Grosir — migrasi dari bottom sheet.
-class _HargaGrosirPage extends StatelessWidget {
-  final List<Product> grosir;
-
-  const _HargaGrosirPage({required this.grosir});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Grosir Otomatis')),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'JUMLAH NAIK, HARGA TURUN',
-              style: TextStyle(
-                color: AppColors.orange,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Harga partai langsung aktif di keranjang, tanpa kode promo '
-              'dan tanpa tanya admin.',
-              style: TextStyle(color: context.teksRedup, fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: grosir.isEmpty
-                  ? const AppCard(
-                      child: Text(
-                        'Belum ada harga grosir.',
-                        style: TextStyle(fontSize: 13),
-                      ),
-                    )
-                  : ListView.separated(
-                      itemCount: grosir.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: 8),
-                      itemBuilder: (_, i) {
-                        final p = grosir[i];
-                        return AppCard(
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(p.name,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 14)),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'GROSIR: ${p.wholesaleLabel} · '
-                                      '${formatRp(p.wholesalePrice)}/${p.unit}',
-                                      style: const TextStyle(
-                                          color: AppColors.orange,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Text(formatRp(p.price),
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w700)),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Jumlah kurang dari satu dus tetap memakai harga satuan.',
-              style: TextStyle(color: context.teksRedup, fontSize: 12),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Halaman Mode Anggaran — migrasi dari bottom sheet.
-class _ModeAnggaranPage extends ConsumerStatefulWidget {
-  const _ModeAnggaranPage();
-
-  @override
-  ConsumerState<_ModeAnggaranPage> createState() => _ModeAnggaranPageState();
-}
-
-class _ModeAnggaranPageState extends ConsumerState<_ModeAnggaranPage> {
-  static const _budgets = [
-    ('Hemat harian', '4 jenis', 50000),
-    ('Isi dapur', '5 jenis', 75000),
-    ('Stok seminggu', '6 jenis', 100000),
-    ('Atur sendiri', 'nominal', 20000),
-  ];
-
-  int? _selected;
-  final _nominalCtrl = TextEditingController();
-  var _busy = false;
-
-  @override
-  void dispose() {
-    _nominalCtrl.dispose();
-    super.dispose();
-  }
-
-  int get _nominal {
-    if (_selected == null) return 0;
-    if (_selected == 3) {
-      return int.tryParse(
-              _nominalCtrl.text.replaceAll(RegExp(r'\D'), '')) ??
-          0;
-    }
-    return _budgets[_selected!].$3;
-  }
-
-  Future<void> _masukkanKeKeranjang() async {
-    setState(() => _busy = true);
-    final nominal = _nominal;
-    final products =
-        ref.read(productsProvider).valueOrNull ?? const <Product>[];
-    final murah = products.where((p) => p.stock > 0).toList()
-      ..sort((a, b) => a.price.compareTo(b.price));
-    var total = 0;
-    var count = 0;
-    for (final p in murah) {
-      if (total + p.price > nominal) continue;
-      ref.read(cartProvider.notifier).add(p);
-      total += p.price;
-      count++;
-      if (count >= 12) break;
-    }
-    if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    Navigator.of(context).pop();
-    messenger.showSnackBar(
-      SnackBar(
-          content: Text(count == 0
-              ? 'Tidak ada produk yang muat dalam budget ini.'
-              : '$count barang masuk keranjang · total ${formatRp(total)}')),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final nominal = _nominal;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mode Anggaran')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'BELANJA TETAP TERUKUR',
-              style: TextStyle(
-                color: AppColors.orange,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Pilih batas belanja. Kami susun kombinasi kebutuhan '
-              'rumah tanpa melewati nominal.',
-              style: TextStyle(color: context.teksRedup, fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1.6,
-              children: List.generate(_budgets.length, (i) {
-                final b = _budgets[i];
-                final active = _selected == i;
-                return AppCard(
-                  onTap: () => setState(() => _selected = i),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: active
-                            ? AppColors.orange
-                            : Colors.transparent,
-                        width: 2,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(b.$1,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13)),
-                        const SizedBox(height: 2),
-                        Text(
-                          i == 3
-                              ? 'nominal, mulai Rp20.000'
-                              : '${b.$2}, ≤ ${formatRp(b.$3)}',
-                          style: TextStyle(
-                              color: context.teksRedup, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ),
-            if (_selected == 3) ...[
-              const SizedBox(height: 8),
-              TextField(
-                controller: _nominalCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Nominal budget',
-                  hintText: 'Contoh: 50000',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-            ],
-            const SizedBox(height: 8),
-            Text(
-              'Pilih budget untuk melihat susunan.',
-              style: TextStyle(color: context.teksRedup, fontSize: 12),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: (_selected == null || nominal < 20000 || _busy)
-                    ? null
-                    : _masukkanKeKeranjang,
-                child: _busy
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child:
-                            CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Masukkan rekomendasi ke keranjang'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Halaman Patungan Warga — migrasi dari bottom sheet.
-class _PatunganPage extends ConsumerWidget {
-  const _PatunganPage();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Patungan Warga')),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'BELANJA BARENG TETANGGA',
-              style: TextStyle(
-                color: AppColors.orange,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ref.watch(patunganListProvider).when(
-                    loading: () => const Center(
-                        child: CircularProgressIndicator()),
-                    error: (_, __) => const AppCard(
-                      child: Text('Gagal memuat patungan.'),
-                    ),
-                    data: (list) {
-                      if (list.isEmpty) {
-                        return const AppCard(
-                          child: Text(
-                            'Belum ada patungan aktif.',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                        );
-                      }
-                      return ListView.separated(
-                        itemCount: list.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 8),
-                        itemBuilder: (_, i) {
-                          final pg = list[i];
-                          return AppCard(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(pg.title,
-                                          style: const TextStyle(
-                                              fontWeight:
-                                                  FontWeight.w700,
-                                              fontSize: 14)),
-                                    ),
-                                    Container(
-                                      padding:
-                                          const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.orange
-                                            .withValues(alpha: 0.15),
-                                        borderRadius:
-                                            BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        '${pg.filledSlots}/${pg.totalSlots} slot',
-                                        style: const TextStyle(
-                                            color: AppColors.orange,
-                                            fontSize: 11,
-                                            fontWeight:
-                                                FontWeight.w700),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${pg.productName} · '
-                                  '${formatRp(pg.pricePerSlot)}/slot',
-                                  style: TextStyle(
-                                      color: context.teksRedup,
-                                      fontSize: 12),
-                                ),
-                                const SizedBox(height: 6),
-                                LinearProgressIndicator(
-                                  value: pg.totalSlots > 0
-                                      ? pg.filledSlots /
-                                          pg.totalSlots
-                                      : 0,
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton(
-                                    onPressed: () {
-                                      // Halaman penuh: ganti halaman,
-                                      // bukan pop + push.
-                                      Navigator.of(context)
-                                          .pushReplacement(
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const PatunganCustomerPage(),
-                                        ),
-                                      );
-                                    },
-                                    child:
-                                        const Text('Ikut Patungan'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-            ),
-          ],
-        ),
       ),
     );
   }

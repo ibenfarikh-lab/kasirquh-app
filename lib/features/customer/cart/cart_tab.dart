@@ -431,9 +431,10 @@ class CartTab extends ConsumerWidget {
   Future<void> _checkout(BuildContext context, WidgetRef ref) async {
     await requireLogin(context, ref, () async {
       if (!context.mounted) return;
-      // Halaman penuh (aturan user: bottom sheet hanya Teman Belanja/AI).
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const _CheckoutPage()),
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => const _CheckoutPage(),
+        ),
       );
     });
   }
@@ -478,19 +479,15 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
     final potonganKoin = koinDipakai * coinSettings.coinRate;
     final grand = belanja + ongkir - potonganKoin;
     return Scaffold(
-      appBar: AppBar(title: const Text('Selesaikan pesanan')),
+      appBar: AppBar(
+        title: const Text('Ambil atau Diantar'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Ambil atau Diantar',
-              style:
-                  TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            // Metode ambil/diantar.
+              // Metode ambil/diantar.
               _segmented(
                 context,
                 options: const [

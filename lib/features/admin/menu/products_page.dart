@@ -11,6 +11,7 @@ import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/product.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
+import '../admin_nav.dart';
 
 /// Halaman Data Barang (Mode Admin): daftar produk + tambah/ubah/hapus.
 class ProductsPage extends ConsumerWidget {
@@ -30,28 +31,15 @@ class ProductsPage extends ConsumerWidget {
   }
 
   static void _openForm(BuildContext context, [Product? existing]) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        maxChildSize: 0.95,
-        minChildSize: 0.5,
-        expand: false,
-        builder: (ctx, scrollController) => Container(
-          decoration: BoxDecoration(
-            // Warna dari bottomSheetTheme (adaptif terang/gelap).
-            color:
-                Theme.of(ctx).bottomSheetTheme.backgroundColor,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: ProductFormSheet(
-            existing: existing,
-            scrollController: scrollController,
-          ),
+    // Halaman penuh (migrasi dari bottom sheet).
+    openAdminPage(
+      context,
+      Scaffold(
+        appBar: AppBar(
+          title: Text(
+              existing == null ? Strings.tambahProduk : Strings.ubahProduk),
         ),
+        body: ProductFormSheet(existing: existing),
       ),
     );
   }
@@ -187,12 +175,12 @@ class _ProductsBodyState extends ConsumerState<_ProductsBody> {
 /// Formulir tambah/ubah produk dalam bottom sheet.
 class ProductFormSheet extends ConsumerStatefulWidget {
   final Product? existing;
-  final ScrollController scrollController;
+  final ScrollController? scrollController;
 
   const ProductFormSheet({
     super.key,
     this.existing,
-    required this.scrollController,
+    this.scrollController,
   });
 
   @override
@@ -347,15 +335,6 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
       controller: widget.scrollController,
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       children: [
-        Text(
-          isEdit ? Strings.ubahProduk : Strings.tambahProduk,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: context.teksUtama,
-          ),
-        ),
-        const SizedBox(height: 16),
         TextField(
           controller: _nameCtrl,
           decoration:

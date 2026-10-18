@@ -274,16 +274,8 @@ class _CustomerListCard extends ConsumerWidget {
   }
 
   void _openCoinSheet(BuildContext context, Customer customer) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => Padding(
-        padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
-        child: _CoinSheet(customer: customer),
-      ),
-    );
+    // Halaman penuh (migrasi dari bottom sheet).
+    openAdminPage(context, _CoinSheet(customer: customer));
   }
 
   void _openNotesSheet(BuildContext context, Customer customer) {
@@ -344,24 +336,15 @@ class _CoinSheetState extends ConsumerState<_CoinSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        // Warna dari bottomSheetTheme (adaptif terang/gelap).
-        color: Theme.of(context).bottomSheetTheme.backgroundColor,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+    // Halaman penuh (migrasi dari bottom sheet).
+    return Scaffold(
+      appBar: AppBar(title: Text(Strings.sesuaikanKoin)),
+      body: ListView(
+        padding: const EdgeInsets.all(24),
         children: [
-          Text(
-            Strings.sesuaikanKoin,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          Text(widget.customer.name),
+          Text(widget.customer.name,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           Text(
             '${widget.customer.coins} ${Strings.koin}',
             style: TextStyle(color: context.teksRedup),

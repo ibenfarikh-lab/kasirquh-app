@@ -20,16 +20,3 @@ void openAdminPage(BuildContext context, Widget page) {
     MaterialPageRoute(builder: (_) => Theme(data: tema, child: page)),
   );
 }
-
-/// Varian openAdminPage yang mengembalikan nilai
-/// (mis. hasil scan barcode dari halaman scanner).
-Future<T?> openAdminPageForResult<T>(
-    BuildContext context, Widget page) {
-  final pilihan =
-      ProviderScope.containerOf(context).read(temaAdminProvider);
-  final sistem = MediaQuery.platformBrightnessOf(context);
-  final tema = temaAdminAktif(pilihan, sistem);
-  return Navigator.of(context).push<T>(
-    MaterialPageRoute(builder: (_) => Theme(data: tema, child: page)),
-  );
-}

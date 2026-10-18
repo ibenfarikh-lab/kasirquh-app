@@ -193,19 +193,42 @@ class _PaySheetState extends ConsumerState<PaySheet> {
         _receivedInt >= totalBayar &&
         totalBayar > 0;
 
-    // Halaman penuh (migrasi dari bottom sheet).
-    return Scaffold(
-      appBar: AppBar(title: Text(Strings.bayar)),
-      body: _doneCode == null
-          ? _payForm(change, canPay)
-          : _receiptView(),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      expand: false,
+      builder: (_, controller) => Container(
+        decoration: BoxDecoration(
+          // Warna dari bottomSheetTheme (adaptif terang/gelap).
+          color: Theme.of(context).bottomSheetTheme.backgroundColor,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: _doneCode == null
+            ? _payForm(controller, change, canPay)
+            : _receiptView(controller),
+      ),
     );
   }
 
-  Widget _payForm(int change, bool canPay) {
+  Widget _payForm(
+      ScrollController controller, int change, bool canPay) {
     return ListView(
+      controller: controller,
       padding: const EdgeInsets.all(24),
       children: [
+        Center(
+          child: Container(
+            width: 48,
+            height: 5,
+            decoration: BoxDecoration(
+              color: AppColors.adminLine,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         Text(
           Strings.bayar,
           style: TextStyle(
@@ -482,10 +505,11 @@ class _PaySheetState extends ConsumerState<PaySheet> {
     }
   }
 
-  Widget _receiptView() {
+  Widget _receiptView(ScrollController controller) {
     // Struk dibangun dari data terakhir sebelum keranjang dikosongkan —
     // simpan salinan saat bayar. Di sini bangun ulang ringkas dari kode.
     return ListView(
+      controller: controller,
       padding: const EdgeInsets.all(24),
       children: [
         const Icon(Icons.check_circle, color: AppColors.ok, size: 56),

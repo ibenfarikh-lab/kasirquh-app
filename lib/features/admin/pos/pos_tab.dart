@@ -15,7 +15,6 @@ import '../../../data/repositories/product_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../../customer/cart/cart_provider.dart';
-import '../admin_nav.dart';
 import 'pay_sheet.dart';
 import 'scanner_sheet.dart';
 
@@ -313,10 +312,11 @@ class _PosTabState extends ConsumerState<PosTab> {
   }
 
   Future<void> _openScanner() async {
-    // ScannerSheet sudah halaman penuh; kembalikan barcode via pop(value).
-    final barcode = await openAdminPageForResult<String>(
-      context,
-      const ScannerSheet(),
+    final barcode = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const ScannerSheet(),
     );
     if (barcode != null && barcode.isNotEmpty && mounted) {
       _findAndAdd(barcode);
@@ -442,7 +442,12 @@ class _PosTabState extends ConsumerState<PosTab> {
   }
 
   void _openPay(BuildContext context) {
-    openAdminPage(context, const PaySheet());
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const PaySheet(),
+    );
   }
 }
 

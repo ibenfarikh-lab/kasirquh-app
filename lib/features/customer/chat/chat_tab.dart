@@ -119,181 +119,84 @@ class ChatTab extends ConsumerWidget {
     );
   }
 
-  /// Gate login ala PWA untuk tamu.
+  /// Gate login ala PWA untuk tamu — halaman penuh
+  /// (aturan user: bottom sheet hanya Teman Belanja/AI).
   void _loginGate(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Fitur khusus pelanggan',
-              style: TextStyle(
-                color: context.teksRedup,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Masuk / Daftar',
-              style:
-                  TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Mau lanjut? Login atau daftar dulu ya...',
-              style: TextStyle(color: context.teksRedup, fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  // Pindah ke tab Akun untuk login.
-                  ref.read(customerTabProvider.notifier).state = 4;
-                },
-                child: const Text('Masuk / Daftar'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Sheet Rumpi Warga ala PWA.
-  void _bukaRumpi(BuildContext context, String uid, String nama) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.92,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, scrollCtrl) => Column(
-          children: [
-            _sheetHeader(
-              ctx,
-              kicker: 'Komunitas warga',
-              title: 'Rumpi Warga',
-              subtitle1: 'Obrolan lingkungan',
-              subtitle2: 'Postingan terlihat oleh warga & admin',
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: RumpiFeed(
-                uid: uid,
-                nama: nama,
-                modeSheet: true,
-                scrollController: scrollCtrl,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Sheet Chat Toko ala PWA.
-  void _bukaToko(BuildContext context, String uid) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.92,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, scrollCtrl) => Column(
-          children: [
-            _sheetHeader(
-              ctx,
-              kicker: 'Chat Toko',
-              title: 'Warunge Mimi',
-              subtitle1: 'Biasanya membalas cepat',
-              subtitle2: null,
-              hijau: true,
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: TokoChatPage(
-                uid: uid,
-                modeSheet: true,
-                scrollController: scrollCtrl,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _sheetHeader(
-    BuildContext ctx, {
-    required String kicker,
-    required String title,
-    required String subtitle1,
-    String? subtitle2,
-    bool hijau = false,
-  }) {
-    final redup = Theme.of(ctx).brightness == Brightness.dark
-        ? Colors.white70
-        : Colors.black54;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            kicker,
-            style: TextStyle(
-                color: redup,
-                fontSize: 12,
-                fontWeight: FontWeight.w800),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Masuk / Daftar')),
+          body: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Fitur khusus pelanggan',
+                  style: TextStyle(
+                    color: context.teksRedup,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Masuk / Daftar',
+                  style: TextStyle(
                       fontSize: 20, fontWeight: FontWeight.w800),
                 ),
-              ),
-              IconButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ),
-          Text(
-            subtitle1,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: hijau ? Colors.green.shade700 : redup,
+                const SizedBox(height: 8),
+                Text(
+                  'Mau lanjut? Login atau daftar dulu ya...',
+                  style:
+                      TextStyle(color: context.teksRedup, fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      // Pindah ke tab Akun untuk login.
+                      ref.read(customerTabProvider.notifier).state = 4;
+                    },
+                    child: const Text('Masuk / Daftar'),
+                  ),
+                ),
+              ],
             ),
           ),
-          if (subtitle2 != null)
-            Text(
-              subtitle2,
-              style: TextStyle(
-                fontSize: 11,
-                color: Theme.of(ctx).brightness == Brightness.dark
-                    ? Colors.white54
-                    : Colors.black45,
-              ),
-            ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  /// Rumpi Warga — halaman penuh
+  /// (aturan user: bottom sheet hanya Teman Belanja/AI).
+  void _bukaRumpi(BuildContext context, String uid, String nama) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Rumpi Warga')),
+          body: RumpiFeed(
+            uid: uid,
+            nama: nama,
+            modeSheet: true,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Chat Toko — halaman penuh
+  /// (aturan user: bottom sheet hanya Teman Belanja/AI).
+  void _bukaToko(BuildContext context, String uid) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Chat Toko')),
+          body: TokoChatPage(uid: uid),
+        ),
       ),
     );
   }

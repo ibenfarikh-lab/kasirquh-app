@@ -237,13 +237,6 @@ class AccountTab extends ConsumerWidget {
         const SizedBox(height: 8),
         _settingTile(
           context,
-          icon: Icons.badge_outlined,
-          title: 'Simpan kartu aplikasi',
-          onTap: () => _bukaKartu(context),
-        ),
-        const SizedBox(height: 8),
-        _settingTile(
-          context,
           icon: Icons.logout,
           title: 'Keluar dari akun',
           danger: true,
@@ -337,88 +330,41 @@ class AccountTab extends ConsumerWidget {
     );
   }
 
-  /// Sheet generik ala PWA: kicker + judul + × + isi.
-  void _bukaSheet(
+  /// Halaman penuh generik (aturan user: bottom sheet hanya Teman Belanja/AI).
+  void _bukaHalaman(
     BuildContext context, {
-    required String kicker,
     required String title,
     required Widget child,
   }) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.92,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, scrollCtrl) => Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    kicker,
-                    style: TextStyle(
-                      color: Theme.of(ctx).brightness == Brightness.dark
-                          ? Colors.white70
-                          : Colors.black54,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        icon: const Icon(Icons.close),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(child: child),
-          ],
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text(title)),
+          body: child,
         ),
       ),
     );
   }
 
   void _bukaPesanan(BuildContext context, WidgetRef ref, String uid) {
-    _bukaSheet(
+    _bukaHalaman(
       context,
-      kicker: 'Pesananmu',
       title: 'Pesanan aktif',
       child: _PesananList(uid: uid, aktifSaja: true),
     );
   }
 
   void _bukaRiwayat(BuildContext context, WidgetRef ref, String uid) {
-    _bukaSheet(
+    _bukaHalaman(
       context,
-      kicker: 'Pesananmu',
       title: 'Riwayat Pesanan',
       child: _PesananList(uid: uid, aktifSaja: false),
     );
   }
 
   void _bukaCatatan(BuildContext context, WidgetRef ref, String uid) {
-    _bukaSheet(
+    _bukaHalaman(
       context,
-      kicker: 'Dari toko',
       title: 'Catatan & Tagihan',
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -428,53 +374,10 @@ class AccountTab extends ConsumerWidget {
   }
 
   void _bukaPengaturan(BuildContext context, WidgetRef ref) {
-    _bukaSheet(
+    _bukaHalaman(
       context,
-      kicker: 'Sesuai caramu',
       title: 'Pengaturan Pelanggan',
       child: const _PengaturanForm(),
-    );
-  }
-
-  void _bukaKartu(BuildContext context) {
-    _bukaSheet(
-      context,
-      kicker: 'Kartu aplikasi',
-      title: 'Kartu Pelanggan',
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            const Text(
-              'Tunjukkan kode ini untuk membuka Warunge Mimi',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.orange),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'KQ-WM-2026',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Powered by KasirQuh',
-              style:
-                  TextStyle(color: context.teksRedup, fontSize: 11),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
