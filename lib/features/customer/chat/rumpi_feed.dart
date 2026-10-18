@@ -74,18 +74,20 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
           );
         }
         final disukai = likesAsync.valueOrNull ?? const <String>{};
-        // Pastikan terbaru di atas (menurun), selaras PWA.
+        // Terbaru di bawah ala chat (perintah user 2026-10-18:
+        // "Samakan saja, bawah semuanya") — selaras Chat Toko.
         final urut = [...posts]
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
         return RefreshIndicator(
           onRefresh: () async => ref.invalidate(rumpiPostsProvider),
           child: ListView.builder(
+            reverse: true,
             controller: widget.scrollController,
             padding: EdgeInsets.fromLTRB(
                 16, 12, 16, widget.modeSheet ? 12 : 90),
             itemCount: urut.length,
             itemBuilder: (context, i) {
-              final p = urut[i];
+              final p = urut[urut.length - 1 - i];
               return _PostCard(
                 post: p,
                 disukai: disukai.contains(p.id),
