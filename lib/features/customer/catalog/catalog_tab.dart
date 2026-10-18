@@ -303,14 +303,13 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
             ),
             const SizedBox(width: 8),
             ElevatedButton(
-              onPressed: () => showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                shape: const RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(28)),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(title: Text(prod.name)),
+                    body: ProductDetailSheet(product: prod),
+                  ),
                 ),
-                builder: (_) => ProductDetailSheet(product: prod),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
@@ -556,13 +555,13 @@ class _ProductCard extends ConsumerWidget {
   }
 
   void _showDetail(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text(product.name)),
+          body: ProductDetailSheet(product: product),
+        ),
       ),
-      builder: (_) => ProductDetailSheet(product: product),
     );
   }
 }
@@ -596,14 +595,13 @@ class _ProductListTile extends ConsumerWidget {
 
     return AppCard(
       onTap: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          shape: const RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.vertical(top: Radius.circular(28)),
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => Scaffold(
+              appBar: AppBar(title: Text(product.name)),
+              body: ProductDetailSheet(product: product),
+            ),
           ),
-          builder: (_) => ProductDetailSheet(product: product),
         );
       },
       child: Row(

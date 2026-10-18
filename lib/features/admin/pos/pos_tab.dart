@@ -312,11 +312,13 @@ class _PosTabState extends ConsumerState<PosTab> {
   }
 
   Future<void> _openScanner() async {
-    final barcode = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const ScannerSheet(),
+    final barcode = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Scan Barcode')),
+          body: const ScannerSheet(),
+        ),
+      ),
     );
     if (barcode != null && barcode.isNotEmpty && mounted) {
       _findAndAdd(barcode);
@@ -442,11 +444,13 @@ class _PosTabState extends ConsumerState<PosTab> {
   }
 
   void _openPay(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const PaySheet(),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Pembayaran')),
+          body: const PaySheet(),
+        ),
+      ),
     );
   }
 }

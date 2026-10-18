@@ -490,11 +490,11 @@ class HomeTab extends ConsumerWidget {
     final products = ref.read(productsProvider).valueOrNull ?? const <Product>[];
     final grosir = products.where((p) => p.adaGrosir).toList();
     if (!context.mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetCtx) => DraggableScrollableSheet(
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (sheetCtx) => Scaffold(
+          appBar: AppBar(title: const Text('Grosir Otomatis')),
+          body: DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.7,
         minChildSize: 0.4,
@@ -573,7 +573,9 @@ class HomeTab extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ),
+  ),
+  );
   }
 
   /// Header bottom sheet ala PWA: eyebrow oranye + judul + tombol ×.
@@ -623,11 +625,11 @@ class HomeTab extends ConsumerWidget {
     final nominalCtrl = TextEditingController();
     var busy = false;
     if (!context.mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetCtx) => StatefulBuilder(
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (sheetCtx) => Scaffold(
+          appBar: AppBar(title: const Text('Mode Anggaran')),
+          body: StatefulBuilder(
         builder: (sheetCtx2, setSheet) {
           final nominal = selected == null
               ? 0
@@ -780,7 +782,9 @@ class HomeTab extends ConsumerWidget {
           );
         },
       ),
-    );
+    ),
+  ),
+  );
     nominalCtrl.dispose();
   }
 
@@ -788,11 +792,11 @@ class HomeTab extends ConsumerWidget {
   Future<void> _patunganSheet(
       BuildContext context, WidgetRef ref, String? uid) async {
     if (!context.mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetCtx) => DraggableScrollableSheet(
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (sheetCtx) => Scaffold(
+          appBar: AppBar(title: const Text('Patungan Warga')),
+          body: DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.7,
         minChildSize: 0.4,
@@ -906,7 +910,9 @@ class HomeTab extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ),
+  ),
+  );
   }
 
   /// Belanja Rutin ala PWA: paket cepat + jadwal tersimpan lokal.
@@ -918,11 +924,11 @@ class HomeTab extends ConsumerWidget {
     var interval = 'Mingguan';
     var hari = 'Senin';
     if (!context.mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetCtx) => StatefulBuilder(
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (sheetCtx) => Scaffold(
+          appBar: AppBar(title: const Text('Belanja Rutin')),
+          body: StatefulBuilder(
         builder: (sheetCtx2, setSheet) => Padding(
           padding: EdgeInsets.only(
             left: 20,
@@ -1100,7 +1106,9 @@ class HomeTab extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ),
+  ),
+  );
     namaCtrl.dispose();
   }
 
@@ -1108,10 +1116,11 @@ class HomeTab extends ConsumerWidget {
   Future<void> _paketHajatanSheet(
       BuildContext context, WidgetRef ref) async {
     if (!context.mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetCtx) => Padding(
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (sheetCtx) => Scaffold(
+          appBar: AppBar(title: const Text('Paket Hajatan')),
+          body: Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1161,7 +1170,9 @@ class HomeTab extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ),
+  ),
+  );
   }
 
   /// Kartu paket ala PWA.
@@ -1231,10 +1242,12 @@ class HomeTab extends ConsumerWidget {
     final products = ref.read(productsProvider).valueOrNull ?? const <Product>[];
     final byId = {for (final p in products) p.id: p};
     if (!context.mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetCtx) {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (sheetCtx) => Scaffold(
+          appBar: AppBar(title: const Text('Pantau Harga')),
+          body: Builder(
+            builder: (sheetCtx) {
         final items = <Widget>[];
         for (final entry in watched) {
           final sep = entry.indexOf(':');
@@ -1311,7 +1324,10 @@ class HomeTab extends ConsumerWidget {
           ),
         );
       },
-    );
+    ),
+  ),
+  ),
+);
   }
 
   Widget _serviceCard(
@@ -1394,13 +1410,11 @@ class HomeTab extends ConsumerWidget {
     var method = 'Ambil di warung';
     var busy = false;
     String? error;
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) => StatefulBuilder(
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => Scaffold(
+          appBar: AppBar(title: const Text('Titip Belanja')),
+          body: StatefulBuilder(
         builder: (ctx, setState) => SafeArea(
           child: Padding(
             padding: EdgeInsets.only(
@@ -1529,7 +1543,9 @@ class HomeTab extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ),
+  ),
+  );
     itemCtrl.dispose();
     noteCtrl.dispose();
   }
@@ -1642,13 +1658,11 @@ class HomeTab extends ConsumerWidget {
       BuildContext context, WidgetRef ref) async {
     final ctrl = TextEditingController();
     var status = 'habis';
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) => StatefulBuilder(
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => Scaffold(
+          appBar: AppBar(title: const Text('Tambah Stok')),
+          body: StatefulBuilder(
         builder: (ctx, setState) => SafeArea(
           child: Padding(
             padding: EdgeInsets.only(
@@ -1713,7 +1727,9 @@ class HomeTab extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ),
+  ),
+  );
     ctrl.dispose();
   }
 
@@ -1846,11 +1862,11 @@ class HomeTab extends ConsumerWidget {
     final bahan = <Map<String, dynamic>>[
       {'productId': products.first.id, 'qty': 1}
     ];
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (sheetCtx) => StatefulBuilder(
+    final ok = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (sheetCtx) => Scaffold(
+          appBar: AppBar(title: const Text('Buat Ide Masak')),
+          body: StatefulBuilder(
         builder: (ctx, setSt) => Padding(
           padding: EdgeInsets.only(
             left: 16,
@@ -1996,7 +2012,9 @@ class HomeTab extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ),
+  ),
+  );
     if (ok != true || !context.mounted) return;
     final n = namaCtrl.text.trim();
     final items = bahan
@@ -2286,14 +2304,13 @@ class _HomeProductCard extends ConsumerWidget {
     return SizedBox(
       width: 140,
       child: AppCard(
-        onTap: () => showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          shape: const RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.vertical(top: Radius.circular(28)),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => Scaffold(
+              appBar: AppBar(title: Text(product.name)),
+              body: ProductDetailSheet(product: product),
+            ),
           ),
-          builder: (_) => ProductDetailSheet(product: product),
         ),
         padding: const EdgeInsets.all(10),
         child: Column(

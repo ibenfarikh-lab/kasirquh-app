@@ -75,11 +75,13 @@ class _NotesTabState extends ConsumerState<NotesTab> {
   }
 
   void _bukaBelanjaStok() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const StockShoppingSheet(),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Belanja Stok')),
+          body: const StockShoppingSheet(),
+        ),
+      ),
     );
   }
 
@@ -268,10 +270,13 @@ class _NoteCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: AppCard(
-        onTap: () => showModalBottomSheet(
-          context: context,
-          backgroundColor: Colors.transparent,
-          builder: (_) => _NoteDetailSheet(note: note),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => Scaffold(
+              appBar: AppBar(title: const Text('Detail Catatan')),
+              body: _NoteDetailSheet(note: note),
+            ),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,11 +457,13 @@ class _NoteDetailSheet extends ConsumerWidget {
                   kind: AppButtonKind.secondary,
                   onPressed: () {
                     Navigator.pop(context);
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => _NoteFormSheet(existing: note),
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => Scaffold(
+                          appBar: AppBar(title: const Text('Ubah Catatan')),
+                          body: _NoteFormSheet(existing: note),
+                        ),
+                      ),
                     );
                   },
                 ),
