@@ -15,6 +15,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../l10n/strings_id.dart';
+import '../admin_nav.dart';
 import '../menu/stock_shopping_sheet.dart';
 
 /// Fungsi murni (di-test): label pil sumber catatan.
@@ -75,12 +76,8 @@ class _NotesTabState extends ConsumerState<NotesTab> {
   }
 
   void _bukaBelanjaStok() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const StockShoppingSheet(),
-    );
+    // StockShoppingSheet sudah halaman penuh (Scaffold).
+    openAdminPage(context, const StockShoppingSheet());
   }
 
   @override
@@ -268,11 +265,8 @@ class _NoteCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: AppCard(
-        onTap: () => showModalBottomSheet(
-          context: context,
-          backgroundColor: Colors.transparent,
-          builder: (_) => _NoteDetailSheet(note: note),
-        ),
+        onTap: () =>
+            openAdminPage(context, _NoteDetailSheet(note: note)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -370,17 +364,11 @@ class _NoteDetailSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final date = DateTime.tryParse(note.date);
-    return Container(
-      decoration: BoxDecoration(
-        // Warna dari bottomSheetTheme (adaptif terang/gelap).
-        color: Theme.of(context).bottomSheetTheme.backgroundColor,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+    // Halaman penuh (migrasi dari bottom sheet).
+    return Scaffold(
+      appBar: AppBar(title: Text(note.supplier)),
+      body: ListView(
+        padding: const EdgeInsets.all(24),
         children: [
           Row(
             children: [
@@ -451,13 +439,9 @@ class _NoteDetailSheet extends ConsumerWidget {
                   label: Strings.ubah,
                   kind: AppButtonKind.secondary,
                   onPressed: () {
-                    Navigator.pop(context);
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => _NoteFormSheet(existing: note),
-                    );
+                    // Halaman penuh: dorong form di atas halaman detail.
+                    openAdminPage(
+                        context, _NoteFormSheet(existing: note));
                   },
                 ),
               ),
@@ -728,48 +712,17 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      maxChildSize: 0.95,
-      minChildSize: 0.5,
-      expand: false,
-      builder: (_, controller) => Container(
-        decoration: BoxDecoration(
-          // Warna dari bottomSheetTheme (adaptif terang/gelap).
-          color: Theme.of(context)
-              .bottomSheetTheme
-              .backgroundColor,
-          borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(28)),
-        ),
-        child: ListView(
-          controller: controller,
-          padding: const EdgeInsets.all(24),
-          children: [
-            Center(
-              child: Container(
-                width: 48,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: AppColors.adminLine,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              widget.existing == null
-                  ? Strings.tambahCatatan
-                  : Strings.ubah,
-              style: TextStyle(
-                color: context.teksUtama,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _supplier,
+    final isEdit = widget.existing != null;
+    // Halaman penuh (migrasi dari bottom sheet).
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(isEdit ? Strings.ubah : Strings.tambahCatatan),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          TextField(
+            controller: _supplier,
               style: TextStyle(color: context.teksUtama),
               decoration: InputDecoration(
                 labelText: Strings.namaSupplier,
@@ -856,7 +809,7 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
             ),
           ],
         ),
-      ),
+      );
     );
   }
 

@@ -9,27 +9,22 @@ import '../../features/customer/session.dart';
 
 /// Gembok tamu: "Mau lanjut? Login atau daftar dulu ya..."
 /// Mengembalikan true bila pengguna berhasil masuk → panggil aksi tertunda.
+///
+/// Migrasi v3.6.98 (keputusan user): halaman penuh, bukan bottom sheet.
 class GuestLockSheet extends ConsumerWidget {
   const GuestLockSheet({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 48,
-              height: 5,
-              decoration: BoxDecoration(
-                color: AppColors.line,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(Strings.guestLockTitle),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+        children: [
+          Center(
+            child: Container(
               width: 64,
               height: 64,
               decoration: BoxDecoration(
@@ -42,42 +37,32 @@ class GuestLockSheet extends ConsumerWidget {
                 color: AppColors.orange,
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              Strings.guestLockTitle,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              Strings.guestLockBody,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.muted, fontSize: 15),
-            ),
-            const SizedBox(height: 20),
-            AppButton(
-              label: Strings.masuk,
-              onPressed: () => _openLogin(context, 0),
-            ),
-            const SizedBox(height: 12),
-            AppButton(
-              label: Strings.daftar,
-              kind: AppButtonKind.secondary,
-              onPressed: () => _openLogin(context, 1),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            Strings.guestLockBody,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.muted, fontSize: 15),
+          ),
+          const SizedBox(height: 20),
+          AppButton(
+            label: Strings.masuk,
+            onPressed: () => _openLogin(context, 0),
+          ),
+          const SizedBox(height: 12),
+          AppButton(
+            label: Strings.daftar,
+            kind: AppButtonKind.secondary,
+            onPressed: () => _openLogin(context, 1),
+          ),
+        ],
       ),
     );
   }
 
   Future<void> _openLogin(BuildContext context, int tab) async {
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (_) => LoginSheet(initialTab: tab),
+    final ok = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => LoginSheet(initialTab: tab)),
     );
     if (ok == true && context.mounted) {
       Navigator.of(context).pop(true);
@@ -97,12 +82,8 @@ Future<bool> requireLogin(
     await onGranted();
     return true;
   }
-  final ok = await showModalBottomSheet<bool>(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
-    builder: (_) => const GuestLockSheet(),
+  final ok = await Navigator.of(context).push<bool>(
+    MaterialPageRoute(builder: (_) => const GuestLockSheet()),
   );
   if (ok == true) {
     await onGranted();

@@ -431,26 +431,22 @@ class CartTab extends ConsumerWidget {
   Future<void> _checkout(BuildContext context, WidgetRef ref) async {
     await requireLogin(context, ref, () async {
       if (!context.mounted) return;
-      await showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        builder: (_) => const _CheckoutSheet(),
+      // Halaman penuh (aturan user: bottom sheet hanya Teman Belanja/AI).
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const _CheckoutPage()),
       );
     });
   }
 }
 
-class _CheckoutSheet extends ConsumerStatefulWidget {
-  const _CheckoutSheet();
+class _CheckoutPage extends ConsumerStatefulWidget {
+  const _CheckoutPage();
 
   @override
-  ConsumerState<_CheckoutSheet> createState() => _CheckoutSheetState();
+  ConsumerState<_CheckoutPage> createState() => _CheckoutPageState();
 }
 
-class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
+class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
   String _fulfillment = 'pickup'; // pickup | delivery
   String _payment = 'cod';
   final _address = TextEditingController();
@@ -481,51 +477,20 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
         const CoinSettings();
     final potonganKoin = koinDipakai * coinSettings.coinRate;
     final grand = belanja + ongkir - potonganKoin;
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header ala PWA: kicker + judul + ×.
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Selesaikan pesanan',
-                          style: TextStyle(
-                            color: context.teksRedup,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const Text(
-                          'Ambil atau Diantar',
-                          style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Metode ambil/diantar.
+    return Scaffold(
+      appBar: AppBar(title: const Text('Selesaikan pesanan')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Ambil atau Diantar',
+              style:
+                  TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            // Metode ambil/diantar.
               _segmented(
                 context,
                 options: const [
@@ -645,7 +610,6 @@ class _CheckoutSheetState extends ConsumerState<_CheckoutSheet> {
             ],
           ),
         ),
-      ),
     );
   }
 
