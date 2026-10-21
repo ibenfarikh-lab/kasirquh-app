@@ -5,10 +5,6 @@ import '../../core/theme/app_colors.dart';
 import '../../l10n/strings_id.dart';
 import 'biometric_credential_service.dart';
 
-/// Tombol "Masuk dengan sidik jari" — reusable untuk login cepat.
-///
-/// Tampil hanya bila: biometric tersedia + ada kredensial tersimpan
-/// untuk accountId yang diminta.
 class FingerprintLoginButton extends ConsumerStatefulWidget {
   final String accountId;
   final Future<void> Function(BiometricCredential cred) onCredential;
@@ -49,7 +45,7 @@ class _FingerprintLoginButtonState
     try {
       final svc = ref.read(biometricCredentialServiceProvider);
       final ok = await svc.verifyBiometric(Strings.alasanVerifikasiSidikJari);
-      if (!ok) return; // dibatalkan/gagal → diam, fallback manual
+      if (!ok) return;
       final cred = await svc.read(widget.accountId);
       if (cred == null) {
         if (mounted) setState(() => _visible = false);

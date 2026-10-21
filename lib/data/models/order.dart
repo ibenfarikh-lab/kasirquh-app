@@ -1,12 +1,9 @@
-/// Status pesanan — selaras dengan skema Firestore yang dikunci.
 enum OrderStatus { menunggu, dikemas, dikirim, selesai, dibatalkan }
 
 OrderStatus orderStatusFrom(String s) =>
     OrderStatus.values.firstWhere((e) => e.name == s,
         orElse: () => OrderStatus.menunggu);
 
-/// Model Pesanan — mirror koleksi Firestore `orders`.
-/// Field transfer & koin mengikuti skema PWA (settle/cancel butuh data ini).
 class Order {
   final String id;
   final String customerId;
@@ -15,17 +12,15 @@ class Order {
   final List<OrderItem> items;
   final int total;
   final OrderStatus status;
-  final String payment; // cod | transfer — selaras skema (tunai hanya di kasir admin, tanpa dokumen order)
+  final String payment;
   final DateTime createdAt;
-  // Transfer (PWA: transferStatus 'rejected' persisten agar kartu tak hilang).
   final String transferReference;
-  final String transferStatus; // '' | 'rejected'
+  final String transferStatus;
   final String transferRejectReason;
-  // Koin (PWA: coinUsed/earnedCoins untuk pengembalian saat batal).
   final int coinUsed;
   final int coinValue;
   final int earnedCoins;
-  final String fulfillment; // 'pickup' | 'delivery'
+  final String fulfillment;
 
   const Order({
     required this.id,
@@ -100,11 +95,6 @@ class OrderItem {
       };
 }
 
-/// Agregat produk laris: jumlah qty per productId dari semua pesanan
-/// (batal tidak dihitung), urut terbanyak → [limit] teratas.
-/// Fungsi pure — bisa di-unit-test tanpa Flutter.
-/// Dipakai section "Sedang laris" (Beranda pelanggan) via topProductIds
-/// yang dihitung admin dan disimpan di store_settings.
 List<String> topProductsByQty(List<Order> orders, {int limit = 8}) {
   final qtyById = <String, double>{};
   for (final o in orders) {

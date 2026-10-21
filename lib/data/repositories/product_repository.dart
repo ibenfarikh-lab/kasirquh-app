@@ -5,7 +5,6 @@ import '../../data/local/app_database.dart';
 import '../../data/models/product.dart';
 import '../../data/remote/firestore_service.dart';
 
-/// Kategori katalog kelontong (keputusan dikunci).
 const kProductCategories = [
   'Sembako',
   'Minuman',
@@ -14,10 +13,6 @@ const kProductCategories = [
   'Rumah Tangga',
 ];
 
-/// Repository katalog: baca Firestore (publik, server menang untuk stok)
-/// dengan fallback SQLite saat offline/mode lokal.
-/// Catatan: ambang "stok menipis" kini per produk (Product.lowStockAt,
-/// selaras skema), bukan konstanta global lagi.
 class ProductRepository {
   final FirebaseFirestore? _db;
 
@@ -28,8 +23,6 @@ class ProductRepository {
       yield await _fromSqlite();
       return;
     }
-    // Anti-gagal-diam-diam: error Firestore DITERUSKAN ke UI (bukan ditelan).
-    // UI wajib menangani via .when(error:) + tombol "Coba lagi".
     yield* _db
         .collection('products')
         .snapshots()
@@ -75,10 +68,6 @@ class ProductRepository {
     }
   }
 
-  /// Jalur baca KHUSUS hitungan NILAI STOK di Catatan Belanja:
-  /// SEMUA produk tanpa filter isActive (ikut PWA).
-  /// Jangan dipakai untuk katalog/kasir — mereka tetap pakai
-  /// watchProducts()/productsProvider yang memfilter nonaktif.
   Stream<List<Product>> watchAllProducts() async* {
     if (_db == null) {
       yield await _allFromSqlite();
@@ -94,8 +83,6 @@ class ProductRepository {
     }
   }
 
-  /// Varian _fromDocs tanpa buang isActive == false.
-  /// _fromDocs (jalur katalog/kasir) TIDAK diubah.
   List<Product> _fromDocsAll(
       List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
     final list = <Product>[];
@@ -133,7 +120,6 @@ class ProductRepository {
     }
   }
 
-  /// Ambil stok terkini satu produk dari server (untuk validasi checkout).
   Future<double?> fetchStock(String productId) async {
     if (_db == null) return null;
     final doc = await _db.collection('products').doc(productId).get();
@@ -151,13 +137,10 @@ final productsProvider = StreamProvider<List<Product>>((ref) {
   return ref.watch(productRepositoryProvider).watchProducts();
 });
 
-/// SEMUA produk tanpa filter isActive — KHUSUS hitungan NILAI STOK
-/// (Catatan Belanja, ikut PWA). Jangan dipakai katalog/kasir.
 final allProductsProvider = StreamProvider<List<Product>>((ref) {
   return ref.watch(productRepositoryProvider).watchAllProducts();
 });
 
-/// Filter katalog murni — bisa di-unit-test.
 List<Product> filterProducts(
   List<Product> all, {
   String query = '',

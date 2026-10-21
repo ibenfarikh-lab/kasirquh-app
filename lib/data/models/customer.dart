@@ -1,8 +1,3 @@
-/// Model Pelanggan — mirror koleksi Firestore `customers`.
-/// approvalStatus: pending | approved | rejected
-///
-/// Kode member: 'KQ-' + 8 karakter pertama UID (uppercase).
-/// Format IDENTIK dengan PWA — jangan diubah sepihak.
 String memberCodeFromUid(String uid) {
   final bersih =
       uid.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
@@ -16,9 +11,9 @@ class Customer {
   final String uid;
   final String name;
   final String email;
-  final String? wa; // nomor WA opsional (skema)
-  final String? address; // alamat opsional — selaras Web ?v=20261020ar
-  final String? photoURL; // foto profil base64 — selaras Web (2026-10-18)
+  final String? wa;
+  final String? address;
+  final String? photoURL;
   final String approvalStatus;
   final int coins;
   final String? memberCode;
@@ -39,7 +34,6 @@ class Customer {
 
   bool get isApproved => approvalStatus == 'approved';
 
-  /// Kode member — dari field DB, fallback hitung dari UID.
   String get kodeMember => memberCode ?? memberCodeFromUid(uid);
 
   Map<String, dynamic> toMap() => {

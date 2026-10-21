@@ -5,7 +5,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Sheet Kalkulator: panel tugas cepat Mode Admin (bottom sheet).
 class CalculatorSheet extends StatefulWidget {
   const CalculatorSheet({super.key});
 
@@ -16,7 +15,7 @@ class CalculatorSheet extends StatefulWidget {
 class _CalculatorSheetState extends State<CalculatorSheet> {
   String _current = '0';
   double? _prev;
-  String? _op; // internal: '+' '-' '*' '/'
+  String? _op;
 
   void _input(String d) {
     setState(() {
@@ -52,7 +51,6 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
     return null;
   }
 
-  /// Hilangkan .0: bulat tampil sebagai int.
   String _format(double v) {
     if (v.isInfinite || v.isNaN) return Strings.galat;
     if (v == v.truncateToDouble()) return v.toInt().toString();
@@ -165,7 +163,7 @@ class _CalculatorSheetState extends State<CalculatorSheet> {
           children: [
             Container(
             decoration: BoxDecoration(
-              color: context.permukaanKartu, // Aturan 1&3: adaptif.
+              color: context.permukaanKartu,
               borderRadius: BorderRadius.circular(16),
             ),
             padding:
@@ -235,7 +233,7 @@ class _CalcButton extends StatelessWidget {
               ? AppColors.danger
               : _isOp
                   ? AppColors.orange
-                  : context.permukaanKartu, // Aturan 1: adaptif.
+                  : context.permukaanKartu,
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),

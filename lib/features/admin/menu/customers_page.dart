@@ -11,13 +11,10 @@ import '../../../l10n/strings_id.dart';
 import 'customer_notes_sheet.dart';
 import 'report_page.dart';
 
-/// Backfill memberCode — dijalankan sekali, idempotent.
 final _backfillMemberProvider = FutureProvider<int>((ref) async {
   return ref.watch(adminRepositoryProvider).backfillMemberCodes();
 });
 
-/// Query pencarian pelanggan — StateProvider agar [CustomersPage] tetap
-/// ConsumerWidget tanpa state lokal.
 final _customerSearchProvider = StateProvider<String>((ref) => '');
 
 void _snack(BuildContext context, String message) {
@@ -25,14 +22,11 @@ void _snack(BuildContext context, String message) {
       .showSnackBar(SnackBar(content: Text(message)));
 }
 
-/// Tab Mode Admin > Modul Data: persetujuan pendaftar + daftar pelanggan +
-/// penyesuaian koin + Laporan (pindah ke dalam Data, selaras prototipe).
 class CustomersPage extends ConsumerWidget {
   const CustomersPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Backfill memberCode sekali per sesi (idempotent, aman).
     ref.watch(_backfillMemberProvider);
     return Scaffold(
       appBar: AppBar(title: const Text(Strings.modulData)),
@@ -50,12 +44,10 @@ class CustomersPage extends ConsumerWidget {
   }
 }
 
-/// Seksi Laporan — di dalam Data (bukan modul sendiri).
 class _LaporanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      // Aturan 1&3: ikut cardTheme (adaptif).
       child: ListTile(
         leading: const Icon(Icons.bar_chart_outlined,
             color: AppColors.orange),
@@ -76,7 +68,6 @@ class _LaporanCard extends StatelessWidget {
   }
 }
 
-/// Seksi A — kartu persetujuan pendaftar baru.
 class _ApprovalCard extends ConsumerWidget {
   final WidgetRef ref;
 
@@ -86,7 +77,6 @@ class _ApprovalCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pendingAsync = ref.watch(pendingApprovalsProvider);
     return Card(
-      // Aturan 1&3: ikut cardTheme (adaptif).
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -176,7 +166,6 @@ class _ApprovalCard extends ConsumerWidget {
   }
 }
 
-/// Seksi B — kartu daftar pelanggan dengan pencarian + tombol koin.
 class _CustomerListCard extends ConsumerWidget {
   final WidgetRef ref;
 
@@ -187,7 +176,6 @@ class _CustomerListCard extends ConsumerWidget {
     final query = ref.watch(_customerSearchProvider).toLowerCase();
     final customersAsync = ref.watch(adminCustomersProvider);
     return Card(
-      // Aturan 1&3: ikut cardTheme (adaptif).
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -274,7 +262,6 @@ class _CustomerListCard extends ConsumerWidget {
   }
 
   void _openCoinSheet(BuildContext context, Customer customer) {
-    // Halaman penuh (migrasi dari bottom sheet).
     openAdminPage(context, _CoinSheet(customer: customer));
   }
 
@@ -283,7 +270,6 @@ class _CustomerListCard extends ConsumerWidget {
   }
 }
 
-/// Bottom sheet penyesuaian koin pelanggan.
 class _CoinSheet extends ConsumerStatefulWidget {
   final Customer customer;
 
@@ -336,7 +322,6 @@ class _CoinSheetState extends ConsumerState<_CoinSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // Halaman penuh (migrasi dari bottom sheet).
     return Scaffold(
       appBar: AppBar(title: Text(Strings.sesuaikanKoin)),
       body: ListView(

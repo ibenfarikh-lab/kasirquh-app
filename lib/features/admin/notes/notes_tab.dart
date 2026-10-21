@@ -17,33 +17,24 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../l10n/strings_id.dart';
 import '../menu/stock_shopping_sheet.dart';
 
-/// Fungsi murni (di-test): label pil sumber catatan.
-/// Perbaikan bug: 'impor' selama ini tampil 'Manual'.
 String labelSumberCatatan(String source) => switch (source) {
       'belanja_stok' => Strings.dariBelanjaStok,
       'impor' => Strings.labelImpor,
       _ => Strings.manualTeks,
     };
 
-/// Fungsi murni (di-test): label satu baris barang di kartu.
 String labelItemBarang(StockNoteItem it) =>
     it.qty > 1 ? '${it.name} · ${formatStok(it.qty)}' : it.name;
 
 
 
-/// Fungsi murni (di-test): kunci tanggal YYYY-MM-DD untuk filter.
 String kunciTanggal(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-'
     '${d.day.toString().padLeft(2, '0')}';
 
-/// Fungsi murni (di-test): nilai stok = Σ stok × modal/pcs.
-/// Stok desimal dipertahankan (3,75 × 4000 = 15000, bukan 12000).
 double nilaiStokModal(List<Product> products) =>
     products.fold(0.0, (s, p) => s + p.stock * p.cost);
 
-/// Mode Admin > Tab Catatan: Catatan Belanja Harian satu halaman.
-/// Acuan tampilan = PWA (halaman Catatan Belanja).
-/// Ubah/hapus HANYA mengubah arsip — pembukuan & stok tidak dihitung ulang.
 class NotesTab extends ConsumerStatefulWidget {
   const NotesTab({super.key});
 
@@ -54,8 +45,6 @@ class NotesTab extends ConsumerStatefulWidget {
 class _NotesTabState extends ConsumerState<NotesTab> {
   DateTime _tanggal = DateTime.now();
 
-  // Keputusan user: catatan stok TIDAK auto-load (hemat kuota).
-  // Admin menekan tombol refresh untuk memuat.
   bool _dimuat = false;
 
   String get _kunci => kunciTanggal(_tanggal);
@@ -87,12 +76,9 @@ class _NotesTabState extends ConsumerState<NotesTab> {
 
   @override
   Widget build(BuildContext context) {
-    // Tidak auto-load: hanya watch setelah admin menekan tombol muat.
     final notes = _dimuat
         ? ref.watch(stockNotesProvider).valueOrNull ?? const <StockNote>[]
         : const <StockNote>[];
-    // NILAI STOK dihitung dari SEMUA produk tanpa filter isActive
-    // (ikut PWA) — jalur baca khusus, bukan productsProvider.
     final products = ref.watch(allProductsProvider).valueOrNull ?? const [];
     final hariIni = notes.where((n) => n.date == _kunci).toList();
     final totalHari = hariIni.fold(0, (s, n) => s + n.total);
@@ -102,7 +88,6 @@ class _NotesTabState extends ConsumerState<NotesTab> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Kepala halaman: kicker + judul + tombol Belanja Stok.
           Row(
             children: [
               Expanded(
@@ -137,8 +122,6 @@ class _NotesTabState extends ConsumerState<NotesTab> {
           const SizedBox(height: 16),
           _NilaiStokCard(nilai: nilaiStokModal(products)),
           const SizedBox(height: 16),
-          // Navigator tanggal: ‹ tanggal › + tombol refresh
-          // (keputusan user: tidak auto-load, muat manual per tanggal).
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -173,7 +156,6 @@ class _NotesTabState extends ConsumerState<NotesTab> {
               ),
             ],
           ),
-          // Header hari: tanggal + "N catatan · total RpX".
           Text(
             DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(_tanggal),
             style: TextStyle(
@@ -221,7 +203,6 @@ class _NotesTabState extends ConsumerState<NotesTab> {
 
 }
 
-/// Kartu NILAI STOK · MODAL DI RAK (paling atas).
 class _NilaiStokCard extends StatelessWidget {
   final double nilai;
   const _NilaiStokCard({required this.nilai});
@@ -258,8 +239,6 @@ class _NilaiStokCard extends StatelessWidget {
   }
 }
 
-/// Kartu catatan ala PWA: judul + pil sumber, "N jenis barang",
-/// daftar isi barang, footer total, chevron ›. Tap → detail arsip.
 class _NoteCard extends StatelessWidget {
   final StockNote note;
 
@@ -356,7 +335,7 @@ class _SourcePill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: otomatis ? AppColors.ok : context.permukaanKartu, // Aturan 1: adaptif.
+        color: otomatis ? AppColors.ok : context.permukaanKartu,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -377,7 +356,6 @@ class _NoteDetailSheet extends ConsumerWidget {
     final date = DateTime.tryParse(note.date);
     return Container(
       decoration: BoxDecoration(
-        // Warna dari bottomSheetTheme (adaptif terang/gelap).
         color: Theme.of(context).bottomSheetTheme.backgroundColor,
         borderRadius:
             const BorderRadius.vertical(top: Radius.circular(28)),
@@ -503,7 +481,6 @@ class _NoteDetailSheet extends ConsumerWidget {
       ),
     );
     if (ok == true && context.mounted) {
-      // Hapus arsip saja (lokal + antrean).
       final repo = ref.read(adminRepositoryProvider);
       await repo.deleteStockNote(note.id);
       if (context.mounted) Navigator.pop(context);
@@ -511,8 +488,6 @@ class _NoteDetailSheet extends ConsumerWidget {
   }
 }
 
-/// Form "Tambah catatan" di bawah daftar (ikut PWA):
-/// Supplier, Barang yang dibeli (satu per baris), Total habis.
 class _FormTambah extends ConsumerStatefulWidget {
   final String tanggal;
   const _FormTambah({required this.tanggal});
@@ -571,7 +546,6 @@ class _FormTambahState extends ConsumerState<_FormTambah> {
         createdAt: DateTime.now(),
       );
       final noteId = await repo.saveStockNote(note);
-      // Catatan baru: jurnal kulakan + kurangi modal (seperti sebelumnya).
       await repo.addJournal(
         kind: 'kulakan',
         label: 'Kulakan · $supplier',
@@ -594,7 +568,7 @@ class _FormTambahState extends ConsumerState<_FormTambah> {
         hintText: hint,
         hintStyle: TextStyle(color: context.teksRedup),
         filled: true,
-        fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
+        fillColor: context.permukaanKartu,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
@@ -669,7 +643,6 @@ class _FormTambahState extends ConsumerState<_FormTambah> {
   }
 }
 
-/// Form ubah catatan (dipakai dari sheet detail; sifat arsip).
 class _NoteFormSheet extends ConsumerStatefulWidget {
   final StockNote? existing;
 
@@ -742,7 +715,6 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
       expand: false,
       builder: (_, controller) => Container(
         decoration: BoxDecoration(
-          // Warna dari bottomSheetTheme (adaptif terang/gelap).
           color: Theme.of(context)
               .bottomSheetTheme
               .backgroundColor,
@@ -928,8 +900,6 @@ class _NoteFormSheetState extends ConsumerState<_NoteFormSheet> {
       );
       final noteId = await repo.saveStockNote(note);
       if (!isEdit) {
-        // Catatan baru: jurnal kulakan + kurangi modal.
-        // Modal sebagai delta antrean: tidak dilewati diam-diam saat offline.
         await repo.addJournal(
           kind: 'kulakan',
           label: 'Kulakan · ${note.supplier}',

@@ -11,8 +11,6 @@ import '../../../core/utils/currency.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Halaman Impor Produk dari CSV (P1-7, mengikuti Web): pilih file →
-/// pratinjau (baru/diperbarui/dilewati) → impor (upsert per barcode).
 class CsvImportPage extends ConsumerStatefulWidget {
   const CsvImportPage({super.key});
 

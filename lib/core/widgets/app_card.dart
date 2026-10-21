@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// Kartu standar: radius 14px — dari DESIGN_SYSTEM.md.
 class AppCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final VoidCallback? onTap;
 
-  /// Border khusus (mis. kartu kasir PWA: 1px #d4d4d4 di dark mode).
-  /// Null = ikut cardTheme.
   final BorderSide? borderSide;
 
   const AppCard({
@@ -24,7 +21,6 @@ class AppCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: Padding(padding: padding, child: child),
     );
-    // Border khusus: bungkus dengan Container ber-border.
     if (borderSide != null) {
       card = Container(
         decoration: BoxDecoration(

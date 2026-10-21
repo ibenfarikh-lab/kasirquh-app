@@ -9,10 +9,6 @@ import '../session.dart';
 import 'rumpi_feed.dart';
 import 'toko_chat_page.dart';
 
-/// Mode Pelanggan > Tab Chat — plek-plek PWA live (?v=20261013r).
-/// Header "Tetap terhubung" / "Chat" + 2 kartu pilihan:
-/// "Rumpi Warga" dan "Chat Toko" — masing-masing buka sheet modal.
-/// Tamu melihat kartu, diblokir saat tap (modal login).
 class ChatTab extends ConsumerWidget {
   const ChatTab({super.key});
 
@@ -25,7 +21,6 @@ class ChatTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       children: [
-        // Header ala PWA.
         Text(
           'Tetap terhubung',
           style: TextStyle(
@@ -39,7 +34,6 @@ class ChatTab extends ConsumerWidget {
           style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 16),
-        // Kartu Rumpi Warga.
         _chatChoiceCard(
           context,
           icon: Icons.groups_outlined,
@@ -54,7 +48,6 @@ class ChatTab extends ConsumerWidget {
           },
         ),
         const SizedBox(height: 12),
-        // Kartu Chat Toko.
         _chatChoiceCard(
           context,
           icon: Icons.storefront_outlined,
@@ -72,7 +65,6 @@ class ChatTab extends ConsumerWidget {
     );
   }
 
-  /// Kartu pilihan ala PWA: ikon 42px | teks | chevron.
   Widget _chatChoiceCard(
     BuildContext context, {
     required IconData icon,
@@ -119,8 +111,6 @@ class ChatTab extends ConsumerWidget {
     );
   }
 
-  /// Gate login ala PWA untuk tamu — halaman penuh
-  /// (aturan user: bottom sheet hanya Teman Belanja/AI).
   void _loginGate(BuildContext context, WidgetRef ref) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -157,7 +147,6 @@ class ChatTab extends ConsumerWidget {
                   child: FilledButton(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      // Pindah ke tab Akun untuk login.
                       ref.read(customerTabProvider.notifier).state = 4;
                     },
                     child: const Text('Masuk / Daftar'),
@@ -171,8 +160,6 @@ class ChatTab extends ConsumerWidget {
     );
   }
 
-  /// Rumpi Warga — halaman penuh
-  /// (aturan user: bottom sheet hanya Teman Belanja/AI).
   void _bukaRumpi(BuildContext context, String uid, String nama) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -187,8 +174,6 @@ class ChatTab extends ConsumerWidget {
     );
   }
 
-  /// Chat Toko — halaman penuh
-  /// (aturan user: bottom sheet hanya Teman Belanja/AI).
   void _bukaToko(BuildContext context, String uid) {
     Navigator.of(context).push(
       MaterialPageRoute(

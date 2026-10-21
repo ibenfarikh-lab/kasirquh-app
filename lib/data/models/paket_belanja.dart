@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Item dalam paket: produk + qty.
 class PaketItem {
   final String productId;
   final int qty;
@@ -15,9 +14,6 @@ class PaketItem {
   Map<String, dynamic> toMap() => {'productId': productId, 'qty': qty};
 }
 
-/// Paket Belanja — skema SAMA PERSIS dengan PWA.
-/// Dipakai untuk koleksi `rutinPackages` dan `hajatanPackages`.
-/// Field: name, description, items [{productId, qty}], isActive.
 class PaketBelanja {
   final String id;
   final String name;

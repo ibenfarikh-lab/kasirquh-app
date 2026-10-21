@@ -1,16 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Peserta patungan — skema SAMA PERSIS dengan Web.
-/// paymentStatus: 'menunggu bayar' | 'lunas' (keputusan user
-/// 2026-10-21: tulisan diseragamkan ke Web; bayar tunai saat ambil
-/// barang atau transfer, admin konfirmasi lunas). Nilai warisan
-/// 'menunggu' dari tulisan Native lama tetap dibaca sebagai
-/// belum lunas — tulis selalu nilai baru.
 class PatunganParticipant {
-  /// Nilai status belum lunas — tulisan Web (persis).
   static const statusBelumLunas = 'menunggu bayar';
 
-  /// Nilai warisan tulisan Native lama untuk keadaan yang sama.
   static const statusBelumLunasLama = 'menunggu';
 
   final String customerId;
@@ -18,8 +10,6 @@ class PatunganParticipant {
   final int slots;
   final DateTime joinedAt;
   final String paymentStatus;
-  // Metode bayar pilihan peserta (P2-4, skema Web):
-  // 'tunai' (saat ambil) | 'transfer'.
   final String paymentMethod;
 
   const PatunganParticipant({
@@ -31,8 +21,6 @@ class PatunganParticipant {
     this.paymentMethod = 'tunai',
   });
 
-  /// Sudah lunas — satu-satunya definisi; selain ini (termasuk
-  /// nilai warisan 'menunggu') berarti belum lunas.
   bool get sudahLunas => paymentStatus == 'lunas';
   bool get belumLunas => !sudahLunas;
 
@@ -67,8 +55,6 @@ class PatunganParticipant {
       };
 }
 
-/// Patungan Warga — skema SAMA PERSIS dengan PWA (koleksi `patungan`).
-/// Status: 'aktif' | 'penuh' | 'selesai' | 'batal'
 class Patungan {
   final String id;
   final String title;
@@ -96,14 +82,11 @@ class Patungan {
     required this.createdAt,
   });
 
-  /// Slot tersisa.
   int get remainingSlots => totalSlots - filledSlots;
 
-  /// Persentase terisi (0-100).
   int get percentFilled =>
       totalSlots > 0 ? (filledSlots * 100 ~/ totalSlots).clamp(0, 100) : 0;
 
-  /// Apakah pelanggan tertentu sudah ikut.
   bool isJoined(String customerId) =>
       participants.any((p) => p.customerId == customerId);
 

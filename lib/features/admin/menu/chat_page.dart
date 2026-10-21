@@ -13,8 +13,6 @@ import '../../customer/chat/rumpi_feed.dart';
 import '../admin_session.dart';
 import 'chat_thread_page.dart';
 
-/// Mode Admin > Chat — 2 tab: Rumpi (feed + posting + moderasi)
-/// dan Chat Toko (daftar thread pelanggan).
 class ChatPage extends ConsumerWidget {
   const ChatPage({super.key});
 
@@ -53,10 +51,6 @@ class ChatPage extends ConsumerWidget {
   }
 }
 
-/// Tab Chat Toko: daftar percakapan (thread) dengan pelanggan.
-/// P1-2 (persis Web): pencarian nama, filter Semua/Belum dibaca, dan
-/// pin persisten — thread ter-pin selalu di atas mengikuti urutan
-/// `pinnedChatIds`; ketuk ikon pin untuk pin/lepas.
 class _ThreadList extends ConsumerStatefulWidget {
   const _ThreadList();
 
@@ -123,7 +117,6 @@ class _ThreadListState extends ConsumerState<_ThreadList> {
                   hint: Strings.chatKosongHint,
                 );
               }
-              // Saring: nama + status baca.
               var tampil = list.where((t) {
                 if (_hanyaBelumDibaca && t.unreadAdmin <= 0) return false;
                 if (_query.isNotEmpty &&
@@ -132,14 +125,13 @@ class _ThreadListState extends ConsumerState<_ThreadList> {
                 }
                 return true;
               }).toList();
-              // Urutan pin mengikuti pinnedChatIds (prioritas Web).
               tampil.sort((a, b) {
                 final ia = pinned.indexOf(a.id);
                 final ib = pinned.indexOf(b.id);
                 if (ia >= 0 && ib >= 0) return ia.compareTo(ib);
                 if (ia >= 0) return -1;
                 if (ib >= 0) return 1;
-                return 0; // sisanya: urutan repository (terbaru di atas)
+                return 0;
               });
               if (tampil.isEmpty) {
                 return const EmptyState(

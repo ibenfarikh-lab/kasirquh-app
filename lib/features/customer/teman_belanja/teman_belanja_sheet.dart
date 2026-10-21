@@ -7,8 +7,6 @@ import '../../../data/models/product.dart';
 import '../../../data/repositories/product_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 
-/// Teman Belanja — asisten belanja ala PWA (FAB kotak hitam + panel).
-/// Jawaban dihitung dari data produk real-time, tanpa angka siluman.
 Future<void> showTemanBelanjaSheet(
     BuildContext context, WidgetRef ref) async {
   await showModalBottomSheet<void>(

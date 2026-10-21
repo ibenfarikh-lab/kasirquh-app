@@ -11,7 +11,6 @@ import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import 'coin_settings_page.dart';
 
-/// Sheet Koin Warga: panel cepat ubah saldo koin pelanggan (butuh internet).
 class CoinsSheet extends ConsumerStatefulWidget {
   const CoinsSheet({super.key});
 
@@ -78,7 +77,7 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
         hintText: hint,
         hintStyle: TextStyle(color: context.teksRedup),
         filled: true,
-        fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
+        fillColor: context.permukaanKartu,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
@@ -87,15 +86,13 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
         ),
       );
 
-  /// Nilai koin + batas penukaran + event bonus — selaras prototipe.
-  /// Nilai koin DIKUNCI Rp1 (instruksi user) — hanya tampil info.
   Widget _pengaturanKoin() {
     final info = ref.watch(storeInfoProvider).valueOrNull;
     final batas = info?.coinRedeemLimit ?? 0;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: context.permukaanKartu, // Aturan 1&3: adaptif.
+        color: context.permukaanKartu,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -103,8 +100,6 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             dense: true,
-            // Nilai koin DIKUNCI: 1 koin = Rp1 tetap (instruksi user).
-            // Tidak bisa diubah, tampil sebagai info saja.
             title: Text(
               'Nilai koin',
               style: TextStyle(color: context.teksUtama),
@@ -171,7 +166,6 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          // Aturan 1&3: ikut dialogTheme (adaptif).,
           title: Text(judul,
               style:
                   TextStyle(color: context.teksUtama)),
@@ -234,7 +228,6 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          // Aturan 1&3: ikut dialogTheme (adaptif).,
           title: Text('Event bonus koin',
               style:
                   TextStyle(color: context.teksUtama)),
@@ -363,7 +356,6 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
               style: TextStyle(color: context.teksRedup, fontSize: 12),
             ),
             const SizedBox(height: 16),
-            // Nilai & batas — selaras prototipe (Nilai, event & batas).
             _pengaturanKoin(),
             const SizedBox(height: 16),
             Text(

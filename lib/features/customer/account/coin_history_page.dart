@@ -9,7 +9,6 @@ import '../../../data/models/rumpi.dart';
 import '../../../data/repositories/social_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Mode Pelanggan > Akun > Riwayat Koin — baca dari `coin_ledger`.
 class CoinHistoryPage extends ConsumerWidget {
   final String uid;
   const CoinHistoryPage({super.key, required this.uid});
@@ -71,8 +70,6 @@ class _CoinTile extends StatelessWidget {
         ),
       ),
       title: Text(
-        // Selaras Web (2026-10-17): pakai label dari ledger bila ada,
-        // fallback ke label turunan untuk entri lama.
         entry.label.isNotEmpty
             ? entry.label
             : labelAlasanKoin(entry.reason),

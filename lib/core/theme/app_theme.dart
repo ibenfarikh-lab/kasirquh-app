@@ -3,31 +3,22 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_text.dart';
 
-/// Akses cepat: apakah tema yang aktif itu gelap?
-/// Dipakai widget yang warnanya di-hardcode agar mengikuti aturan:
-/// tema gelap = tanpa background terang + teks terang, tema terang = kebalikannya.
 extension KonteksTema on BuildContext {
   bool get temaGelap => Theme.of(this).brightness == Brightness.dark;
 
-  /// Teks utama adaptif: terang di tema gelap, gelap di tema terang.
   Color get teksUtama =>
       temaGelap ? AppColors.warmText : AppColors.ink;
 
-  /// Teks redup adaptif: warmMuted di tema gelap, muted di tema terang.
   Color get teksRedup =>
       temaGelap ? AppColors.warmMuted : AppColors.muted;
 
-  /// Garis/border adaptif.
   Color get garis => temaGelap ? AppColors.adminLine : AppColors.line;
 
-  /// Surface kartu adaptif (L2): panel di tema gelap, card di tema terang.
   Color get permukaanKartu =>
       Theme.of(this).cardTheme.color ??
       (temaGelap ? AppColors.panel : AppColors.card);
 }
 
-/// ThemeData ganda: terang untuk Mode Pelanggan, dark warm untuk
-/// Gateway + Mode Admin — dari DESIGN_SYSTEM.md.
 class AppTheme {
   static ThemeData customerTheme() {
     final scheme = const ColorScheme.light(
@@ -52,7 +43,6 @@ class AppTheme {
         ),
       ),
       dialogTheme: const DialogThemeData(
-        // Aturan 3: dialog = L3.
         backgroundColor: AppColors.card,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -76,8 +66,6 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      // Label/hint field teks: JANGAN andalkan default framework —
-      // diuji di HP: default-nya terlalu redup. Eksplisit per mode.
       inputDecorationTheme: const InputDecorationTheme(
         labelStyle: TextStyle(color: AppColors.muted),
         hintStyle: TextStyle(color: AppColors.muted),
@@ -109,14 +97,12 @@ class AppTheme {
         ),
       ),
       dialogTheme: const DialogThemeData(
-        // Aturan 3: dialog = L3.
         backgroundColor: AppColors.panel2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        // Aturan 3: sheet/dialog = L3 = panel2.
         backgroundColor: AppColors.panel2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -134,8 +120,6 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      // Label/hint field teks: eksplisit — warmMuted terbukti kebaca
-      // di atas panel gelap (temuan uji HP: default framework terlalu redup).
       inputDecorationTheme: const InputDecorationTheme(
         labelStyle: TextStyle(color: AppColors.warmMuted),
         hintStyle: TextStyle(color: AppColors.warmMuted),
@@ -144,10 +128,6 @@ class AppTheme {
     );
   }
 
-  /// Varian gelap Mode Pelanggan — FULL BLACK AMOLED (keputusan user 2026-10-12).
-  /// Background #000000 murni, kartu #0a0a0a + border abu tipis,
-  /// teks putih, aksen orange kontras. Tidak ada background warna
-  /// apapun selain hitam. Token selaras PWA ?v=20261017s (freeze).
   static ThemeData customerDarkTheme() {
     const bg = Color(0xFF000000);
     const kartu = Color(0xFF0A0908);
@@ -213,7 +193,6 @@ class AppTheme {
     );
   }
 
-  /// Varian terang Mode Admin — palet terang pelanggan.
   static ThemeData adminLightTheme() {
     final scheme = const ColorScheme.light(
       primary: AppColors.orange,
@@ -237,7 +216,6 @@ class AppTheme {
         ),
       ),
       dialogTheme: const DialogThemeData(
-        // Aturan 3: dialog = L3.
         backgroundColor: AppColors.card,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(20)),

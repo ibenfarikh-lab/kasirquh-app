@@ -189,7 +189,6 @@ void main() {
     });
 
     test('data URI valid → MemoryImage', () {
-      // PNG 1x1 transparan.
       const uri =
           'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
       final p = photoImageProvider(uri);
@@ -206,7 +205,7 @@ void main() {
     test('fromString & label', () {
       expect(TemaPilihan.fromString('gelap'), TemaPilihan.gelap);
       expect(TemaPilihan.fromString('sistem'), TemaPilihan.sistem);
-      expect(TemaPilihan.fromString('oled'), TemaPilihan.gelap); // migrasi OLED lama
+      expect(TemaPilihan.fromString('oled'), TemaPilihan.gelap); 
       expect(TemaPilihan.fromString(null), TemaPilihan.terang);
       expect(TemaPilihan.fromString('aneh'), TemaPilihan.terang);
       expect(TemaPilihan.terang.label, 'Terang');

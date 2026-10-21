@@ -8,9 +8,6 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../pos/pay_sheet.dart';
 
-/// Modul Struk 58mm (Mode Admin): buka ulang struk terakhir.
-/// Struk disimpan setiap selesai pembayaran di Kasir.
-/// Belum pernah ada transaksi → empty state jujur.
 class ReceiptPage extends ConsumerWidget {
   const ReceiptPage({super.key});
 
@@ -47,7 +44,6 @@ class ReceiptPage extends ConsumerWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  // Kertas struk ngikutin tema (aturan: tema gelap tanpa putih).
                   color: Theme.of(context).brightness == Brightness.dark
                       ? AppColors.panel2
                       : Colors.white,

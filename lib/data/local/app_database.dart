@@ -1,8 +1,6 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-/// Database SQLite lokal — offline-first. Tulis lokal dulu,
-/// sinkron ke Firestore via [SyncEngine] saat online.
 class AppDatabase {
   static const _name = 'kasirquh.db';
   static const _version = 7;
@@ -75,7 +73,6 @@ class AppDatabase {
           CREATE TABLE store_settings(
             key TEXT PRIMARY KEY, value TEXT NOT NULL,
             updatedAt INTEGER NOT NULL DEFAULT 0)''');
-        // Antrean sinkron: operasi tulis yang belum terkirim ke Firestore.
         await db.execute('''
           CREATE TABLE sync_queue(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,7 +93,6 @@ class AppDatabase {
         }
         if (oldVersion < 4) {
           await _createPromos(db);
-          // Kolom baru v4: batas menipis per produk + peran pengirim pesan.
           try {
             await db.execute(
                 'ALTER TABLE products ADD COLUMN lowStockAt INTEGER NOT NULL DEFAULT 5');
@@ -113,8 +109,6 @@ class AppDatabase {
           await _createHomeStock(db);
         }
         if (oldVersion < 6) {
-          // Catatan Toko → cloud: kolom flag migrasi (aturan keras Tahap 1:
-          // hapus baris lokal hanya yang ber-flag, setelah verifikasi).
           try {
             await db.execute(
                 'ALTER TABLE store_notes ADD COLUMN cloudId TEXT');
@@ -125,7 +119,6 @@ class AppDatabase {
           } catch (_) {}
         }
         if (oldVersion < 7) {
-          // Mode Anggaran (P1-5): saklar & batas qty per produk gaya Web.
           try {
             await db.execute(
                 'ALTER TABLE products ADD COLUMN budgetEligible INTEGER NOT NULL DEFAULT 1');
@@ -139,8 +132,6 @@ class AppDatabase {
     );
   }
 
-  /// Stok rumah pelanggan (Fase 6): catatan lokal per-perangkat,
-  /// tidak disinkron — "Stok rumah habis?" di Beranda.
   static Future<void> _createHomeStock(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS home_stock(
@@ -168,14 +159,11 @@ class AppDatabase {
         createdAt INTEGER NOT NULL, synced INTEGER NOT NULL DEFAULT 0)''');
   }
 
-  /// Tutup (untuk tes).
   static Future<void> close() async {
     await _db?.close();
     _db = null;
   }
 
-  /// Catatan Toko — outbox lokal + backup pra-verifikasi migrasi cloud.
-  /// `migrated`: 1 = sudah tersalin ke `store_memos` (cloudId = ID dokumen).
   static Future<void> _createStoreNotes(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS store_notes(

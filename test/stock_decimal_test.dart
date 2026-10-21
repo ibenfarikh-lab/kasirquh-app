@@ -4,9 +4,6 @@ import 'package:kasirquh_app/core/utils/currency.dart';
 import 'package:kasirquh_app/data/models/product.dart';
 import 'package:kasirquh_app/data/models/stock_note.dart';
 
-/// Revisi stok desimal — root cause selisih Rp21.000:
-/// PWA membulatkan (3,75→4), native memotong (3,75→3).
-/// Yang benar: 3,75 × Rp4.000 = Rp15.000 (desimal dipertahankan).
 void main() {
   test('formatStok: bulat tanpa desimal, pecahan pakai koma', () {
     expect(formatStok(10), '10');
@@ -20,8 +17,6 @@ void main() {
     expect(parseDesimal('3,75'), 3.75);
     expect(parseDesimal('3.75'), 3.75);
     expect(parseDesimal('10'), 10.0);
-    // Untuk field qty/stok: titik = desimal (selaras PWA —
-    // format ribuan dilewati untuk desimal).
     expect(parseDesimal('1.000'), 1.0);
     expect(parseDesimal(''), 0.0);
   });

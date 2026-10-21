@@ -13,8 +13,6 @@ import '../../../data/models/journal_entry.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Batas periode [from, to) — fungsi murni (di-test).
-/// 0 = hari ini, 1 = minggu ini (Senin–Minggu), 2 = bulan ini.
 (DateTime, DateTime) batasPeriode(int periode, DateTime now) {
   final hari = DateTime(now.year, now.month, now.day);
   return switch (periode) {
@@ -32,7 +30,6 @@ import '../../../l10n/strings_id.dart';
   };
 }
 
-/// Filter entri ke dalam [from, to) — fungsi murni (di-test).
 List<JournalEntry> filterJurnalPeriode(
         List<JournalEntry> semua, DateTime from, DateTime to) =>
     semua
@@ -40,15 +37,9 @@ List<JournalEntry> filterJurnalPeriode(
             (e) => !e.createdAt.isBefore(from) && e.createdAt.isBefore(to))
         .toList();
 
-/// Saldo awal sudah pernah diisi — fungsi murni (di-test).
-/// Label 'Saldo awal kas' sama persis dengan yang ditulis PWA.
 bool saldoAwalSudahAda(List<JournalEntry> semua) =>
     semua.any((e) => e.label == Strings.saldoAwalKas);
 
-/// Halaman Pembukuan (Mode Admin) — selaras bentuk ideal PWA:
-/// tab Hari|Minggu|Bulan, tombol Isi saldo awal & Catat,
-/// kartu UANG MASUK / UANG KELUAR (per periode) + SALDO KAS (semua waktu),
-/// jurnal berikon + waktu + nominal bertanda.
 class LedgerPage extends ConsumerStatefulWidget {
   const LedgerPage({super.key});
 
@@ -106,9 +97,6 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
     try {
       final repo = ref.read(adminRepositoryProvider);
       if (_modeSaldoAwal) {
-        // Saldo awal: pemasukan kind 'modal' → Firestore
-        // {type: 'pemasukan', category: 'lainnya', note: 'Saldo awal kas'}
-        // persis seperti yang ditulis PWA.
         await repo.addJournal(
           kind: 'modal',
           label: Strings.saldoAwalKas,
@@ -150,7 +138,6 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Kepala: kembali + kicker/judul + aksi.
             Row(
               children: [
                 IconButton(
@@ -195,7 +182,6 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
               ],
             ),
             const SizedBox(height: 16),
-            // Tab periode: Hari | Minggu | Bulan.
             _PeriodTabs(
               index: _periode,
               onChanged: (i) => setState(() => _periode = i),
@@ -261,7 +247,6 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
   }
 }
 
-/// Tab periode Hari | Minggu | Bulan.
 class _PeriodTabs extends StatelessWidget {
   final int index;
   final ValueChanged<int> onChanged;
@@ -297,8 +282,6 @@ class _PeriodTabs extends StatelessWidget {
   }
 }
 
-/// Kartu ringkasan: UANG MASUK / UANG KELUAR (per periode aktif)
-/// + SALDO KAS (semua waktu).
 class _SummarySection extends ConsumerWidget {
   final DateTime from;
   final DateTime to;
@@ -325,8 +308,6 @@ class _SummarySection extends ConsumerWidget {
         }
         final periode = snap.data![0];
         final semua = snap.data![1];
-        // Prinsip: mending "belum ada transaksi" daripada angka
-        // dari ketiadaan data.
         if (semua.transaksi == 0) {
           return const EmptyState(
             icon: Icons.book_outlined,
@@ -429,8 +410,6 @@ class _CashCard extends StatelessWidget {
   }
 }
 
-/// Form "Catat transaksi manual" inline (toggle dari tombol Catat).
-/// Mode saldo awal: jenis & keterangan dikunci.
 class _FormCatat extends StatelessWidget {
   final bool modeSaldoAwal;
   final bool masuk;
@@ -456,7 +435,7 @@ class _FormCatat extends StatelessWidget {
         hintText: hint,
         hintStyle: TextStyle(color: context.teksRedup),
         filled: true,
-        fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
+        fillColor: context.permukaanKartu,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
@@ -498,7 +477,7 @@ class _FormCatat extends StatelessWidget {
             DropdownButtonFormField<bool>(
               initialValue: masuk,
               decoration: _deco(context, Strings.jenisTransaksi),
-              dropdownColor: context.permukaanKartu, // Aturan 1&3: adaptif.
+              dropdownColor: context.permukaanKartu,
               style: TextStyle(color: context.teksUtama),
               items: const [
                 DropdownMenuItem(
@@ -558,8 +537,6 @@ Color _kindColor(BuildContext context, String kind) => switch (kind) {
       _ => context.teksRedup,
     };
 
-/// Satu baris entri jurnal: ikon jenis + keterangan + waktu
-/// + nominal bertanda.
 class _JournalTile extends StatelessWidget {
   final JournalEntry entry;
 
@@ -577,7 +554,7 @@ class _JournalTile extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: context.permukaanKartu, // Aturan 1&3: adaptif.
+                color: context.permukaanKartu,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(

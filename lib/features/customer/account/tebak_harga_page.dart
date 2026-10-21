@@ -15,9 +15,6 @@ import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../session.dart';
 
-/// Tebak Harga — ikut PWA (renderGuessGame, answerGuess).
-/// Soal acak dari katalog (1x sehari), 3 pilihan jawaban.
-/// Benar → koin otomatis via grantCoins (reason: tebak_harga).
 class TebakHargaPage extends ConsumerStatefulWidget {
   const TebakHargaPage({super.key});
 
@@ -25,11 +22,6 @@ class TebakHargaPage extends ConsumerStatefulWidget {
   ConsumerState<TebakHargaPage> createState() => _TebakHargaPageState();
 }
 
-/// Buat 2 opsi pengecoh yang wajar (kelipatan Rp500) untuk Tebak Harga.
-/// Diambil acak dari kelipatan 500 dalam ±40% harga asli; bila kandidat
-/// kurang (mis. harga kecil), fallback ke kelipatan 500 terdekat.
-/// Dijamin: kelipatan 500, positif, tidak sama dengan harga asli.
-/// Fungsi pure (bisa di-test).
 List<int> buatPengecoh(int hargaAsli, Random rand) {
   final kandidat = <int>{};
   final bawah = (hargaAsli * 0.6 / 500).floor() * 500;
@@ -60,7 +52,6 @@ class _TebakHargaPageState extends ConsumerState<TebakHargaPage> {
   bool _sudahJawab = false;
   bool _busy = false;
 
-  /// Pilih soal acak + buat 2 pengecoh (kelipatan Rp500, wajar).
   void _acakSoal(List<Product> produk) {
     if (produk.isEmpty) return;
     final rand = Random();
@@ -102,7 +93,6 @@ class _TebakHargaPageState extends ConsumerState<TebakHargaPage> {
       return;
     }
 
-    // Benar → beri koin otomatis.
     setState(() => _busy = true);
     try {
       final settings = ref.read(coinSettingsProvider).valueOrNull ??
@@ -191,7 +181,6 @@ class _TebakHargaPageState extends ConsumerState<TebakHargaPage> {
             );
           }
 
-          // Pilih soal saat pertama kali.
           if (_soal == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted && _soal == null) _acakSoal(aktif);

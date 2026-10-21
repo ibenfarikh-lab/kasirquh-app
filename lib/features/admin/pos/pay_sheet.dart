@@ -17,27 +17,20 @@ import '../../../l10n/strings_id.dart';
 import '../../customer/cart/cart_provider.dart';
 import 'pos_tab.dart';
 
-/// Kembalian = diterima - total. Negatif = uang kurang.
 int kembalian(int diterima, int total) => diterima - total;
 
-/// Kunci struk terakhir di SharedPreferences.
 const kLastReceiptKey = 'strukTerakhir';
 
-/// Simpan teks struk terakhir agar bisa dibuka ulang dari modul Struk.
-/// Fungsi terpisah agar bisa di-test/di-mock.
 Future<void> simpanStrukTerakhir(String teks) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(kLastReceiptKey, teks);
 }
 
-/// Baca struk terakhir; null bila belum pernah ada.
 Future<String?> bacaStrukTerakhir() async {
   final prefs = await SharedPreferences.getInstance();
   return prefs.getString(kLastReceiptKey);
 }
 
-/// Bangun teks struk 58mm (32 kolom, teks rata).
-/// Tanpa istilah siluman — hanya data transaksi nyata.
 String buildReceipt({
   required String storeName,
   required String code,
@@ -79,7 +72,6 @@ String buildReceipt({
   b.writeln(row('Total', formatRp(total)));
   b.writeln(row('Tunai', formatRp(received)));
   b.writeln(row('Kembali', formatRp(kembalian(received, total))));
-  // Info member & koin (Opsi B) — ikut PWA.
   if (memberName != null && memberName.isNotEmpty) {
     b.writeln('-' * w);
     b.writeln(center('Member: $memberName'));
@@ -104,7 +96,6 @@ String _fmtDate(DateTime d) =>
     '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year} '
     '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
-/// Sheet Bayar: input uang diterima → kembalian otomatis → simpan → struk.
 class PaySheet extends ConsumerStatefulWidget {
   const PaySheet({super.key});
 
@@ -128,11 +119,9 @@ class _PaySheetState extends ConsumerState<PaySheet> {
   @override
   void initState() {
     super.initState();
-    // Muat saldo koin member terkini (untuk toggle Pakai Koin).
     final member = ref.read(posMemberProvider);
     if (member != null) {
       _saldoKoin = member.coins;
-      // Refresh dari DB agar tidak basi.
       ref
           .read(adminRepositoryProvider)
           .findCustomerByMemberCode(member.kodeMember)
@@ -146,8 +135,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
 
   int get _total => ref.read(posCartProvider.notifier).total;
 
-  /// Koin maksimal yang bisa dipakai — rumus Web (PosPage maxRedeem):
-  /// min(saldo, total × redeemLimit% ÷ nilai koin).
   int _koinMaksimal(int total) {
     final settings =
         ref.read(coinSettingsProvider).valueOrNull ??
@@ -159,11 +146,9 @@ class _PaySheetState extends ConsumerState<PaySheet> {
     return _saldoKoin < maksimal ? _saldoKoin : maksimal;
   }
 
-  /// Koin yang dipakai (0 jika toggle mati).
   int _koinDipakai(int total) =>
       _pakaiKoin ? _koinMaksimal(total) : 0;
 
-  /// Total setelah potongan koin (1 koin = Rp1, ikut coinRate).
   int _totalSetelahKoin(int total) {
     final settings =
         ref.read(coinSettingsProvider).valueOrNull ??
@@ -171,8 +156,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
     return total - (_koinDipakai(total) * settings.coinRate);
   }
 
-  /// Koin yang akan didapat dari belanja ini.
-  /// Web mensyaratkan event 'spend' aktif (PosPage earned).
   int _koinDidapat(int total) {
     final settings =
         ref.read(coinSettingsProvider).valueOrNull ??
@@ -190,7 +173,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
   @override
   Widget build(BuildContext context) {
     final lines = ref.watch(posCartProvider);
-    // Total yang harus dibayar (setelah potongan koin jika dipakai).
     final totalBayar = _totalSetelahKoin(_total);
     final change = kembalian(_receivedInt, totalBayar);
     final canPay = _doneCode == null &&
@@ -205,7 +187,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
       expand: false,
       builder: (_, controller) => Container(
         decoration: BoxDecoration(
-          // Warna dari bottomSheetTheme (adaptif terang/gelap).
           color: Theme.of(context).bottomSheetTheme.backgroundColor,
           borderRadius:
               const BorderRadius.vertical(top: Radius.circular(28)),
@@ -245,7 +226,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
         const SizedBox(height: 16),
         _rincianTotal(),
         const SizedBox(height: 16),
-        // Toggle Pakai Koin — hanya jika ada member aktif.
         _koinToggle(),
         TextField(
           controller: _received,
@@ -302,7 +282,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
     );
   }
 
-  /// Rincian total: tampilkan potongan koin jika dipakai.
   Widget _rincianTotal() {
     final total = _total;
     final koinDipakai = _koinDipakai(total);
@@ -369,8 +348,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
     );
   }
 
-  /// Toggle "Pakai Koin" — tampil hanya jika ada member + saldo > 0.
-  /// Switch ON = pakai MAKSIMAL yang diizinkan (tanpa konfirmasi tambahan).
   Widget _koinToggle() {
     final member = ref.watch(posMemberProvider);
     if (member == null) return const SizedBox.shrink();
@@ -443,7 +420,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
       final received = _receivedInt;
       final total = _total;
       final member = ref.read(posMemberProvider);
-      // Koin: hitung sebelum bayar.
       final koinDipakai = _koinDipakai(total);
       final totalBayar = _totalSetelahKoin(total);
       final koinDidapat =
@@ -456,7 +432,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
                 price: l.product.price,
               ))
           .toList();
-      // Profit & jumlah item — rumus Web (PosPage): Σ (harga − modal) × qty.
       var profit = 0;
       num itemCount = 0;
       for (final l in lines) {
@@ -465,8 +440,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
       }
       final coinSettings = ref.read(coinSettingsProvider).valueOrNull ??
           const CoinSettings();
-      // SATU batch atomik (P0-4): stok + totalTerjual + jurnal + ledger
-      // + beban promosi, dengan validasi ulang member & saldo di server.
       final code = await repo.completeCashSale(
         items: items,
         rawTotal: total,
@@ -478,14 +451,12 @@ class _PaySheetState extends ConsumerState<PaySheet> {
         memberUid: member?.uid,
         memberName: member?.name,
       );
-      // Salinan untuk struk (keranjang dikosongkan setelahnya).
       _lastLines = lines;
       _lastTotal = totalBayar;
       _lastReceived = received;
       _lastKoinDipakai = koinDipakai;
       _lastKoinDidapat = koinDidapat;
       _lastMember = member;
-      // Simpan struk terakhir — bisa dibuka ulang dari modul Struk.
       final struk = buildReceipt(
         storeName: Strings.appName,
         code: code,
@@ -500,7 +471,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
       );
       unawaited(simpanStrukTerakhir(struk));
       ref.read(posCartProvider.notifier).clear();
-      // Reset member setelah transaksi selesai.
       ref.read(posMemberProvider.notifier).state = null;
       if (mounted) setState(() => _doneCode = code);
     } catch (e) {
@@ -515,8 +485,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
   }
 
   Widget _receiptView(ScrollController controller) {
-    // Struk dibangun dari data terakhir sebelum keranjang dikosongkan —
-    // simpan salinan saat bayar. Di sini bangun ulang ringkas dari kode.
     return ListView(
       controller: controller,
       padding: const EdgeInsets.all(24),
@@ -549,7 +517,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            // Kertas struk ngikutin tema (aturan: tema gelap tanpa putih).
             color: Theme.of(context).brightness == Brightness.dark
                 ? AppColors.panel2
                 : Colors.white,
@@ -587,7 +554,6 @@ class _PaySheetState extends ConsumerState<PaySheet> {
     );
   }
 
-  // Salinan data struk (diisi saat _pay).
   List<CartLine> _lastLines = const [];
   int _lastTotal = 0;
   int _lastReceived = 0;

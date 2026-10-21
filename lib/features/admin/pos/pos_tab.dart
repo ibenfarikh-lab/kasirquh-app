@@ -18,18 +18,13 @@ import '../../customer/cart/cart_provider.dart';
 import 'pay_sheet.dart';
 import 'scanner_sheet.dart';
 
-/// Keranjang kasir — instance terpisah dari keranjang pelanggan.
 final posCartProvider =
     StateNotifierProvider<CartNotifier, List<CartLine>>((ref) {
   return CartNotifier();
 });
 
-/// Member aktif di kasir — hasil scan kartu KQ-XXXXXXXX.
-/// null = transaksi tanpa member (tamu).
 final posMemberProvider = StateProvider<Customer?>((ref) => null);
 
-/// Tab Kasir (POS): cari produk, pindai barcode, keranjang,
-/// bayar tunai + kembalian otomatis, struk 58mm.
 class PosTab extends ConsumerStatefulWidget {
   const PosTab({super.key});
 
@@ -59,7 +54,6 @@ class _PosTabState extends ConsumerState<PosTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header ala PWA: "Alat kasir cepat".
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Text(
@@ -107,7 +101,6 @@ class _PosTabState extends ConsumerState<PosTab> {
             ],
           ),
         ),
-        // Kategori + jumlah + muat ulang (ala PWA).
         productsAsync.when(
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),
@@ -192,8 +185,6 @@ class _PosTabState extends ConsumerState<PosTab> {
             },
           ),
         ),
-        // Panel Transaksi Aktif — selalu tampil (ala PWA).
-        // Border #2a2a2a selaras PWA ?v=20261017s (dark).
         Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           decoration: BoxDecoration(
@@ -210,7 +201,6 @@ class _PosTabState extends ConsumerState<PosTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Banner member aktif (hasil scan kartu KQ-).
                 _memberBanner(context),
                 Text(
                   '${Strings.transaksiAktif} $totalQty item',
@@ -327,7 +317,6 @@ class _PosTabState extends ConsumerState<PosTab> {
 
   Future<void> _findAndAdd(String barcode) async {
     final q = barcode.trim();
-    // Kartu member (KQ-XXXXXXXX) → identifikasi member, bukan produk.
     if (q.toUpperCase().startsWith('KQ-')) {
       await _findMember(q);
       return;
@@ -351,7 +340,6 @@ class _PosTabState extends ConsumerState<PosTab> {
     }
   }
 
-  /// Cari member dari kode kartu. Hanya member approved yang diterima.
   Future<void> _findMember(String code) async {
     final customer = await ref
         .read(adminRepositoryProvider)
@@ -379,18 +367,14 @@ class _PosTabState extends ConsumerState<PosTab> {
     );
   }
 
-  /// Hapus member dari transaksi berjalan.
   void _clearMember() {
     ref.read(posMemberProvider.notifier).state = null;
-    // Keranjang juga dikosongkan agar tidak tercampur.
     ref.read(posCartProvider.notifier).clear();
   }
 
-  /// Banner member aktif di atas keranjang kasir.
   Widget _memberBanner(BuildContext context) {
     final member = ref.watch(posMemberProvider);
     if (member == null) return const SizedBox.shrink();
-    // Hitung koin yang akan didapat dari keranjang saat ini.
     final settings =
         ref.watch(coinSettingsProvider).valueOrNull ??
             const CoinSettings();
@@ -469,7 +453,6 @@ class _ProductRow extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: AppCard(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        // Border kartu kasir selaras PWA ?v=20261017s: 1px #d4d4d4 (dark).
         borderSide: Theme.of(context).brightness == Brightness.dark
             ? const BorderSide(color: Color(0xFFD4D4D4), width: 1)
             : null,

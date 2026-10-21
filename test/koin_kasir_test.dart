@@ -1,9 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 
-/// Rumus Opsi B (disalin dari pay_sheet agar teruji):
-/// - koinMaksimal = min(saldo, total * redeemLimit ~/ 100)
-/// - koinDidapat = (total ~/ spendRule) * spendReward
-/// - potongan = koinDipakai * coinRate (1 koin = Rp1)
 
 int koinMaksimal({
   required int saldo,
@@ -29,7 +25,6 @@ int koinDidapat({
 void main() {
   group('Opsi B — penukaran koin di kasir', () {
     test('maksimal = min(saldo, 50% total)', () {
-      // Saldo 1000, total 10000 → 50% = 5000 → min(1000, 5000) = 1000
       expect(
           koinMaksimal(
               saldo: 1000,
@@ -37,7 +32,6 @@ void main() {
               redeemLimit: 50,
               enabled: true),
           equals(1000));
-      // Saldo 10000, total 10000 → 50% = 5000 → min = 5000
       expect(
           koinMaksimal(
               saldo: 10000,

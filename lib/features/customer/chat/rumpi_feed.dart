@@ -13,20 +13,12 @@ import '../../../data/repositories/social_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../session.dart';
 
-/// Feed kabar Rumpi + composer inline gaya chat. Dipakai Mode
-/// Pelanggan dan (modeAdmin) Tab Rumpi admin — admin bisa posting
-/// sebagai admin dan menghapus postingan (moderasi).
-/// Composer-nya sama seperti chat lain (perintah user 2026-10-21):
-/// kolom input + tombol kirim + tombol foto dengan pratinjau —
-/// BUKAN lagi tombol "Tulis Kabar" / halaman form terpisah.
 class RumpiFeed extends ConsumerStatefulWidget {
   final String uid;
   final String nama;
 
-  /// true bila dipakai admin: tulis sebagai admin + tombol hapus tiap post.
   final bool modeAdmin;
 
-  /// ScrollController dari DraggableScrollableSheet (opsional).
   final ScrollController? scrollController;
 
   const RumpiFeed({
@@ -44,11 +36,8 @@ class RumpiFeed extends ConsumerStatefulWidget {
 class _RumpiFeedState extends ConsumerState<RumpiFeed> {
   final _composer = TextEditingController();
 
-  /// Foto terlampir di composer (data URI 300px PNG, pola Chat Toko).
   String? _fotoUrl;
 
-  /// Scroll & penanda jumlah pesan untuk tampilan CHAT admin
-  /// (auto-geser ke pesan terbaru, pola Web & Chat Toko).
   final _scrollChat = ScrollController();
   int _jumlahChat = -1;
 
@@ -64,10 +53,6 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
     final postsAsync = ref.watch(rumpiPostsProvider);
     final likesAsync = ref.watch(myLikesProvider(widget.uid));
 
-    // Mode admin: tampilan CHAT penuh (perintah user 2026-10-21) —
-    // pesan sebagai bubble percakapan dan composer PERSIS bar input
-    // thread Chat Toko admin, menyatu dalam layar chat yang sama
-    // (bukan feed kartu + composer yang berdiri sendiri).
     if (widget.modeAdmin) {
       return _adminChat(context, postsAsync, likesAsync);
     }
@@ -83,14 +68,11 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
         if (posts.isEmpty) {
           return const EmptyState(
             icon: Icons.forum_outlined,
-            // Teks PWA persis.
             title: 'Belum ada obrolan di Rumpi Warga.',
             hint: Strings.rumpiKosongHint,
           );
         }
         final disukai = likesAsync.valueOrNull ?? const <String>{};
-        // Terbaru di bawah ala chat (perintah user 2026-10-18:
-        // "Samakan saja, bawah semuanya") — selaras Chat Toko.
         final urut = [...posts]
           ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
         return RefreshIndicator(
@@ -115,13 +97,10 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
       },
     );
 
-    // Composer inline gaya chat (pelanggan & admin sama): feed +
-    // bar input di bawah dengan tombol foto & kirim.
     return Column(
       children: [
         Expanded(child: feed),
         const Divider(height: 1),
-        // Pratinjau foto terlampir (pola Chat Toko P1-2).
         if (_fotoUrl != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -189,11 +168,6 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
     );
   }
 
-  /// Tampilan Rumpi mode admin sebagai CHAT: daftar bubble
-  /// percakapan (terbaru di bawah, auto-geser) + composer yang sama
-  /// persis dengan thread Chat Toko admin (pola chat_thread_page):
-  /// wadah permukaan kartu, tombol foto, kolom "Ketik pesan...",
-  /// tombol kirim polos oranye — semua menyatu dalam layar chat.
   Widget _adminChat(
     BuildContext context,
     AsyncValue<List<RumpiPost>> postsAsync,
@@ -221,8 +195,6 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
               }
               final urut = [...posts]
                 ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-              // Pesan bertambah → geser ke paling bawah (pola Web:
-              // scrollTop = scrollHeight tiap jumlah pesan berubah).
               if (urut.length != _jumlahChat) {
                 _jumlahChat = urut.length;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -249,7 +221,6 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
             },
           ),
         ),
-        // Pratinjau foto yang akan dikirim (pola thread Chat Toko).
         if (_fotoUrl != null)
           Container(
             color: context.permukaanKartu,
@@ -276,7 +247,6 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
               ],
             ),
           ),
-        // Composer — PERSIS bar input thread Chat Toko admin.
         Container(
           color: context.permukaanKartu,
           padding: const EdgeInsets.all(12),
@@ -314,8 +284,6 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
     );
   }
 
-  /// Pilih foto untuk postingan (galeri → 300px PNG data URI —
-  /// helper yang sama dengan Chat Toko & foto produk).
   Future<void> _pilihFoto() async {
     final uri = await pickProductPhoto();
     if (uri != null && mounted) {
@@ -323,8 +291,6 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
     }
   }
 
-  /// Kirim postingan dari composer inline — teks dan/atau foto
-  /// (foto saja boleh, persis Web).
   Future<void> _kirim(BuildContext context, WidgetRef ref) async {
     final teks = _composer.text.trim();
     if (teks.isEmpty && _fotoUrl == null) {
@@ -409,8 +375,6 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
           .read(socialRepositoryProvider)
           .toggleLike(postId: postId, uid: widget.uid);
     } catch (_) {
-      // Gagal (mis. rules belum dipublish / offline) → beri tahu user,
-      // jangan diam-diam: like tidak tercatat.
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text(Strings.sukaGagal)),
@@ -420,10 +384,6 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
   }
 }
 
-/// Bubble pesan Rumpi untuk tampilan CHAT admin — pola bubble
-/// Chat Toko & Web: pesan admin rata kanan (oranye), pesan warga
-/// rata kiri dengan avatar; nama + badge Admin di kepala bubble;
-/// suka & waktu di kaki bubble; tombol hapus moderasi di bawahnya.
 class _BubbleAdmin extends StatelessWidget {
   final RumpiPost post;
   final bool disukai;
@@ -572,7 +532,6 @@ class _BubbleAdmin extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Moderasi admin: hapus postingan (semua pesan).
                 InkWell(
                   onTap: onHapus,
                   child: Padding(
@@ -602,7 +561,6 @@ class _PostCard extends StatelessWidget {
   final bool disukai;
   final VoidCallback onLike;
 
-  /// Moderasi admin: tampilkan tombol hapus + aksi hapus.
   final bool tampilkanHapus;
   final VoidCallback? onHapus;
   const _PostCard({
@@ -626,8 +584,6 @@ class _PostCard extends StatelessWidget {
                 CircleAvatar(
                   backgroundColor:
                       AppColors.orange.withValues(alpha: 0.15),
-                  // Foto profil penulis (P2-9): ditampilkan bila ada;
-                  // tanpa foto → huruf inisial seperti sebelumnya.
                   backgroundImage: post.authorPhoto.isNotEmpty
                       ? photoImageProvider(post.authorPhoto)
                       : null,
@@ -770,7 +726,6 @@ class _PostCard extends StatelessWidget {
   }
 }
 
-/// Gambar postingan dari data URI base64 (tanpa Storage).
 class _PostImage extends StatelessWidget {
   final String dataUri;
   const _PostImage({required this.dataUri});

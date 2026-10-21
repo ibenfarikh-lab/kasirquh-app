@@ -93,7 +93,7 @@ void main() {
       expect(teks.contains('KSR-20261006-120000'), true);
       expect(teks.contains('Rp11.000'), true);
       expect(teks.contains('Rp20.000'), true);
-      expect(teks.contains('Rp9.000'), true); // kembali
+      expect(teks.contains('Rp9.000'), true); 
       for (final baris in teks.split('\n')) {
         expect(baris.length <= 32, true, reason: 'baris: $baris');
       }
@@ -112,8 +112,8 @@ void main() {
       ];
       final hasil = omzetPerHari(entries, today);
       expect(hasil.length, 7);
-      expect(hasil[6], 50000); // hari ini
-      expect(hasil[5], 25000); // kemarin
+      expect(hasil[6], 50000);
+      expect(hasil[5], 25000);
       expect(hasil.sublist(0, 5).every((e) => e == 0), true);
       expect(hasil.reduce((a, b) => a + b), 75000);
     });

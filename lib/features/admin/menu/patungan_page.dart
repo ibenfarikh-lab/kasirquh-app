@@ -10,8 +10,6 @@ import '../../../data/models/patungan.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../admin_nav.dart';
 
-/// Tab Mode Admin > Modul Patungan Warga: buat + kelola patungan.
-/// Skema & alur SAMA PERSIS dengan PWA (koleksi `patungan`).
 class PatunganPage extends ConsumerWidget {
   const PatunganPage({super.key});
 
@@ -55,13 +53,11 @@ class PatunganPage extends ConsumerWidget {
     );
   }
 
-  /// Halaman penuh form buat patungan (migrasi dari bottom sheet).
   void _bukaBuatPatungan(BuildContext context) {
     openAdminPage(context, const _BuatPatunganPage());
   }
 }
 
-/// Halaman penuh "Buat Patungan" — field SAMA PERSIS dengan PWA.
 class _BuatPatunganPage extends ConsumerStatefulWidget {
   const _BuatPatunganPage();
 
@@ -186,8 +182,6 @@ class _BuatPatunganPageState extends ConsumerState<_BuatPatunganPage> {
   }
 }
 
-/// Kartu patungan untuk admin — daftar peserta + aksi selesai/batal.
-/// Tampilan mengikuti PWA (renderPatunganAdminList).
 class _PatunganAdminCard extends ConsumerWidget {
   final Patungan patungan;
 
@@ -234,8 +228,6 @@ class _PatunganAdminCard extends ConsumerWidget {
                     style: const TextStyle(fontSize: 13)),
               ),
             const SizedBox(height: 6),
-            // Daftar peserta + status bayar (keputusan user: admin
-            // konfirmasi lunas manual setelah tunai/transfer).
             if (p.participants.isEmpty)
               Text(
                 'Belum ada peserta',
@@ -266,7 +258,6 @@ class _PatunganAdminCard extends ConsumerWidget {
                   ),
                 ),
             const SizedBox(height: 10),
-            // Progress bar ala PWA.
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
@@ -337,8 +328,6 @@ class _PatunganAdminCard extends ConsumerWidget {
   }
 
   Widget _bayarPill(PatunganParticipant ps) {
-    // Definisi lunas tunggal di model — nilai warisan 'menunggu'
-    // tetap tampil "Menunggu bayar" (belum lunas).
     final lunas = ps.sudahLunas;
     final color = lunas ? AppColors.ok : AppColors.orange;
     return Container(

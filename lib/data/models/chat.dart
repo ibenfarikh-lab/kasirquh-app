@@ -1,10 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Thread chat — mirror koleksi Firestore `chat_threads`.
-/// Satu thread per pelanggan (type 'toko'); tidak bocor antar-thread.
 class ChatThread {
   final String id;
-  final String type; // 'toko' | 'group' (komunitas) | 'direct'
+  final String type;
   final String customerId;
   final String customerName;
   final String? lastMessage;
@@ -40,14 +38,11 @@ class ChatThread {
   }
 }
 
-/// Pesan chat — mirror subkoleksi `chat_threads/{id}/messages`.
 class ChatMessage {
   final String id;
   final String senderId;
-  final String senderRole; // 'admin' | 'customer'
+  final String senderRole;
   final String text;
-  /// Foto terlampir (data URI PNG ≤300px, skema Web `imageUrl`).
-  /// Kosong = pesan teks biasa.
   final String imageUrl;
   final DateTime createdAt;
 

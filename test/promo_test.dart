@@ -71,7 +71,6 @@ void main() {
       expect(p.copy, 'Diskon sembako akhir bulan');
       expect(p.badge, 'HEMAT');
       expect(p.isActive, isTrue);
-      // Promo Web bukan diskon harga: tidak memicu potongan.
       expect(p.discountType, isNull);
       expect(p.hargaPromo(10000), 10000);
     });

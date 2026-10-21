@@ -1,8 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Catatan Toko — coretan admin. Sumber utama: Firestore `store_memos`.
-/// SQLite `store_notes` hanya sebagai outbox (tulisan saat offline) dan
-/// backup pra-verifikasi migrasi (kolom `migrated`, `cloudId`).
 class StoreNote {
   final String id;
   final String title;
@@ -31,7 +28,6 @@ class StoreNote {
         'createdAt': createdAt.millisecondsSinceEpoch,
       };
 
-  /// Baca dari Firestore `store_memos` (skema terkunci: title, body, createdAt).
   factory StoreNote.fromDoc(String id, Map<String, dynamic> m) {
     final ts = m['createdAt'];
     return StoreNote(
@@ -45,14 +41,12 @@ class StoreNote {
     );
   }
 
-  /// Tulis ke Firestore untuk catatan baru (createdAt = waktu server).
   Map<String, dynamic> toFirestore() => {
         'title': title,
         'body': body,
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-  /// Tulis ke Firestore untuk migrasi: pertahankan createdAt asli.
   Map<String, dynamic> toFirestoreMigrasi() => {
         'title': title,
         'body': body,

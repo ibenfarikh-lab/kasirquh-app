@@ -7,13 +7,6 @@ import 'package:image/image.dart' as img;
 
 import '../theme/app_colors.dart';
 
-/// Foto produk tanpa Firebase Storage (keputusan dikunci: tanpa Blaze).
-/// Sumber foto:
-/// - data URI (`data:image/...;base64,...`) — foto lokal per-perangkat,
-///   dipilih dari HP lalu di-resize ≤300px PNG;
-/// - URL online (`http...`) — foto dari internet;
-/// - path file lokal — cadangan bila tersimpan sebagai file.
-/// Bila kosong/gagal → ikon kemasan (bukan kotak putih siluman).
 class ProductPhoto extends StatelessWidget {
   final String? photoPath;
   final double size;
@@ -66,7 +59,6 @@ class ProductPhoto extends StatelessWidget {
   }
 }
 
-/// ImageProvider dari photoPath produk. null bila kosong/tak dikenal.
 ImageProvider? photoImageProvider(String? photoPath) {
   if (photoPath == null || photoPath.isEmpty) return null;
   if (photoPath.startsWith('data:image')) {
@@ -85,9 +77,6 @@ ImageProvider? photoImageProvider(String? photoPath) {
   return null;
 }
 
-/// Pilih foto dari galeri HP → resize ≤300px → PNG data URI.
-/// Pola yang sama dipakai form Rumpi (compose_post_sheet).
-/// Mengembalikan data URI, atau null bila dibatalkan/gagal.
 Future<String?> pickProductPhoto() async {
   try {
     final picked = await ImagePicker().pickImage(

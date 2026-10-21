@@ -14,29 +14,20 @@ import 'data/remote/messaging_service.dart';
 import 'data/sync/sync_engine.dart';
 import 'firebase_options.dart';
 
-/// Bootstrap Fase 1: Firebase init → DB lokal → SyncEngine → runApp.
-///
-/// ATURAN KERAS: runApp() WAJIB tercapai apa pun yang terjadi.
-/// Setiap langkah init dibungkus try-catch sendiri; kegagalan dicatat
-/// di StartupReport dan aplikasi lanjut mode lokal (offline-first).
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Pencatat error global ala PWA (2026-10-16).
-  // Flutter framework errors → ErrorLog.
   FlutterError.onError = (details) {
     try {
       ErrorLog.log('flutter', details.exception, details.stack);
     } catch (_) {}
-    // Tetap teruskan ke handler bawaan agar terlihat di console.
     FlutterError.presentError(details);
   };
-  // Async errors di luar zone Flutter → ErrorLog.
   WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
     try {
       ErrorLog.log('async', error, stack);
     } catch (_) {}
-    return true; // sudah ditangani
+    return true;
   };
 
   try {
@@ -45,7 +36,6 @@ Future<void> main() async {
     StartupReport.add('format tanggal', e);
   }
 
-  // DB lokal selalu diusahakan (offline-first).
   try {
     await AppDatabase.db;
   } catch (e) {
@@ -60,12 +50,10 @@ Future<void> main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      // Handler FCM background (wajib setelah Firebase init).
       FirebaseMessaging.onBackgroundMessage(fcmBackgroundHandler);
       sync = SyncEngine(FirebaseFirestore.instance);
       await sync.start();
     } catch (e) {
-      // Firebase gagal (mis. konfigurasi/API) → mode lokal, tanpa crash.
       StartupReport.add('firebase', e);
       debugPrint('Firebase init gagal, lanjut mode lokal: $e');
       sync = null;
@@ -76,7 +64,6 @@ Future<void> main() async {
         'jalan mode lokal saja. Lihat README > Setup.');
   }
 
-  // Notifikasi lokal (heads-up pesanan/chat) — gagal diam-diam bila tak bisa.
   try {
     await Notify.init();
   } catch (e) {

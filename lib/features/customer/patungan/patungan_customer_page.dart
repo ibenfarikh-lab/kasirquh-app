@@ -9,8 +9,6 @@ import '../../../data/models/patungan.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../session.dart';
 
-/// Halaman pelanggan: daftar patungan aktif + ikut.
-/// Tampilan mengikuti PWA (renderPatunganList).
 class PatunganCustomerPage extends ConsumerWidget {
   const PatunganCustomerPage({super.key});
 
@@ -54,8 +52,6 @@ class PatunganCustomerPage extends ConsumerWidget {
   }
 }
 
-/// Kartu patungan untuk pelanggan — progress + tombol ikut / tanda.
-/// Mengikuti PWA (renderPatunganList).
 class _PatunganCustomerCard extends ConsumerWidget {
   final Patungan patungan;
   final String customerId;
@@ -94,7 +90,6 @@ class _PatunganCustomerCard extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    // Aturan tema: dark = full black, tanpa warna lain.
                     color: Theme.of(context).brightness == Brightness.dark
                         ? const Color(0xFF2A2A2A)
                         : context.garis,
@@ -109,7 +104,6 @@ class _PatunganCustomerCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 8),
-            // Progress bar ala PWA.
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
@@ -201,8 +195,6 @@ class _PatunganCustomerCard extends ConsumerWidget {
     );
   }
 
-  /// Halaman pilih slot (1-10) + total — ala PWA (openJoinPatungan).
-  /// Dulu bottom sheet; kini halaman penuh (aturan user 2026-10-18).
   void _showJoinSheet(
       BuildContext context, WidgetRef ref, Patungan p) {
     Navigator.of(context).push(
@@ -217,7 +209,6 @@ class _PatunganCustomerCard extends ConsumerWidget {
   }
 }
 
-/// Halaman konfirmasi ikut patungan: pilih slot + total.
 class _JoinPatunganPage extends ConsumerStatefulWidget {
   final Patungan patungan;
   final String customerId;
@@ -237,7 +228,6 @@ class _JoinPatunganPage extends ConsumerStatefulWidget {
 class _JoinPatunganPageState
     extends ConsumerState<_JoinPatunganPage> {
   int _qty = 1;
-  // Metode bayar (P2-4, ala Web): 'tunai' | 'transfer'.
   String _payMethod = 'tunai';
 
   Future<void> _konfirmasi(BuildContext context) async {

@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/remote/firestore_service.dart';
 import '../models/recipe.dart';
 
-/// Konfigurasi visibilitas & urutan satu section Beranda — mirror
-/// `store_settings/main.homeSections.{restock,popular,recipe}` (PWA).
 class HomeSectionConfig {
   final bool show;
   final int order;
@@ -21,8 +19,6 @@ class HomeSectionConfig {
   Map<String, dynamic> toMap() => {'show': show, 'order': order};
 }
 
-/// Info toko — mirror doc `store_settings/main`.
-/// Nilai default jujur bila dokumen belum ada (bukan data siluman).
 class StoreInfo {
   final String storeName;
   final String? address;
@@ -31,53 +27,34 @@ class StoreInfo {
   final String? runningText;
   final String openTime;
   final String closeTime;
-  final int? modal; // sisa modal belanja (null = belum diisi)
+  final int? modal;
   final int lowStockDefault;
   final int coinRate;
-  // Batas penukaran koin: persen maks. dari total belanja (0 = belum diatur).
   final int coinRedeemLimit;
-  // Paket Tanggal Muda (section Beranda, diatur warung).
   final bool paketEnabled;
   final String? paketTitle;
   final String? paketSubtitle;
-  // Agregat produk laris (dihitung admin dari pesanan, bukan data siluman).
   final List<String> topProductIds;
-  // --- Pusat Kendali Beranda (mirror PWA homeControlModal) ---
-  // Slide gateway (headline max 64, subheadline max 110).
   final String gatewayTitle1;
   final String gatewayCopy1;
   final String gatewayTitle2;
   final String gatewayCopy2;
   final String gatewayTitle3;
   final String gatewayCopy3;
-  // Promo pilihan.
   final String? promoTitle;
   final String? promoProductId;
   final String? promoCopy;
-  // Promo kilat.
   final String? flashProductId;
   final int flashPrice;
   final String? flashRule;
   final DateTime? flashEndsAt;
-  // Thread Chat Toko yang di-pin admin (urutan = prioritas, P1-2).
   final List<String> pinnedChatIds;
-  // ID item Inbox yang sudah dibaca — persisten lintas perangkat
-  // di store_settings (P1-8, skema Web `inboxReadIds`).
   final List<String> inboxReadIds;
-  // ID shortcut Dashboard pilihan admin (P2-1, skema Web
-  // `dashboardShortcutIds`, katalog 20, maks 6).
   final List<String> dashboardShortcutIds;
-  // Kabar warung (override; kosong = otomatis).
   final String? kabarStatus;
   final String? kabarMood;
-  // Slot carousel promo (5 slot tetap ala PWA: flash/coin/recipe/budget/hajatan).
-  // Key: `{slot}Title`, `{slot}Copy`, `{slot}Badge` — kosong = pakai default PWA.
   final Map<String, String> carouselSlots;
-  // Visibilitas & urutan section Beranda (restock/popular/recipe).
   final Map<String, HomeSectionConfig> homeSections;
-  // Pengaturan bunyi admin dari Web (`adminSoundSettings`):
-  // nada per jenis kejadian + getar — kini DIBACA & diterapkan
-  // Native (sebelumnya hanya ditulis Web, tak pernah dibaca).
   final AdminSoundSettings soundSettings;
 
   const StoreInfo({
@@ -122,15 +99,11 @@ class StoreInfo {
     this.soundSettings = const AdminSoundSettings(),
   });
 
-  /// Teks slot carousel promo ala PWA: `{slot}Title/Copy/Badge`.
-  /// Kosong → pakai [def].
   String slotText(String slot, String field, String def) {
     final v = (carouselSlots['$slot$field'] ?? '').trim();
     return v.isEmpty ? def : v;
   }
 
-  /// Buka/tutup berdasar jam — hanya bila format jam valid.
-  /// Bila tak bisa dihitung, kembalikan null (jangan tampilkan status palsu).
   bool? get isOpenNow {
     try {
       final now = DateTime.now();
@@ -153,9 +126,6 @@ class StoreInfo {
         phone: m['phone'] as String?,
         infoText: m['infoText'] as String?,
         runningText: m['runningText'] as String?,
-        // Jam operasional mengikuti field Web `openTime`/`closeTime`
-        // (P0-5). Fallback ke field lama Native agar jam yang pernah
-        // diatur dari Native tidak hilang sebelum ditulis ulang.
         openTime: (m['openTime'] as String?) ??
             (m['openHour'] as String?) ??
             '07:00',
@@ -225,9 +195,6 @@ class StoreInfo {
       );
 }
 
-/// Pengaturan bunyi admin — mirror `store_settings.adminSoundSettings`
-/// (ditulis Web): nada per jenis ('system' | 'mimi' | 'silent')
-/// untuk pesanan/chat/promo + saklar getar.
 class AdminSoundSettings {
   final String order;
   final String chat;
@@ -257,26 +224,17 @@ class AdminSoundSettings {
   }
 }
 
-/// Promo — mirror koleksi `promos`.
-/// Skema tulis Web (P1-10): banner sederhana {title, copy, badge,
-/// isActive} — TANPA diskon harga. Field diskon warisan Native
-/// (productId/discountType/discountValue/startsAt/endsAt) dipertahankan
-/// hanya untuk membaca data lama; promo Web tidak memilikinya sehingga
-/// tidak pernah memicu potongan harga.
 class Promo {
   final String id;
   final String title;
   final String? subtitle;
-  /// Teks promo gaya Web (`copy`); fallback ke `subtitle` lama.
   final String copy;
-  /// Lencana promo gaya Web (`badge`, bawaan Web 'PROMO').
   final String badge;
   final String? productId;
   final String? discountType;
   final int discountValue;
   final bool isActive;
 
-  /// Batas akhir promo (untuk countdown Promo Kilat). Null = akhir hari ini.
   final DateTime? endsAt;
 
   const Promo({
@@ -314,8 +272,6 @@ class Promo {
     );
   }
 
-  /// Harga setelah promo untuk [hargaNormal] (integer Rp).
-  /// 'percent' → potongan %; 'amount'/'flash' → potongan nominal.
   int hargaPromo(int hargaNormal) {
     switch (discountType) {
       case 'percent':
@@ -372,9 +328,6 @@ class StoreRepository {
     }
   }
 
-  /// Langganan resep publik — selaras PWA `watchRecipes()`.
-  /// Koleksi `recipes` boleh dibaca publik (rule: allow read: if true),
-  /// jadi langganan ini permanen dan tidak ikut terputus saat ganti mode.
   Stream<List<Recipe>> watchRecipes() async* {
     if (_db == null) {
       yield const [];
@@ -395,8 +348,6 @@ class StoreRepository {
     }
   }
 
-  /// Langganan "Ide Masakku" pelanggan — subkoleksi `customers/{uid}/my_recipes`.
-  /// Selaras PWA (2026-10-16).
   Stream<List<Recipe>> watchMyRecipes(String uid) async* {
     if (_db == null || uid.isEmpty) {
       yield const [];
@@ -431,26 +382,23 @@ final promosProvider = StreamProvider<List<Promo>>((ref) {
   return ref.watch(storeRepositoryProvider).watchPromos();
 });
 
-/// Daftar resep Ide Masak Warga (publik, permanen) — selaras PWA.
 final recipesProvider = StreamProvider<List<Recipe>>((ref) {
   return ref.watch(storeRepositoryProvider).watchRecipes();
 });
 
-/// Daftar "Ide Masakku" milik pelanggan yang login — selaras PWA.
 final myRecipesProvider =
     StreamProvider.family<List<Recipe>, String>((ref, uid) {
   return ref.watch(storeRepositoryProvider).watchMyRecipes(uid);
 });
 
-/// Pengaturan Koin Warga — mirror `store_settings/main` (ikut PWA).
 class CoinSettings {
   final bool enabled;
-  final int coinRate; // Rp per koin
-  final int redeemLimit; // % maksimal dari total
-  final Map<String, bool> events; // checkin, mission, guess, spend
-  final Map<String, int> rewards; // checkin, mission, guess
-  final int spendRule; // Rp per bonus (bawaan Web: 10000)
-  final int spendReward; // koin per rule
+  final int coinRate;
+  final int redeemLimit;
+  final Map<String, bool> events;
+  final Map<String, int> rewards;
+  final int spendRule;
+  final int spendReward;
 
   const CoinSettings({
     this.enabled = true,
@@ -481,7 +429,6 @@ class CoinSettings {
   }
 }
 
-/// Stream pengaturan koin (ikut PWA).
 final coinSettingsProvider = StreamProvider<CoinSettings>((ref) {
   final db = ref.watch(firestoreOrNullProvider);
   if (db == null) {

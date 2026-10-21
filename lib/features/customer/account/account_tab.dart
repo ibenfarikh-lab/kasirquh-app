@@ -35,14 +35,9 @@ import '../session.dart';
 import 'dompet_koin_page.dart';
 import 'misi_koin_page.dart';
 
-/// Tab Akun — bergembok untuk tamu.
-/// Member: data akun + koin + riwayat pesanan + Keluar.
 class AccountTab extends ConsumerWidget {
   const AccountTab({super.key});
 
-  /// Layar terkunci pengganti "halaman Akun Tamu" (dihapuskan atas
-  /// perintah user 2026-10-21): ikon gembok + ajakan masuk; tombol
-  /// membuka alur login/daftar yang sama seperti gerbang tab.
   Widget _akunTerkunci(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
@@ -85,12 +80,6 @@ class AccountTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider).valueOrNull;
     final isGuest = session == null || session.isGuest;
-    // TIDAK ADA AKUN TAMU (perintah user 2026-10-21 21:44): tab
-    // Akun untuk tamu BUKAN halaman akun berisi data kosong —
-    // tampilkan layar terkunci dengan tombol masuk. (Di shell,
-    // tamu yang terdampar di tab ini lebih dulu dicegat gerbang
-    // yang membuka alur login; layar ini lapisan pengaman bila
-    // tab dirender dalam keadaan tamu.)
     if (isGuest) {
       return _akunTerkunci(context, ref);
     }
@@ -102,7 +91,6 @@ class AccountTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       children: [
-        // Header ala PWA.
         Text(
           'Milikmu',
           style: TextStyle(
@@ -116,7 +104,6 @@ class AccountTab extends ConsumerWidget {
           style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 12),
-        // Kartu profil: avatar | info | chip koin.
         AppCard(
           child: Row(
             children: [
@@ -127,7 +114,6 @@ class AccountTab extends ConsumerWidget {
                   color: AppColors.orange.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                // Foto profil gantikan inisial — selaras Web (2026-10-18).
                 child: session.photoURL != null &&
                         session.photoURL!.isNotEmpty
                     ? ClipOval(
@@ -169,14 +155,11 @@ class AccountTab extends ConsumerWidget {
                   ],
                 ),
               ),
-              // Chip koin ala PWA.
               InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: uid == null
                     ? null
                     : () {
-                        // Perintah user 2026-10-18: chip koin → Dompet Koin
-                        // (riwayat koin ada di dalam dompet).
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => const DompetKoinPage(),
@@ -209,10 +192,8 @@ class AccountTab extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // Kartu member barcode (Code39) ala PWA — sync all-in-one.
         if (uid != null) _MemberBarcodeCard(uid: uid, nama: nama),
         if (uid != null) const SizedBox(height: 12),
-        // Kartu Bonus Harian ala PWA (background ikut tema).
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -228,7 +209,6 @@ class AccountTab extends ConsumerWidget {
           child: const _BonusHarianCard(),
         ),
         const SizedBox(height: 12),
-        // Grid menu 2 kolom ala PWA.
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
@@ -280,7 +260,6 @@ class AccountTab extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 12),
-        // Daftar pengaturan ala PWA.
         _settingTile(
           context,
           icon: Icons.settings_outlined,
@@ -296,7 +275,6 @@ class AccountTab extends ConsumerWidget {
           onTap: () => _confirmLogout(context, ref),
         ),
         const SizedBox(height: 20),
-        // Login cepat sidik jari (fitur native, dipertahankan).
         LoginCepatToggle(
           accountId: 'customer',
           verifySignIn: (email, password) async {
@@ -317,7 +295,6 @@ class AccountTab extends ConsumerWidget {
     );
   }
 
-  /// Tile menu grid ala PWA: ikon atas, teks bawah.
   Widget _menuTile(
     BuildContext context, {
     required IconData icon,
@@ -351,7 +328,6 @@ class AccountTab extends ConsumerWidget {
     );
   }
 
-  /// Baris pengaturan ala PWA.
   Widget _settingTile(
     BuildContext context, {
     required IconData icon,
@@ -383,7 +359,6 @@ class AccountTab extends ConsumerWidget {
     );
   }
 
-  /// Halaman penuh generik (aturan user: bottom sheet hanya Teman Belanja/AI).
   void _bukaHalaman(
     BuildContext context, {
     required String title,
@@ -434,8 +409,6 @@ class AccountTab extends ConsumerWidget {
     );
   }
 
-  /// Section Catatan toko: daftar tagihan/catatan dari toko + sisa tagihan.
-  /// Tanpa catatan → empty state jujur.
   Widget _catatanTokoSection(
       BuildContext context, WidgetRef ref, String uid) {
     final notesAsync = ref.watch(myCustomerNotesProvider(uid));
@@ -572,7 +545,6 @@ class AccountTab extends ConsumerWidget {
     if (ok == true && context.mounted) {
       await ref.read(authServiceProvider)?.signOut();
       if (context.mounted) {
-        // Keluar → kembali ke gateway.
         ref.read(modeAktifProvider.notifier).state = 'gateway';
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const GatewayScreen()),
@@ -588,7 +560,6 @@ final _myOrdersProvider =
   return ref.watch(orderRepositoryProvider).watchMyOrders(uid);
 });
 
-/// Daftar pesanan untuk sheet (aktif saja atau riwayat).
 class _PesananList extends ConsumerWidget {
   final String uid;
   final bool aktifSaja;
@@ -631,7 +602,6 @@ class _PesananList extends ConsumerWidget {
   }
 }
 
-/// Kartu pesanan statis (dipakai di sheet).
 class _OrderCardStatic extends StatelessWidget {
   final Order order;
 
@@ -665,7 +635,6 @@ class _OrderCardStatic extends StatelessWidget {
   }
 }
 
-/// Chip status pesanan.
 class _StatusChip extends StatelessWidget {
   final OrderStatus status;
 
@@ -696,7 +665,6 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-/// Form Pengaturan Pelanggan ala PWA (plek-plek).
 class _PengaturanForm extends ConsumerStatefulWidget {
   const _PengaturanForm();
 
@@ -708,7 +676,7 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
   late TextEditingController _nama;
   late TextEditingController _wa;
   late TextEditingController _alamat;
-  String? _photoURL; // base64 — selaras Web (2026-10-18)
+  String? _photoURL;
   bool _fotoBusy = false;
   String _tema = 'terang';
   String _density = 'ringkas';
@@ -720,17 +688,13 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
     final session = ref.read(sessionProvider).valueOrNull;
     _nama = TextEditingController(
         text: displayName(session ?? const Session.guest()));
-    // Prefill dari database — selaras Web ?v=20261020ar (jangan hardcoded).
     _wa = TextEditingController();
     _alamat = TextEditingController(text: session?.address ?? '');
     _photoURL = session?.photoURL;
-    // Map tema provider ke string PWA.
     final t = ref.read(temaPelangganProvider);
     _tema = t.name;
-    // Muat density & dering tersimpan.
     _density = ref.read(densityPelangganProvider);
     _dering = ref.read(deringPelangganProvider);
-    // WA dimuat dari dokumen pelanggan.
     _loadWa();
   }
 
@@ -755,8 +719,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
     super.dispose();
   }
 
-  /// Pilih foto → kompres max 200x200 JPEG → base64.
-  /// Selaras Web (2026-10-18): data URL < 900KB di field photoURL.
   Future<void> _gantiFoto() async {
     if (_fotoBusy) return;
     setState(() => _fotoBusy = true);
@@ -768,7 +730,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
       final bytes = await file.readAsBytes();
       final img.Image? decoded = img.decodeImage(bytes);
       if (decoded == null) throw StateError('Gambar tidak bisa dibaca');
-      // Kompres: max 200x200, JPEG 70 — ikut Web.
       const maxDim = 200;
       final scale = maxDim /
           (decoded.width > decoded.height
@@ -806,7 +767,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Nama panggilan.
         const Text('Nama panggilan',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
         const SizedBox(height: 4),
@@ -824,7 +784,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
           ),
         ),
         const SizedBox(height: 16),
-        // Foto profil — selaras Web (2026-10-18).
         const Text('Foto profil',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
         const SizedBox(height: 8),
@@ -871,7 +830,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
           ],
         ),
         const SizedBox(height: 16),
-        // Nomor WhatsApp — selaras Web ?v=20261020ar.
         const Text('Nomor WhatsApp',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
         const SizedBox(height: 8),
@@ -887,7 +845,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
           ),
         ),
         const SizedBox(height: 16),
-        // Alamat — selaras Web ?v=20261020ar.
         const Text('Alamat',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
         const SizedBox(height: 8),
@@ -902,7 +859,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
           ),
         ),
         const SizedBox(height: 16),
-        // Tema tampilan.
         const Text('Tema tampilan',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
         const SizedBox(height: 8),
@@ -910,7 +866,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
         _opsi('gelap', 'Gelap', 'Hitam pekat'),
         _opsi('sistem', 'Otomatis', 'Ikuti HP'),
         const SizedBox(height: 16),
-        // Tampilan produk.
         const Text('Tampilan produk',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
         const SizedBox(height: 8),
@@ -918,7 +873,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
         _opsiDensity('lega', 'Lega'),
         _opsiDensity('daftar', 'Daftar'),
         const SizedBox(height: 16),
-        // Dering notifikasi.
         const Text('Dering notifikasi',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
         const SizedBox(height: 8),
@@ -947,8 +901,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
             Expanded(
               child: FilledButton(
                 onPressed: () async {
-                  // Terapkan SEMUA: tema, nama, density, dering.
-                  // (Bug lapor user 2026-10-12: tombol tidak menyimpan apa-apa.)
                   await ref
                       .read(temaPelangganProvider.notifier)
                       .pilih(TemaPilihan.fromString(_tema));
@@ -965,7 +917,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
                       : memberUid(session);
                   if (uid != null) {
                     try {
-                      // Selaras Web ?v=20261020ar: nama + WA + alamat + foto.
                       await ref
                           .read(socialRepositoryProvider)
                           .updateProfil(
@@ -993,7 +944,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
         const SizedBox(height: 24),
         const Divider(),
         const SizedBox(height: 8),
-        // Tentang — info versi aplikasi (perintah user via Tim Utama).
         const Text('Tentang',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
         const SizedBox(height: 8),
@@ -1026,7 +976,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          // Aturan: selected = border orange saja (tanpa bg terang).
           border: Border.all(
             color: aktif
                 ? AppColors.orange
@@ -1087,8 +1036,6 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
   Widget _opsiDering(String val, String title, String subtitle) {
     final aktif = _dering == val;
     return InkWell(
-      // Ketuk opsi = pilih + TES bunyi langsung (pola Web "tes
-      // bunyi") agar pilihan benar-benar terdengar sebelum diterapkan.
       onTap: () {
         setState(() => _dering = val);
         Notify.headsUp(
@@ -1130,15 +1077,12 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
 }
 
 
-/// Kartu member dengan barcode Code39 ala PWA (sync all-in-one).
-/// "Tunjukkan kode ini untuk membuka Warunge Mimi".
 class _MemberBarcodeCard extends StatelessWidget {
   final String uid;
   final String nama;
 
   const _MemberBarcodeCard({required this.uid, required this.nama});
 
-  /// Kode member — fungsi bersama, format identik PWA.
   String get kodeMember => memberCodeFromUid(uid);
 
   @override
@@ -1203,7 +1147,6 @@ class _MemberBarcodeCard extends StatelessWidget {
   }
 }
 
-/// Kartu Bonus Harian — bisa diklaim 1x sehari (ikut PWA).
 class _BonusHarianCard extends ConsumerStatefulWidget {
   const _BonusHarianCard();
 
@@ -1242,7 +1185,6 @@ class _BonusHarianCardState extends ConsumerState<_BonusHarianCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('+$reward koin masuk!')),
         );
-        // Refresh session agar saldo update.
         ref.invalidate(sessionProvider);
       }
     } on StateError catch (e) {

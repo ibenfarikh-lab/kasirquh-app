@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// Token warna dari DESIGN_SYSTEM.md (diekstrak dari prototipe V3,
-/// terverifikasi OK di HP 2026-10-06).
 class AppColors {
-  // Mode Pelanggan — terang (light)
   static const paper = Color(0xFFF7F4F1);
   static const card = Color(0xFFFFFDFB);
   static const ink = Color(0xFF242329);
   static const muted = Color(0xFF777277);
   static const line = Color(0xFFDED8D2);
 
-  // Gateway + Mode Admin — dark warm
   static const adminBg = Color(0xFF120D0B);
   static const panel = Color(0xFF211F20);
   static const panel2 = Color(0xFF302E2F);
@@ -19,16 +15,12 @@ class AppColors {
   static const warmMuted = Color(0xFFBDB2AD);
   static const warmHighlight = Color(0xFFFFB45F);
 
-  // Aksen oranye TUNGGAL (Aturan 2, dikunci): 0xFFF49A24.
-  // Token oranye lain (orange2, orangeDeep, ctaGradient) DIHAPUS.
   static const orange = Color(0xFFF49A24);
 
-  // Semantik
   static const danger = Color(0xFFDF624F);
   static const ok = Color(0xFF4D8A62);
 
-  // Status pesanan
-  static const statusWaiting = orange; // MENUNGGU
-  static const statusDone = ok; // selesai/disetujui
-  static const statusRejected = danger; // ditolak/batal
+  static const statusWaiting = orange;
+  static const statusDone = ok;
+  static const statusRejected = danger;
 }

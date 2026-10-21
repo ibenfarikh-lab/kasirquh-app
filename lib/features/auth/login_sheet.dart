@@ -10,10 +10,7 @@ import 'biometric_credential_service.dart';
 import 'biometric_optin_dialogs.dart';
 import 'fingerprint_login_button.dart';
 
-/// Sheet Login/Daftar: dua panel — Masuk & Daftar (email + kata sandi).
-/// Pendaftar baru → menunggu persetujuan admin.
 class LoginSheet extends ConsumerStatefulWidget {
-  /// Tab awal: 0 = Masuk, 1 = Daftar.
   final int initialTab;
 
   const LoginSheet({super.key, this.initialTab = 0});
@@ -28,7 +25,6 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
-  // Alamat opsional — selaras Web ?v=20261020ar (2026-10-18).
   final _address = TextEditingController();
   bool _busy = false;
   String? _error;
@@ -59,7 +55,6 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
     });
     final auth = ref.read(authServiceProvider);
     if (auth == null) {
-      // Mode lokal: Firebase tidak tersedia.
       setState(() {
         _error = 'Mode lokal: login butuh layanan online. Coba lagi nanti.';
         _busy = false;
@@ -74,7 +69,6 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
             password: password,
           );
       if (!mounted) return;
-      // Alur A: tawarkan opt-in login cepat (sandi masih di memori).
       await tawarkanOptInSidikJari(
         context: context,
         ref: ref,
@@ -125,14 +119,12 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
         Navigator.of(context).pop(false);
       }
     } catch (e) {
-      // Jangan tampilkan exception mentah (bisa Inggris + detail teknis).
       setState(() => _error = _pesanDaftar(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  /// Petakan galat pendaftaran ke Bahasa Indonesia yang ramah.
   String _pesanDaftar(Object e) {
     final msg = e.toString();
     if (msg.contains('email-already-in-use')) {
@@ -159,7 +151,6 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Identitas: kicker + judul (prototipe: chip + judul modal).
             const Text(
               Strings.fiturKhususPelanggan,
               style: TextStyle(
@@ -173,7 +164,7 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
             Text(
               Strings.akunWarungJudul,
               style: TextStyle(
-                color: context.teksUtama, // Aturan 4: adaptif.
+                color: context.teksUtama,
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),
@@ -236,7 +227,6 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
               border: OutlineInputBorder(),
             ),
           ),
-          // Alamat opsional — selaras Web ?v=20261020ar.
           if (!isLogin) const SizedBox(height: 12),
           if (!isLogin)
             TextField(
@@ -264,7 +254,6 @@ class _LoginSheetState extends ConsumerState<LoginSheet>
             isLoading: _busy,
             onPressed: onSubmit,
           ),
-          // Fingerprint Jalur Tercepat — hanya untuk mode Masuk.
           if (isLogin) const SizedBox(height: 12),
           if (isLogin)
             FingerprintLoginButton(

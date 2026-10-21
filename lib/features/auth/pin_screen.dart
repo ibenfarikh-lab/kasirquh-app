@@ -11,9 +11,6 @@ import 'admin_login_screen.dart';
 import 'biometric_messages.dart';
 import 'pin_service.dart';
 
-/// PIN Admin 6 digit: buat + konfirmasi (pertama kali), verifikasi,
-/// lupa PIN → reset → buat baru. Hash disimpan di secure storage.
-/// Sidik jari = jalan pintas verifikasi (PIN tetap cadangan).
 class PinScreen extends ConsumerStatefulWidget {
   const PinScreen({super.key});
 
@@ -23,14 +20,12 @@ class PinScreen extends ConsumerStatefulWidget {
 
 class _PinScreenState extends ConsumerState<PinScreen> {
   String _pin = '';
-  String? _firstPin; // untuk konfirmasi
+  String? _firstPin;
   bool _isNew = false;
   bool _checking = true;
   String? _error;
-  // Anti brute-force: 5x salah → kunci 60 detik.
   int _salah = 0;
   DateTime? _kunciSampai;
-  // Sidik jari tersedia di HP ini (dicek saat init).
   bool _bisaSidikJari = false;
 
   bool get _terkunci =>
@@ -46,8 +41,6 @@ class _PinScreenState extends ConsumerState<PinScreen> {
     final has = await ref.read(pinServiceProvider).hasPin;
     var bisa = false;
     if (has) {
-      // Saklar di Pengaturan menentukan boleh tidaknya; sisanya dicek
-      // ke perangkat (terdaftar & didukung).
       final prefs = await SharedPreferences.getInstance();
       final diaktifkan = prefs.getBool(kunciSidikJariAktif) ?? true;
       bisa = diaktifkan && await sidikJariTersedia();
@@ -61,9 +54,6 @@ class _PinScreenState extends ConsumerState<PinScreen> {
     }
   }
 
-  /// Verifikasi via sidik jari — sukses = langsung masuk (PIN tetap cadangan).
-  /// Pakai opsi standar (seperti aplikasi lain): sidik jari dulu,
-  /// dialog sistem boleh tawarkan PIN HP sebagai cadangan.
   Future<void> _pakaiSidikJari() async {
     if (_terkunci) return;
     try {
@@ -79,12 +69,9 @@ class _PinScreenState extends ConsumerState<PinScreen> {
         _salah = 0;
         _granted();
       } else {
-        // Dialog ditutup tanpa hasil (umumnya dibatalkan) — bukan
-        // berarti sidik jarinya tidak cocok.
         setState(() => _error = Strings.sidikJariDibatalkan);
       }
     } on PlatformException catch (e) {
-      // JANGAN samarkan semua jadi "tidak cocok": sampaikan sebab aslinya.
       if (!mounted) return;
       setState(() => _error = pesanGalatSidikJari(e.code));
     } catch (_) {
@@ -129,14 +116,12 @@ class _PinScreenState extends ConsumerState<PinScreen> {
       } else {
         _salah++;
         if (_salah >= 5) {
-          // Kunci 60 detik; hitungan di-reset agar tak menumpuk.
           _kunciSampai = DateTime.now().add(const Duration(seconds: 60));
           _salah = 0;
           setState(() {
             _error = Strings.pinTerkunci;
             _pin = '';
           });
-          // Buka kunci otomatis setelah 60 detik.
           Future.delayed(const Duration(seconds: 61), () {
             if (mounted) setState(() {});
           });
@@ -151,7 +136,6 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   }
 
   void _granted() {
-    // PIN benar → lanjut ke login admin (email + kata sandi + claim).
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
     );
@@ -193,8 +177,6 @@ class _PinScreenState extends ConsumerState<PinScreen> {
     final title = _isNew
         ? (_firstPin == null ? Strings.buatPin : Strings.konfirmasiPin)
         : Strings.masukkanPin;
-    // Gerbang admin ngikutin tema admin (default: gelap). Aturan: tema
-    // gelap tanpa background terang + teks terang, tema terang kebalikannya.
     final tema = ref.watch(temaAdminProvider);
     final sistem = MediaQuery.platformBrightnessOf(context);
     final gelap = temaAdminAktif(tema, sistem).brightness == Brightness.dark;

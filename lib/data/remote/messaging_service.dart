@@ -5,28 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'firestore_service.dart';
 
-/// Handler background FCM — wajib top-level.
 @pragma('vm:entry-point')
 Future<void> fcmBackgroundHandler(RemoteMessage message) async {
-  // Disengaja minimal: tanpa Cloud Functions (Blaze) tidak ada pengirim
-  // push server; token tetap disimpan untuk kesiapan masa depan.
   debugPrint('FCM background: ${message.messageId}');
 }
 
-/// Layanan push (FCM):
-/// - minta izin notifikasi (setelah penjelasan jujur di UI),
-/// - ambil token & simpan ke customers/{uid}.fcmToken (member)
-///   atau store_settings/main.adminFcmTokens (admin),
-/// - pesan foreground diteruskan ke UI sebagai banner dalam aplikasi.
 class MessagingService {
   final FirebaseFirestore? _db;
   bool _jalan = false;
 
   MessagingService(this._db);
 
-  /// Minta izin + ambil token. Kembalikan token (null bila ditolak/gagal).
-  /// [onForeground] dipanggil untuk pesan saat aplikasi terbuka.
-  /// [simpanUlang] dipanggil saat token di-refresh (untuk simpan ulang).
   Future<String?> init({
     required Future<bool> Function() mintaIzinDulu,
     required void Function(String judul, String isi) onForeground,
@@ -69,7 +58,6 @@ class MessagingService {
     }
   }
 
-  /// Simpan token ke dokumen pelanggan (dipanggil setelah login member).
   Future<void> simpanTokenMember(String uid, String token) async {
     final db = _db;
     if (db == null) return;
@@ -83,7 +71,6 @@ class MessagingService {
     }
   }
 
-  /// Simpan token admin ke store_settings/main (tulis = admin, sesuai rules).
   Future<void> simpanTokenAdmin(String token) async {
     final db = _db;
     if (db == null) return;

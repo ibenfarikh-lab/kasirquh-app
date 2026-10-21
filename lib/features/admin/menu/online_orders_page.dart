@@ -8,11 +8,8 @@ import '../../../data/models/order.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Filter status pesanan — StateProvider agar [OnlineOrdersPage] tetap
-/// ConsumerWidget tanpa state lokal.
 final _statusFilterProvider = StateProvider<OrderStatus?>((ref) => null);
 
-/// Label status dari konstanta Strings, lewat switch atas status.name.
 String _statusName(OrderStatus status) => switch (status.name) {
       'menunggu' => Strings.statusMenunggu,
       'dikemas' => Strings.statusDikemas,
@@ -24,20 +21,16 @@ String _statusName(OrderStatus status) => switch (status.name) {
 
 Color _statusColor(OrderStatus status) => switch (status) {
       OrderStatus.menunggu => AppColors.orange,
-      // Aturan 2: oranye tunggal.
       OrderStatus.dikemas => AppColors.orange,
       OrderStatus.dikirim => Colors.blue,
       OrderStatus.selesai => AppColors.ok,
       OrderStatus.dibatalkan => AppColors.danger,
     };
 
-/// Format tanggal manual 'd/M/yyyy HH:mm' (tanpa intl agar ringan).
 String _formatDateTime(DateTime d) =>
     '${d.day}/${d.month}/${d.year} '
     '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
-/// Tab Mode Admin > Modul Kasir Online: daftar pesanan dari aplikasi
-/// pelanggan + ubah status pesanan.
 class OnlineOrdersPage extends ConsumerWidget {
   const OnlineOrdersPage({super.key});
 
@@ -96,7 +89,6 @@ class OnlineOrdersPage extends ConsumerWidget {
                   itemBuilder: (context, i) {
                     final order = shown[i];
                     return Card(
-                      // Aturan 1&3: ikut cardTheme (adaptif).
                       child: ListTile(
                         title: Text(
                           order.customerName,
@@ -131,7 +123,6 @@ class OnlineOrdersPage extends ConsumerWidget {
     );
   }
 
-  /// Dialog detail pesanan: daftar item + total + ubah status.
   Future<void> _showDetail(
       BuildContext context, WidgetRef ref, Order order) async {
     await showDialog<void>(
@@ -209,8 +200,6 @@ class OnlineOrdersPage extends ConsumerWidget {
                     ),
                   ],
                 ),
-                // Aksi keuangan (ikut PWA): Selesaikan → masuk Pembukuan;
-                // Batalkan → kembalikan stok + koin.
                 if (order.status != OrderStatus.selesai &&
                     order.status != OrderStatus.dibatalkan) ...[
                   const SizedBox(height: 12),
@@ -257,9 +246,6 @@ class OnlineOrdersPage extends ConsumerWidget {
                     ],
                   ),
                 ],
-                // Hapus pesanan (P1-7, pola aman Web): belum selesai →
-                // stok & koin dikembalikan dulu dalam transaksi yang
-                // sama; selesai/dibatalkan → hapus dokumen saja.
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
@@ -286,7 +272,6 @@ class OnlineOrdersPage extends ConsumerWidget {
     );
   }
 
-  /// Konfirmasi + eksekusi hapus pesanan (P1-7).
   Future<void> _hapus(BuildContext context, WidgetRef ref,
       BuildContext dialogContext, Order order) async {
     final belumSelesai = order.status != OrderStatus.selesai &&
@@ -333,7 +318,6 @@ class OnlineOrdersPage extends ConsumerWidget {
     }
   }
 
-  /// Selesaikan pesanan → masuk Pembukuan (ikut PWA settleOrder).
   Future<void> _settle(BuildContext context, WidgetRef ref,
       BuildContext dialogContext, Order order) async {
     final ok = await showDialog<bool>(
@@ -378,7 +362,6 @@ class OnlineOrdersPage extends ConsumerWidget {
     }
   }
 
-  /// Batalkan pesanan → kembalikan stok + koin (ikut PWA cancelOrder).
   Future<void> _batal(BuildContext context, WidgetRef ref,
       BuildContext dialogContext, Order order) async {
     final ok = await showDialog<bool>(

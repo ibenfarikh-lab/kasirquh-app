@@ -1,11 +1,8 @@
 import 'dart:convert';
 
-/// Catatan Belanja Harian — mirror koleksi Firestore `stock_notes`.
-/// source: 'manual' | 'belanja_stok'.
-/// items: [{name, qty, price}] — qty & price integer.
 class StockNote {
   final String id;
-  final String date; // YYYY-MM-DD
+  final String date;
   final String supplier;
   final List<StockNoteItem> items;
   final int total;
@@ -67,9 +64,8 @@ class StockNote {
 
 class StockNoteItem {
   final String name;
-  /// Jumlah — boleh desimal (cth. 2,5 kg). Jangan .toInt().
   final double qty;
-  final int price; // harga per satuan/baris (Rp integer)
+  final int price;
 
   const StockNoteItem({
     required this.name,
@@ -85,8 +81,6 @@ class StockNoteItem {
         v is num ? v.toInt() : int.tryParse('$v') ?? 0;
     double asDouble(dynamic v) {
       if (v is num) return v.toDouble();
-      // PWA menulis qty sebagai string ('1') — terima keduanya;
-      // koma Indonesia ('3,75') juga diterima.
       return double.tryParse('$v'.replaceAll(',', '.')) ?? 0;
     }
 

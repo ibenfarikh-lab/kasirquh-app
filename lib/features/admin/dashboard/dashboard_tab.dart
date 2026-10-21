@@ -31,8 +31,6 @@ import '../menu/chat_page.dart';
 import '../inbox/inbox_tab.dart';
 import '../menu/store_notes_sheet.dart';
 
-/// Tab Beranda admin — desain menyamakan PWA/prototipe.
-/// Ringkasan operasional + 3 kartu metrik seragam + shortcut + banner.
 class DashboardTab extends ConsumerStatefulWidget {
   const DashboardTab({super.key});
 
@@ -41,15 +39,10 @@ class DashboardTab extends ConsumerStatefulWidget {
 }
 
 class _DashboardTabState extends ConsumerState<DashboardTab> {
-  /// Mode ubah susunan shortcut.
   bool _isEditing = false;
 
-  /// ID shortcut yang tampil. Sumber kebenaran bersama (P2-1):
-  /// store_settings.dashboardShortcutIds; SharedPreferences hanya
-  /// cermin lokal. Bawaan mengikuti Web: kasir/inbox/bookkeeping.
   List<String> _shortcutIds = ['kasir', 'inbox', 'bookkeeping'];
 
-  /// Katalog 20 shortcut — persis DASHBOARD_SHORTCUT_CATALOG Web.
   static const _allShortcuts = <String, Map<String, dynamic>>{
     'kasir': {'icon': Icons.point_of_sale_outlined, 'label': 'Buka Kasir'},
     'inbox': {'icon': Icons.inbox_outlined, 'label': 'Cek Inbox'},
@@ -73,7 +66,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     'settings': {'icon': Icons.settings_outlined, 'label': 'Pengaturan Global'},
   };
 
-  /// Peta ID lama Native → ID katalog Web (migrasi cermin lokal).
   static const _petaIdLama = <String, String>{
     'pembukuan': 'bookkeeping',
     'kasir_online': 'online',
@@ -115,7 +107,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     } catch (_) {}
   }
 
-  /// Simpan ke cermin lokal + store_settings (sumber bersama, P2-1).
   Future<void> _saveShortcuts() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -144,8 +135,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
 
   @override
   Widget build(BuildContext context) {
-    // Sinkron shortcut dari store_settings (P2-1): daftar server
-    // yang sah menimpa tampilan lokal (di luar mode edit).
     ref.listen(storeInfoProvider, (prev, next) {
       final ids = next.valueOrNull?.dashboardShortcutIds;
       if (ids == null || ids.isEmpty || _isEditing || !mounted) return;
@@ -174,7 +163,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Lead: Ringkasan operasional / Hari ini + tanggal.
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -205,7 +193,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             ],
           ),
           const SizedBox(height: 12),
-          // 3 kartu metrik seragam.
           summaryAsync.when(
             loading: () => const Center(
                 child: Padding(
@@ -219,8 +206,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             data: (s) {
               final omzetValue =
                   s.transaksi == 0 ? null : formatRp(s.masuk);
-              // Layout ala PWA: OMZET besar kiri (span 2 baris),
-              // PESANAN + STOK kecil numpuk kanan (sama tinggi).
               return IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -276,7 +261,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             },
           ),
           const SizedBox(height: 20),
-          // Buka pekerjaan utama + Ubah/Selesai.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -315,7 +299,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             ],
           ),
           const SizedBox(height: 12),
-          // Shortcut grid (dinamis + mode edit).
           GridView.count(
             crossAxisCount: 3,
             shrinkWrap: true,
@@ -335,7 +318,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                   },
                   onTap: () => _openShortcut(context, id),
                 ),
-              // Tile tambah (hanya saat edit).
               if (_isEditing)
                 _AddShortcutTile(
                   onTap: () => _showShortcutPicker(context),
@@ -343,7 +325,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             ],
           ),
           const SizedBox(height: 14),
-          // Banner peringatan.
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -378,7 +359,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     openAdminPage(context, page);
   }
 
-  /// Buka halaman sesuai ID shortcut (katalog Web, P2-1).
   void _openShortcut(BuildContext context, String id) {
     switch (id) {
       case 'kasir':
@@ -407,8 +387,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
         _open(context, const CustomersPage());
         break;
       case 'reports':
-        // P1-4: shortcut 'Laporan' membuka halaman Laporan (metrik +
-        // tabel), BUKAN Pembukuan — sebelumnya salah sasaran.
         _open(context, const ReportPage());
         break;
       case 'chat':
@@ -442,7 +420,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     }
   }
 
-  /// Dialog pilih shortcut untuk ditambah (maks 6, aturan Web).
   Future<void> _showShortcutPicker(BuildContext context) async {
     if (_shortcutIds.length >= 6) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -490,7 +467,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
   }
 }
 
-/// Kartu metrik ala PWA — OMZET besar (tall), lainnya kecil.
 class _PwaMetricCard extends StatelessWidget {
   final String label;
   final String value;
@@ -511,15 +487,12 @@ class _PwaMetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    // Selaras PWA ?v=20261017s (dark): kartu omzet warm #0a0908
-    // (bukan oranye), judul & nilai putih, teks kecil oranye terang.
     final bg = isPrimary
         ? (dark ? const Color(0xFF0A0908) : AppColors.orange)
         : context.permukaanKartu;
     final muted = isPrimary
         ? (dark ? const Color(0xFFFFC276) : Colors.black54)
         : context.teksRedup;
-    // Kartu tall (OMZET) punya min-height agar span 2 baris.
     final cardContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: tall ? MainAxisSize.max : MainAxisSize.min,
@@ -540,7 +513,6 @@ class _PwaMetricCard extends StatelessWidget {
             maxLines: tall ? 3 : 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              // Dark: nilai omzet putih (PWA ?v=20261017s).
               color: isPrimary
                   ? (dark ? Colors.white : Colors.black87)
                   : AppColors.orange,
@@ -574,7 +546,6 @@ class _PwaMetricCard extends StatelessWidget {
   }
 }
 
-/// Tile shortcut 3 kolom — dukung mode edit (tombol hapus).
 class _ShortcutTile extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -651,7 +622,6 @@ class _ShortcutTile extends StatelessWidget {
   }
 }
 
-/// Tile tambah shortcut (mode edit).
 class _AddShortcutTile extends StatelessWidget {
   final VoidCallback onTap;
 

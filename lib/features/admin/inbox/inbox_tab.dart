@@ -17,8 +17,6 @@ import '../menu/customers_page.dart';
 import '../menu/online_orders_page.dart';
 import '../menu/products_page.dart';
 
-/// Tab Inbox: pusat notifikasi + shortcut.
-/// Tiap item bisa di-tap → deep link ke layar terkait.
 class InboxTab extends ConsumerWidget {
   const InboxTab({super.key});
 
@@ -46,7 +44,6 @@ class InboxTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Kepala: kicker "Pusat notifikasi" + judul (ikut PWA).
         Text(
           Strings.inboxPusatNotifikasi,
           style: TextStyle(
@@ -205,9 +202,6 @@ class InboxTab extends ConsumerWidget {
     openAdminPage(context, page);
   }
 
-  /// Label status titipan — rantai Web (P1-3): Baru → Diproses →
-  /// Tersedia → Selesai / Dibatalkan. Status lama 'dicari'/'ditolak'
-  /// yang terlanjur tertulis dipetakan ke label barunya saat dibaca.
   String _namaStatusTitipan(String status) => switch (status) {
         'diproses' || 'dicari' => Strings.statusTitipanDiproses,
         'tersedia' => Strings.statusTitipanTersedia,
@@ -216,7 +210,6 @@ class InboxTab extends ConsumerWidget {
         _ => Strings.statusTitipanBaru,
       };
 
-  /// Dialog ubah status titipan — keputusan user: ADMIN MANUAL.
   Future<void> _ubahStatusTitipan(
       BuildContext context, WidgetRef ref, TitipRequest t) async {
     const opsi = ['baru', 'diproses', 'tersedia', 'selesai', 'dibatalkan'];
@@ -250,9 +243,6 @@ class InboxTab extends ConsumerWidget {
     }
   }
 
-  /// "Tandai semua dibaca" (ikut PWA): tandai semua item inbox saat ini.
-  /// Badge = item yang belum dibaca, jadi setelah ini badge = 0.
-  /// Item baru (pesanan/stok/chat baru) otomatis belum dibaca.
   Future<void> _tandaiSemuaDibaca(
       BuildContext context, WidgetRef ref) async {
     final ids = collectInboxIds(ref as Ref);
@@ -265,7 +255,6 @@ class InboxTab extends ConsumerWidget {
       }
       return;
     }
-    // Tetap nol-kan unread chat (perilaku lama, untuk konsistensi).
     final threads =
         ref.read(chatThreadsProvider).valueOrNull ?? const [];
     final unread =
@@ -274,11 +263,7 @@ class InboxTab extends ConsumerWidget {
     for (final t in unread) {
       await repo.markThreadRead(t.id);
     }
-    // Tandai semua item inbox sebagai dibaca → badge = 0.
     await ref.read(inboxReadProvider.notifier).markRead(ids);
-    // Persist juga ke store_settings (P1-8, persis Web): gabungan
-    // lokal + server, dibatasi 200 ID — agar status baca mengikuti
-    // admin lintas perangkat & pintu. Gagal simpan tidak menggagalkan.
     try {
       final gabung = <String>{
         ...ref.read(inboxReadEffectiveProvider),
@@ -378,7 +363,6 @@ class _ApprovalTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      // Deep link: tap tile → Data Pelanggan (kelola persetujuan di sana).
       onTap: () => openAdminPage(context, const CustomersPage()),
       title: Text(customer.name,
           style: TextStyle(
@@ -445,7 +429,6 @@ class _OrderTile extends StatelessWidget {
       ),
       trailing: Icon(Icons.chevron_right,
           color: context.teksRedup),
-      // Deep link: buka Kasir Online.
       onTap: () => openAdminPage(context, const OnlineOrdersPage()),
     );
   }

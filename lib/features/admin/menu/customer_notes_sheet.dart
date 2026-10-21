@@ -12,9 +12,6 @@ import '../../../data/models/customer_note.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Catatan Toko per pelanggan (kasbon digital V1) — Mode Admin.
-/// Admin mencatat tagihan/pembayaran/catatan; pelanggan melihatnya
-/// di Tab Akun sebagai "Catatan toko".
 class CustomerNotesSheet extends ConsumerWidget {
   final Customer customer;
 
@@ -58,7 +55,7 @@ class CustomerNotesSheet extends ConsumerWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: context.permukaanKartu, // Aturan 1&3: adaptif.
+                        color: context.permukaanKartu,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -107,8 +104,6 @@ class CustomerNotesSheet extends ConsumerWidget {
     final isTagihan = n.type == 'tagihan';
     final isBayar = n.type == 'pembayaran';
     return Card(
-      // Aturan 3: kartu = L2.
-      // Aturan 1&3: ikut cardTheme (adaptif).
       child: ListTile(
         title: Text(
           n.note.isEmpty
@@ -152,7 +147,6 @@ class CustomerNotesSheet extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        // Aturan 1&3: ikut dialogTheme (adaptif).,
         title: Text('Hapus catatan ini?',
             style: TextStyle(color: context.teksUtama)),
         actions: [
@@ -187,15 +181,12 @@ class CustomerNotesSheet extends ConsumerWidget {
       BuildContext context, WidgetRef ref) async {
     final noteCtrl = TextEditingController();
     final amountCtrl = TextEditingController();
-    // Nilai FORM ala Web (P2-5): belanja/pembayaran/cicilan/umum —
-    // dipetakan ke type dokumen saat simpan (customerNoteTypeFromForm).
     var type = 'belanja';
     var busy = false;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          // Aturan 1&3: ikut dialogTheme (adaptif).,
           title: Text(Strings.tambahCatatanToko,
               style: TextStyle(color: context.teksUtama)),
           content: SingleChildScrollView(
@@ -204,7 +195,7 @@ class CustomerNotesSheet extends ConsumerWidget {
               children: [
                 DropdownButtonFormField<String>(
                   initialValue: type,
-                  dropdownColor: context.permukaanKartu, // Aturan 1&3: adaptif.
+                  dropdownColor: context.permukaanKartu,
                   style:
                       TextStyle(color: context.teksUtama),
                   decoration: InputDecoration(

@@ -1,7 +1,7 @@
 name: kasirquh_app
 description: "KasirQuh-app — aplikasi warung Warunge Mimi (Mode Pelanggan + Mode Admin). Powered by KasirQuh."
 publish_to: "none"
-version: 3.6.109+123
+version: 3.6.110+124
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -10,33 +10,29 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase (FlutterFire) — project: kasirquh-app
-  # CATATAN: firebase_storage TIDAK dipakai (user skip — project baru wajib Blaze).
   firebase_core: ^3.6.0
   cloud_firestore: ^5.4.0
   firebase_auth: ^5.3.0
   firebase_messaging: ^15.1.0
 
-  # Lokal offline-first
   sqflite: ^2.4.0
   path: ^1.9.0
   flutter_secure_storage: ^9.2.0
   shared_preferences: ^2.3.0
 
-  # State & util
   flutter_riverpod: ^2.5.0
   google_fonts: ^6.2.0
   intl: ^0.19.0
   uuid: ^4.5.0
   connectivity_plus: ^6.1.0
   crypto: ^3.0.0
-  mobile_scanner: ^5.2.0 # scan barcode kamera (kasir)
-  barcode_widget: ^2.0.4 # kartu member Code39 (tab Akun)
-  image_picker: ^1.1.0 # foto Rumpi dari HP
-  image: ^4.2.0 # resize foto ≤300px (PNG)
-  flutter_local_notifications: ^19.4.0 # heads-up lokal (pesanan, chat)
-  local_auth: ^2.1.0 # sidik jari (alternatif PIN admin)
-  webview_flutter: ^4.7.0 # WebView untuk game (Tangkap/Buru Diskon)
+  mobile_scanner: ^5.2.0
+  barcode_widget: ^2.0.4
+  image_picker: ^1.1.0
+  image: ^4.2.0
+  flutter_local_notifications: ^19.4.0
+  local_auth: ^2.1.0
+  webview_flutter: ^4.7.0
   file_picker: ^11.0.3
 
 dev_dependencies:

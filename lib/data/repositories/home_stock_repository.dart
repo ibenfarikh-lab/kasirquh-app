@@ -2,12 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../local/app_database.dart';
 
-/// Catatan stok rumah pelanggan — lokal per-perangkat, tidak disinkron.
-/// Dipakai section "Stok rumah habis?" di Beranda (Dari riwayat belanjamu).
 class HomeStockItem {
   final String id;
   final String name;
-  final String status; // 'habis' | 'menipis'
+  final String status;
   final DateTime createdAt;
 
   const HomeStockItem({
@@ -26,7 +24,6 @@ class HomeStockItem {
       );
 }
 
-/// Status stok rumah — dari konstanta, bukan string bebas.
 String homeStockLabel(String status) =>
     status == 'menipis' ? 'Menipis' : 'Habis';
 

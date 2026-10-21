@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kasirquh_app/data/models/titip_request.dart';
 
-/// Domain B — Titip Belanja terstruktur.
 void main() {
   test('TitipRequest.fromDoc: mapping skema PWA', () {
     final t = TitipRequest.fromDoc('abc', {

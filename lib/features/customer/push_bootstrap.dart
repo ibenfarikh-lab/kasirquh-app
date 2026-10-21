@@ -11,10 +11,6 @@ import '../../data/repositories/order_repository.dart';
 import '../../data/repositories/social_repository.dart';
 import '../../l10n/strings_id.dart';
 
-/// Bootstrap push & heads-up Mode Pelanggan (dipasang di CustomerShell).
-/// - Minta izin notifikasi SEKALI per perangkat, didahului penjelasan jujur.
-/// - Simpan token FCM ke customers/{uid}.fcmToken.
-/// - Pantau status pesanan & chat toko → heads-up lokal saat berubah.
 class PushBootstrap extends ConsumerStatefulWidget {
   final String uid;
   const PushBootstrap({super.key, required this.uid});
@@ -41,7 +37,6 @@ class _PushBootstrapState extends ConsumerState<PushBootstrap> {
         prefs.getBool('notif_izin_ditanya') ?? false;
     final messaging = ref.read(messagingServiceProvider);
     if (sudahTanya) {
-      // Pernah ditanya: langsung ambil token tanpa dialog ulang.
       final token = await messaging.init(
         mintaIzinDulu: () async => true,
         onForeground: _bannerDalamAplikasi,
@@ -95,12 +90,10 @@ class _PushBootstrapState extends ConsumerState<PushBootstrap> {
 
   @override
   Widget build(BuildContext context) {
-    // Widget tak kasat mata: pantau perubahan untuk heads-up.
     return const SizedBox.shrink();
   }
 }
 
-/// Pantau pesanan milikku: status berubah → heads-up lokal.
 class OrderStatusWatcher extends ConsumerStatefulWidget {
   final String uid;
   const OrderStatusWatcher({super.key, required this.uid});
@@ -128,7 +121,7 @@ class _OrderStatusWatcherState extends ConsumerState<OrderStatusWatcher> {
         final kini = {for (final o in orders) o.id: o.status};
         final lalu = _terakhir;
         _terakhir = kini;
-        if (lalu == null) return; // snapshot pertama: jangan berisik
+        if (lalu == null) return;
         for (final o in orders) {
           final sLama = lalu[o.id];
           if (sLama != null &&
@@ -137,7 +130,6 @@ class _OrderStatusWatcherState extends ConsumerState<OrderStatusWatcher> {
             Notify.headsUp(
               Strings.statusPesananJudul,
               'Pesanan ${o.code}: ${orderStatusLabel(o.status)}',
-              // Bunyi mengikuti pilihan dering pelanggan.
               dering:
                   modeDeringPelanggan(ref.read(deringPelangganProvider)),
             );
@@ -149,7 +141,6 @@ class _OrderStatusWatcherState extends ConsumerState<OrderStatusWatcher> {
   }
 }
 
-/// Pantau chat toko: pesan baru dari admin → heads-up lokal.
 class TokoUnreadWatcher extends ConsumerStatefulWidget {
   final String uid;
   const TokoUnreadWatcher({super.key, required this.uid});
@@ -175,7 +166,6 @@ class _TokoUnreadWatcherState extends ConsumerState<TokoUnreadWatcher> {
           Notify.headsUp(
             Strings.chatBaruJudul,
             next.valueOrNull?.lastMessage ?? '',
-            // Bunyi mengikuti pilihan dering pelanggan.
             dering:
                 modeDeringPelanggan(ref.read(deringPelangganProvider)),
           );

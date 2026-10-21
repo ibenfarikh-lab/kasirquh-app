@@ -11,12 +11,8 @@ import 'menu/menu_tab.dart';
 import 'notes/notes_tab.dart';
 import 'pos/pos_tab.dart';
 
-/// Tab aktif Mode Admin — bisa diubah dari tab lain (deep link).
 final adminTabProvider = StateProvider<int>((ref) => 0);
 
-/// Mode Admin: 5 Tab (Beranda · Kasir · Inbox · Catatan · Menu).
-/// Header hanya logo + nama warung (tanpa ikon menu/pengaturan).
-/// Tema mengikuti pilihan di Pengaturan (default: Gelap).
 class AdminShell extends ConsumerWidget {
   const AdminShell({super.key});
 
@@ -25,13 +21,10 @@ class AdminShell extends ConsumerWidget {
     final index = ref.watch(adminTabProvider);
     final inboxBadge = ref.watch(inboxBadgeProvider);
 
-    // Tema diatur di MaterialApp berdasar modeAktifProvider —
-    // tidak perlu Theme lokal (agar halaman push ikut tema).
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          // Header admin oranye selaras PWA ?v=20261017s (sebelumnya gelap).
           flexibleSpace: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -76,7 +69,6 @@ class AdminShell extends ConsumerWidget {
                 MenuTab(),
               ],
             ),
-            // Tak kasat mata: token FCM + pantau pesanan baru.
             const AdminPushBootstrap(),
           ],
         ),

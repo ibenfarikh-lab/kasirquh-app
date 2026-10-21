@@ -12,10 +12,6 @@ import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Pusat Kendali Beranda — selaras PWA `homeControlModal` (index.html:168).
-/// Admin mengatur konten Beranda pelanggan: promo, info & kabar, slide
-/// gateway, bagian Beranda (tampil/sembunyi + urutan), promo carousel,
-/// dan Ide Masak. Perubahan berlaku langsung (live via Firestore).
 class CustomerHomeSheet extends ConsumerWidget {
   const CustomerHomeSheet({super.key});
 
@@ -29,7 +25,6 @@ class CustomerHomeSheet extends ConsumerWidget {
         padding: const EdgeInsets.all(24),
         children: [
           const SizedBox(height: 12),
-          // Intro ala PWA.
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -81,8 +76,6 @@ class CustomerHomeSheet extends ConsumerWidget {
   }
 }
 
-/// Form utama: info & kabar, slide gateway, promo pilihan, promo kilat.
-/// Disimpan sekaligus via tombol "Terapkan ke Beranda" (ala PWA).
 class _KendaliFormSection extends ConsumerStatefulWidget {
   const _KendaliFormSection();
 
@@ -108,10 +101,6 @@ class _KendaliFormSectionState extends ConsumerState<_KendaliFormSection> {
   String? _flashProductId;
   bool _menyimpan = false;
 
-  // Anti-timpah-kosong (akar masalah running text hilang 2026-10-21):
-  // form diisi ulang dari snapshot settings TERBARU sampai user
-  // benar-benar mengubah sesuatu — snapshot awal yang masih kosong/
-  // bawaan tidak boleh mengunci form lalu tertimpa saat disimpan.
   bool _diubahUser = false;
   bool _mengisi = false;
 
@@ -230,9 +219,6 @@ class _KendaliFormSectionState extends ConsumerState<_KendaliFormSection> {
 
   Future<void> _simpan(BuildContext context, List products) async {
     final messenger = ScaffoldMessenger.of(context);
-    // Tanpa perubahan dari user, JANGAN menulis apa pun — menulis
-    // snapshot form yang belum tentu berisi data asli adalah akar
-    // tertimpanya settings (running text hilang, 2026-10-21).
     if (!_diubahUser) {
       messenger.showSnackBar(
         const SnackBar(content: Text('Beranda pelanggan disimpan')),
@@ -286,8 +272,6 @@ class _KendaliFormSectionState extends ConsumerState<_KendaliFormSection> {
   }
 }
 
-/// Blok "Bagian Beranda": toggle tampil/sembunyi + urutan per section.
-/// Disimpan langsung (ala PWA).
 class _SectionOrderSection extends ConsumerWidget {
   const _SectionOrderSection();
 
@@ -346,8 +330,6 @@ class _SectionOrderSection extends ConsumerWidget {
   }
 }
 
-/// Blok "Carousel Beranda (5 slot tetap)" — selaras PWA.
-/// Admin edit Judul/Isi/Badge per slot. Disimpan di store_settings.carouselSlots.
 class _PromoCarouselSection extends ConsumerWidget {
   const _PromoCarouselSection();
 
@@ -389,7 +371,6 @@ class _PromoCarouselSection extends ConsumerWidget {
   }
 }
 
-/// Editor satu slot carousel: Judul + Isi + Badge.
 class _SlotEditor extends ConsumerStatefulWidget {
   final int nomor;
   final String slotKey;
@@ -536,7 +517,6 @@ class _SlotEditorState extends ConsumerState<_SlotEditor> {
   }
 }
 
-/// Blok "Ide Masak": daftar resep + batas 5 + tambah/ubah/hapus.
 class _IdeMasakSection extends ConsumerWidget {
   const _IdeMasakSection();
 
@@ -643,7 +623,6 @@ class _IdeMasakSection extends ConsumerWidget {
                     decoration: _dekorasi(context, 'Deskripsi'),
                   ),
                   const SizedBox(height: 12),
-                  // Foto resep (opsional) — selaras PWA.
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -917,8 +896,6 @@ class _RecipeTile extends ConsumerWidget {
   }
 }
 
-/// Paket Tanggal Muda — section Beranda pelanggan yang diatur warung.
-/// Mati = section disembunyikan (bukan contoh).
 class _PaketSection extends ConsumerStatefulWidget {
   const _PaketSection();
 
@@ -1018,7 +995,6 @@ class _PaketSectionState extends ConsumerState<_PaketSection> {
   }
 }
 
-// ============ Widget bantu ============
 
 Widget _blockTitle(BuildContext context, String title) {
   return Text(
@@ -1144,7 +1120,6 @@ Widget _sectionRow(
           ),
         ),
         const SizedBox(width: 8),
-        // Toggle TAMPIL/SEMBUNYI ala PWA.
         TextButton(
           onPressed: () => onChanged(!config.show, config.order),
           style: TextButton.styleFrom(
@@ -1171,7 +1146,6 @@ Widget _sectionRow(
           ),
         ),
         const SizedBox(width: 8),
-        // Dropdown urutan ala PWA.
         DropdownButton<int>(
           value: config.order.clamp(1, 3),
           dropdownColor: context.permukaanKartu,
@@ -1196,8 +1170,7 @@ InputDecoration _dekorasi(BuildContext context, String label) {
     labelText: label,
     labelStyle: TextStyle(color: context.teksRedup),
     filled: true,
-    // Aturan 3: input = L3.
-    fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
+    fillColor: context.permukaanKartu,
     contentPadding:
         const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     enabledBorder: OutlineInputBorder(

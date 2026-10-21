@@ -1,15 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Titip belanja — mekanisme terstruktur (Domain B).
-/// Skema Firestore SAMA PERSIS dengan PWA (koleksi `titip_requests`).
 class TitipRequest {
   final String id;
   final String customerId;
   final String customerName;
-  final String item; // ≤100
-  final String note; // ≤300
-  final String method; // 'Ambil di warung' | 'Diantar ke rumah'
-  final String status; // 'baru'
+  final String item;
+  final String note;
+  final String method;
+  final String status;
   final DateTime createdAt;
 
   const TitipRequest({

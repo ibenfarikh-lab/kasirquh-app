@@ -7,10 +7,6 @@ import '../../../l10n/strings_id.dart';
 import 'biometric_credential_service.dart';
 import 'biometric_optin_dialogs.dart';
 
-/// Toggle "Login cepat sidik jari" — reusable untuk admin & pelanggan.
-///
-/// accountId: 'admin' atau 'customer'
-/// verifySignIn: callback untuk verifikasi sandi (signInAdmin vs signIn)
 class LoginCepatToggle extends ConsumerStatefulWidget {
   final String accountId;
   final Future<void> Function(String email, String password) verifySignIn;
@@ -48,7 +44,6 @@ class _LoginCepatToggleState extends ConsumerState<LoginCepatToggle> {
 
   Future<void> _toggle(bool v) async {
     final svc = ref.read(biometricCredentialServiceProvider);
-    // Tangkap messenger di awal untuk hindari info use_build_context_synchronously.
     final messenger = ScaffoldMessenger.of(context);
     if (v) {
       final password = await mintaKataSandiOptIn(context);

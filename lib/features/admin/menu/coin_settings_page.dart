@@ -9,14 +9,6 @@ import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Pengaturan admin → Koin Warga — selaras Web (?v=20261020ai).
-/// - Toggle: Program Koin Warga (NYALA/MATI)
-/// - Input: Maks. penukaran (%), Nilai 1 koin (terkunci Rp1)
-/// - Event perolehan koin (toggle + input):
-///   Check-in harian, Misi koin, Tebak harga, Belanja,
-///   Tangkap Diskon (500/hari), Buru Diskon (500/hari)
-/// - Nominal belanja per hadiah (Rp), Aturan program
-/// - Tombol "Simpan Pengaturan Koin"
 class CoinSettingsPage extends ConsumerStatefulWidget {
   const CoinSettingsPage({super.key});
 
@@ -236,7 +228,6 @@ class _CoinSettingsPageState extends ConsumerState<CoinSettingsPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Toggle utama
               _toggleRow(
                 title: 'Program Koin Warga',
                 subtitle: 'Dompet, perolehan, dan penukaran',
@@ -244,7 +235,6 @@ class _CoinSettingsPageState extends ConsumerState<CoinSettingsPage> {
                 onChanged: (v) => setState(() => _enabled = v),
               ),
               const SizedBox(height: 16),
-              // Nilai koin (terkunci) + Maks penukaran
               Row(
                 children: [
                   Expanded(

@@ -4,14 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 
-/// Layanan kredensial sidik jari — "Fingerprint Jalur Tercepat".
-///
-/// Prinsip: `local_auth` sebagai GERBANG, `flutter_secure_storage`
-/// sebagai BRANKAS. Kredensial hanya dibaca SETELAH biometric lolos.
-///
-/// - Setup sekali per akun (opt-in eksplisit).
-/// - PIN tidak berubah (hash satu arah, gembok lokal terpisah).
-/// - Fallback selalu ke login manual (tidak ada jalan buntu).
 class BiometricCredentialService {
   static const _prefix = 'bio_cred_';
   static const _indexKey = 'bio_cred_index';
@@ -24,7 +16,6 @@ class BiometricCredentialService {
 
   String _key(String accountId) => '$_prefix$accountId';
 
-  /// Apakah perangkat mendukung biometric?
   Future<bool> get isAvailable async {
     try {
       return await _auth.canCheckBiometrics &&
@@ -34,7 +25,6 @@ class BiometricCredentialService {
     }
   }
 
-  /// Minta verifikasi sidik jari. Return true bila lolos.
   Future<bool> verifyBiometric(String reason) async {
     try {
       return await _auth.authenticate(
@@ -49,13 +39,11 @@ class BiometricCredentialService {
     }
   }
 
-  /// Simpan kredensial (panggil SETELAH biometric lolos saat opt-in).
-  /// password diambil dari input form login (tidak bisa dari Firebase Auth).
   Future<void> save({
     required String accountId,
     required String email,
     required String password,
-    required String mode, // 'admin' | 'customer'
+    required String mode,
     String? label,
   }) async {
     final data = jsonEncode({
@@ -69,8 +57,6 @@ class BiometricCredentialService {
     await _addToIndex(accountId);
   }
 
-  /// Baca kredensial (panggil SETELAH biometric lolos).
-  /// Return null bila tidak ada.
   Future<BiometricCredential?> read(String accountId) async {
     final raw = await _storage.read(key: _key(accountId));
     if (raw == null) return null;
@@ -88,13 +74,11 @@ class BiometricCredentialService {
     }
   }
 
-  /// Hapus kredensial satu akun.
   Future<void> delete(String accountId) async {
     await _storage.delete(key: _key(accountId));
     await _removeFromIndex(accountId);
   }
 
-  /// Daftar accountId yang sudah opt-in.
   Future<List<String>> listAccounts() async {
     final raw = await _storage.read(key: _indexKey);
     if (raw == null || raw.isEmpty) return const [];
@@ -120,12 +104,11 @@ class BiometricCredentialService {
   }
 }
 
-/// Kredensial tersimpan untuk satu akun.
 class BiometricCredential {
   final String accountId;
   final String email;
   final String password;
-  final String mode; // 'admin' | 'customer'
+  final String mode;
   final String label;
 
   const BiometricCredential({

@@ -13,8 +13,6 @@ import '../../../data/repositories/admin_repository.dart';
 import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Saran harga jual: modal +25%, dibulatkan KE ATAS ke kelipatan Rp500.
-/// Contoh: 8000 -> 10000 -> 10000; 8300 -> 10375 -> 10500.
 int saranHargaJual(int modalPcs) {
   final s = (modalPcs * 1.25).ceil();
   return ((s + 499) ~/ 500) * 500;
@@ -60,7 +58,6 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
     super.dispose();
   }
 
-  /// Sinkronisasi baris dengan daftar produk stok menipis terbaru.
   void _sinkronRows(List<Product> products, int batas) {
     final ids = products.map((p) => p.id).toSet();
     for (final id in _rows.keys.toList()) {
@@ -104,7 +101,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
     setState(() => _saving = true);
     try {
       final items = <StockNoteItem>[];
-      var tunai = 0.0; // UANG NYATA yang dibayar = Σ(qty kemasan × harga kemasan).
+      var tunai = 0.0;
       for (final e in dipilih.entries) {
         final p = e.key;
         final row = e.value;
@@ -112,7 +109,6 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
         final isi = parseDesimal(row.isi.text);
         final hargaKemasan = _parseAngka(row.hargaKemasan);
         final hargaJual = _parseAngka(row.hargaJual);
-        // Harga jual wajib > 0: produk Rp0 = dijual gratis di kasir.
         if (hargaJual <= 0) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -140,8 +136,6 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
           barcode: p.barcode,
           active: p.active,
         );
-        // Arsip nota = struk nyata: jumlah kemasan × harga kemasan.
-        // (modal/pcs adalah ekonomi satuan, tersimpan di produk.)
         items.add(StockNoteItem(
             name: p.name, qty: qty, price: hargaKemasan));
         tunai += qty * hargaKemasan;
@@ -167,7 +161,6 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
         amount: -tunai.round(),
         refId: noteId,
       );
-      // Modal sebagai delta antrean: tidak dilewati diam-diam saat offline.
       await repo.adjustModal(-tunai.round());
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -240,8 +233,6 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
     final modalPcs = isi > 0 ? (hargaKemasan / isi).round() : 0;
 
     return Card(
-      // Aturan 3: kartu = L2.
-      // Aturan 1&3: ikut cardTheme (adaptif).
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         children: [
@@ -369,7 +360,7 @@ class _StockShoppingSheetState extends ConsumerState<StockShoppingSheet> {
       labelText: label,
       labelStyle: TextStyle(color: context.teksRedup),
       filled: true,
-      fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
+      fillColor: context.permukaanKartu,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

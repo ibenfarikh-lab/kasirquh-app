@@ -1,7 +1,3 @@
-/// Catatan toko untuk pelanggan (kasbon digital V1) — mirror koleksi
-/// Firestore `customer_notes`. Dibuat admin, dibaca pemilik + admin.
-/// type: 'tagihan' (belanja belum dibayar) | 'pembayaran' | 'catatan'.
-/// amount: nominal Rp (0 untuk catatan umum).
 class CustomerNote {
   final String id;
   final String customerId;
@@ -35,10 +31,6 @@ class CustomerNote {
   }
 }
 
-/// Label jenis catatan (Bahasa Indonesia, tanpa istilah siluman).
-/// 'umum' = nilai warisan (Web lama menulisnya langsung; Web sekarang
-/// memetakannya ke 'catatan' saat simpan) — dikenali eksplisit (P2-5)
-/// agar catatan lama tampil sebagai Catatan Umum, bukan label kosong.
 String customerNoteTypeLabel(String type) => switch (type) {
       'tagihan' => 'Tagihan',
       'pembayaran' => 'Pembayaran',
@@ -46,8 +38,6 @@ String customerNoteTypeLabel(String type) => switch (type) {
       _ => 'Catatan',
     };
 
-/// Petakan jenis pilihan form (ala Web) ke type dokumen:
-/// belanja/cicilan → tagihan; pembayaran → pembayaran; umum → catatan.
 String customerNoteTypeFromForm(String formValue) => switch (formValue) {
       'belanja' => 'tagihan',
       'cicilan' => 'tagihan',
@@ -56,7 +46,6 @@ String customerNoteTypeFromForm(String formValue) => switch (formValue) {
       _ => formValue,
     };
 
-/// Total tagihan berjalan: tagihan − pembayaran. Fungsi pure.
 int totalTagihan(List<CustomerNote> notes) {
   var total = 0;
   for (final n in notes) {

@@ -19,16 +19,12 @@ import 'push_bootstrap.dart';
 import 'session.dart';
 import 'teman_belanja/teman_belanja_sheet.dart';
 
-/// Tab aktif Mode Pelanggan — bisa diubah dari tab lain (mis. Beranda → Produk).
 final customerTabProvider = StateProvider<int>((ref) => 0);
 
-/// Mode Pelanggan: 5 Tab (Beranda · Produk · Keranjang · Chat · Akun).
-/// Chat & Akun bergembok untuk tamu — ketuk → prompt login,
-/// lalu otomatis diteruskan ke tab yang dituju.
 class CustomerShell extends ConsumerWidget {
   const CustomerShell({super.key});
 
-  static const _lockedTabs = {3, 4}; // Chat, Akun
+  static const _lockedTabs = {3, 4};
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,17 +33,7 @@ class CustomerShell extends ConsumerWidget {
         .select((c) => c.fold(0.0, (s, e) => s + e.qty).round()));
     final session = ref.watch(sessionProvider).valueOrNull;
     final uid = memberUid(session ?? const Session.guest());
-    // Mode tamu: ikon Chat & Akun di navbar memakai badge gembok
-    // (perintah user 2026-10-21, selaras Web); begitu ada sesi
-    // login, gembok hilang.
     final isGuest = session == null || session.isGuest;
-    // GERBANG ISI TAB (perintah user 2026-10-21 21:44): gerbang
-    // ketukan navbar saja tidak cukup — indeks tab bisa tertahan
-    // di Chat/Akun saat sesi berubah jadi tamu (Keluar dari akun →
-    // gateway → Lewati), dan isi tab langsung tampil sebagai
-    // "akun tamu". Bila tamu terdampar di tab terkunci: tampilkan
-    // Beranda dan buka alur login (lihat _GerbangTabTerkunci);
-    // batal login → indeks dipindah ke Beranda.
     final bool tabTerkunciAktif = isGuest && _lockedTabs.contains(index);
     final int tampilIndex = tabTerkunciAktif ? 0 : index;
     final unreadChat = uid == null
@@ -55,13 +41,10 @@ class CustomerShell extends ConsumerWidget {
         : ref.watch(myTokoThreadProvider(uid)).valueOrNull?.unreadCustomer ??
             0;
 
-    // Tema diatur di MaterialApp berdasar modeAktifProvider —
-    // tidak perlu Theme lokal (agar halaman push ikut tema).
     return Scaffold(
         appBar: tampilIndex == 0
             ? _berandaHeader(context, ref, session)
             : tampilIndex >= 1 && tampilIndex <= 4
-                // Tab Produk–Akun: header ala PWA di dalam tab.
                 ? null
                 : AppBar(
                 title: LogoTapGate(
@@ -94,7 +77,6 @@ class CustomerShell extends ConsumerWidget {
                   ],
                 ),
                 if (tabTerkunciAktif) const _GerbangTabTerkunci(),
-                // Tak kasat mata: izin notifikasi + pantau pesanan/chat.
                 if (uid != null) ...[
                   PushBootstrap(uid: uid),
                   OrderStatusWatcher(uid: uid),
@@ -102,12 +84,9 @@ class CustomerShell extends ConsumerWidget {
                 ],
               ],
             )
-          // Tab Produk–Akun: tanpa AppBar (header di dalam tab),
-          // jadi butuh SafeArea atas agar tak numpuk status bar Android.
-          // (Laporan user 2026-10-18 + screenshot.)
           : SafeArea(
               top: true,
-              bottom: false, // bottom ditangani BottomNavigationBar
+              bottom: false,
               child: Stack(
                 children: [
                   IndexedStack(
@@ -121,7 +100,6 @@ class CustomerShell extends ConsumerWidget {
                     ],
                   ),
                   if (tabTerkunciAktif) const _GerbangTabTerkunci(),
-                  // Tak kasat mata: izin notifikasi + pantau pesanan/chat.
                   if (uid != null) ...[
                     PushBootstrap(uid: uid),
                     OrderStatusWatcher(uid: uid),
@@ -130,12 +108,9 @@ class CustomerShell extends ConsumerWidget {
                 ],
               ),
             ),
-      // Teman Belanja ala PWA: FAB kotak hitam + ikon sparkle,
-      // hanya di tab Beranda.
       floatingActionButton: tampilIndex == 0
           ? FloatingActionButton(
               tooltip: 'Buka Teman Belanja',
-              // Aturan tema: tanpa background gelap di tema terang.
               backgroundColor: AppColors.orange,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -206,8 +181,6 @@ class CustomerShell extends ConsumerWidget {
     );
   }
 
-  /// Ikon navbar dengan badge gembok di pojok kanan-atas (lingkaran
-  /// gelap, gembok oranye — persis Web) bila [tampil] true (tamu).
   Widget _denganGembok(Widget ikon, bool tampil) {
     if (!tampil) return ikon;
     return Stack(
@@ -234,8 +207,6 @@ class CustomerShell extends ConsumerWidget {
     );
   }
 
-  /// Header Beranda ala PWA (2026-10-10): gradient oranye, sapaan waktu,
-  /// badge BUKA/TUTUP, chip Koin Warga. Tanpa ikon keranjang (selaras PWA).
   PreferredSizeWidget _berandaHeader(
       BuildContext context, WidgetRef ref, Session? session) {
     final store = ref.watch(storeInfoProvider).valueOrNull;
@@ -258,8 +229,6 @@ class CustomerShell extends ConsumerWidget {
         requireLogin(context, ref, () async {});
         return;
       }
-      // Perintah user 2026-10-18: chip koin header → Dompet Koin
-      // (riwayat koin ada di dalam dompet), bukan langsung ke riwayat.
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const DompetKoinPage()),
       );
@@ -383,7 +352,6 @@ class CustomerShell extends ConsumerWidget {
     if (_lockedTabs.contains(i)) {
       final session = ref.read(sessionProvider).valueOrNull;
       if (session == null || session.isGuest) {
-        // Tamu → kunci, lalu teruskan otomatis bila berhasil masuk.
         await requireLogin(context, ref, () async {
           ref.read(customerTabProvider.notifier).state = i;
         });
@@ -394,14 +362,6 @@ class CustomerShell extends ConsumerWidget {
   }
 }
 
-/// Gerbang sekali-jalan untuk tamu yang terdampar di tab terkunci
-/// (Chat/Akun) TANPA lewat ketukan navbar — kasus user 2026-10-21:
-/// Keluar dari akun → gateway → Lewati → indeks tab masih Akun →
-/// halaman "Akun Tamu" tampil. Widget ini terpasang hanya selama
-/// kondisi itu benar; sekali tampil ia membuka alur login
-/// (requireLogin). Login berhasil → sesi berubah, gerbang lepas,
-/// tab tujuan tampil normal. Batal/gagal → indeks dipindah ke
-/// Beranda agar tidak ada halaman akun untuk tamu.
 class _GerbangTabTerkunci extends ConsumerStatefulWidget {
   const _GerbangTabTerkunci();
 

@@ -7,10 +7,6 @@ import '../../l10n/strings_id.dart';
 import '../../features/auth/login_sheet.dart';
 import '../../features/customer/session.dart';
 
-/// Gembok tamu: "Mau lanjut? Login atau daftar dulu ya..."
-/// Mengembalikan true bila pengguna berhasil masuk → panggil aksi tertunda.
-///
-/// Migrasi v3.6.98 (keputusan user): halaman penuh, bukan bottom sheet.
 class GuestLockSheet extends ConsumerWidget {
   const GuestLockSheet({super.key});
 
@@ -70,8 +66,6 @@ class GuestLockSheet extends ConsumerWidget {
   }
 }
 
-/// Minta login bila tamu; jalankan [onGranted] setelah berhasil masuk.
-/// Mengembalikan true bila aksi dijalankan.
 Future<bool> requireLogin(
   BuildContext context,
   WidgetRef ref,

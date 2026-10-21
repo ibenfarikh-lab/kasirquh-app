@@ -9,11 +9,6 @@ import '../../../data/models/order.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Modul Bukti Transfer (Mode Admin): daftar SEMUA pesanan transfer
-/// (menunggu + ditolak) — mengikuti PWA `renderTransfers`.
-/// Yang ditolak TIDAK hilang: tampil dengan badge DITOLAK + alasan,
-/// dan bisa diverifikasi ulang bila ternyata sudah dibayar.
-/// Nomor referensi transfer ditampilkan bila ada.
 class TransferOrdersPage extends ConsumerWidget {
   const TransferOrdersPage({super.key});
 
@@ -53,7 +48,6 @@ class TransferOrdersPage extends ConsumerWidget {
               final o = daftar[i];
               final ditolak = o.transferStatus == 'rejected';
               return Card(
-                // Aturan 1&3: ikut cardTheme (adaptif).
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -251,7 +245,6 @@ class TransferOrdersPage extends ConsumerWidget {
         await repo.setOrderStatus(
             order.id, OrderStatus.dikemas);
       } else {
-        // Tolak persisten: kartu tidak hilang (ikut PWA rejectTransfer).
         await repo.rejectTransfer(order.id, alasan);
       }
       if (context.mounted) {
@@ -271,8 +264,6 @@ class TransferOrdersPage extends ConsumerWidget {
     }
   }
 
-  /// Verifikasi ulang: transfer yang ditolak ternyata sudah dibayar
-  /// → kembalikan ke alur normal (status dikemas, tolak dihapus).
   Future<void> _verifikasiUlang(
       BuildContext context, WidgetRef ref, Order order) async {
     final ok = await showDialog<bool>(

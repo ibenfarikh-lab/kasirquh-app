@@ -4,24 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/strings_id.dart';
 import 'biometric_credential_service.dart';
 
-/// Dialog penawaran opt-in "Login cepat sidik jari" (Alur A).
-///
-/// Ditampilkan setelah login manual berhasil, bila:
-/// - biometric tersedia di HP
-/// - belum ada kredensial tersimpan untuk akun ini
-///
-/// Return true bila user mengaktifkan (kredensial tersimpan).
 Future<bool> tawarkanOptInSidikJari({
   required BuildContext context,
   required WidgetRef ref,
   required String accountId,
   required String email,
   required String password,
-  required String mode, // 'admin' | 'customer'
+  required String mode,
 }) async {
   final svc = ref.read(biometricCredentialServiceProvider);
 
-  // Sudah ada? Jangan tawarkan lagi.
   if (await svc.read(accountId) != null) return false;
   if (!await svc.isAvailable) return false;
 
@@ -49,9 +41,8 @@ Future<bool> tawarkanOptInSidikJari({
 
   if (aktifkan != true || !context.mounted) return false;
 
-  // Verifikasi biometric dulu, baru simpan.
   final ok = await svc.verifyBiometric(Strings.alasanVerifikasiSidikJari);
-  if (!ok) return false; // dibatalkan/gagal → diam
+  if (!ok) return false;
 
   await svc.save(
     accountId: accountId,
@@ -68,9 +59,6 @@ Future<bool> tawarkanOptInSidikJari({
   return true;
 }
 
-/// Dialog minta kata sandi untuk opt-in dari Pengaturan (Alur B).
-///
-/// Return password bila user mengisi, null bila batal.
 Future<String?> mintaKataSandiOptIn(BuildContext context) async {
   final ctrl = TextEditingController();
   try {
@@ -117,7 +105,6 @@ Future<String?> mintaKataSandiOptIn(BuildContext context) async {
   }
 }
 
-/// Dialog konfirmasi nonaktifkan (Alur C).
 Future<bool> konfirmasiNonaktifkanSidikJari(BuildContext context) async {
   final ya = await showDialog<bool>(
     context: context,

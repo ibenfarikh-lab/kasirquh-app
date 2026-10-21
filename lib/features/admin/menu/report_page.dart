@@ -10,10 +10,6 @@ import '../../../data/models/journal_entry.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Omzet harian 7 hari terakhir: 7 nilai, index 0 = 6 hari lalu,
-/// index 6 = hari ini. Hanya menjumlahkan amount positif (pemasukan)
-/// dari entri yang createdAt-nya jatuh di hari kalender tersebut.
-/// Fungsi pure — bisa di-unit-test tanpa Flutter.
 List<int> omzetPerHari(List<JournalEntry> entries, DateTime today) {
   final base = DateTime(today.year, today.month, today.day);
   return List<int>.generate(7, (i) {
@@ -32,9 +28,6 @@ List<int> omzetPerHari(List<JournalEntry> entries, DateTime today) {
   });
 }
 
-/// Ringkasan laporan gaya Web (P1-4): hanya entri PENJUALAN yang
-/// dihitung — omset = Σ amount, laba = Σ field profit jurnal,
-/// transaksi = jumlah entri, item = Σ itemCount. Fungsi murni.
 ({int omset, int laba, int transaksi, num item}) ringkasanLaporan(
     List<JournalEntry> entries) {
   var omset = 0;
@@ -51,18 +44,12 @@ List<int> omzetPerHari(List<JournalEntry> entries, DateTime today) {
   return (omset: omset, laba: laba, transaksi: transaksi, item: item);
 }
 
-/// Entri penjualan untuk tabel transaksi, terbaru dulu (P1-4).
 List<JournalEntry> penjualanTerbaru(List<JournalEntry> entries) {
   final sales = entries.where((e) => e.kind == 'penjualan').toList()
     ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   return sales;
 }
 
-/// Halaman Laporan (Mode Admin) — disamakan Web (P1-4): 4 metrik
-/// (Total Omset, Laba dari field profit, Transaksi Sukses, Total Item
-/// Barang) + tabel transaksi penjualan (Waktu, Metode, Qty, Omset,
-/// Laba). Grafik omzet 7 hari dipertahankan sebagai ringkasan visual.
-/// Tanpa data contoh — kosong berarti belum ada transaksi.
 class ReportPage extends ConsumerWidget {
   const ReportPage({super.key});
 
@@ -247,7 +234,6 @@ class ReportPage extends ConsumerWidget {
   }
 }
 
-/// Kartu metrik kecil (omzet / laba / transaksi).
 class _MetricCard extends StatelessWidget {
   final String label;
   final String value;
@@ -275,7 +261,6 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-/// Grafik batang 7 hari dengan label hari singkat (S S R K J S M).
 class _BarChartPainter extends CustomPainter {
   final List<int> values;
   final Color warna;
@@ -299,7 +284,6 @@ class _BarChartPainter extends CustomPainter {
     const labelH = 22.0;
     final baseY = size.height - labelH;
     final n = values.length;
-    // Baseline selalu digambar (juga saat semua nilai 0).
     canvas.drawLine(
       Offset(0, baseY),
       Offset(size.width, baseY),
@@ -328,7 +312,6 @@ class _BarChartPainter extends CustomPainter {
           barPaint,
         );
       }
-      // Label hari: index i = (n-1-i) hari yang lalu.
       final day = today.subtract(Duration(days: n - 1 - i));
       final tp = TextPainter(
         text: TextSpan(

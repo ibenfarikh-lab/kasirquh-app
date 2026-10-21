@@ -2,11 +2,8 @@ import 'package:local_auth/local_auth.dart';
 
 import '../../l10n/strings_id.dart';
 
-/// Kunci preferensi: saklar "Buka dengan sidik jari" di Pengaturan.
 const kunciSidikJariAktif = 'sidik_jari_aktif';
 
-/// true bila sidik jari BENAR-BENAR terdaftar & perangkat mendukung.
-/// Dipakai layar PIN & Pengaturan agar logikanya satu pintu.
 Future<bool> sidikJariTersedia() async {
   try {
     final bio = LocalAuthentication();
@@ -21,8 +18,6 @@ Future<bool> sidikJariTersedia() async {
   }
 }
 
-/// Pesan jujur per kode galat local_auth (Android).
-/// Jangan samarkan semua jadi "tidak cocok".
 String pesanGalatSidikJari(String code) {
   switch (code) {
     case 'NotEnrolled':

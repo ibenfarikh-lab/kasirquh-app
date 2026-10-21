@@ -1,6 +1,4 @@
-/// Semua string UI Bahasa Indonesia — satu sumber kebenaran.
 class Strings {
-  // Umum
   static const appName = 'Warunge Mimi';
   static const poweredBy = 'Powered by KasirQuh';
   static const batal = 'Batal';
@@ -12,7 +10,6 @@ class Strings {
   static const tutup = 'Tutup';
   static const cari = 'Cari';
 
-  // Gateway — copy selaras prototipe v3.
   static const slide1Kicker = 'PROMO UTAMA';
   static const slide1Title = 'Hemat belanja, senang di rumah';
   static const slide1Sub =
@@ -28,7 +25,6 @@ class Strings {
   static const gatewayHint = 'Ketuk atau geser untuk lanjut';
   static const taglineToko = 'Belanja dekat, terasa hangat';
 
-  // Tamu
   static const guestLockTitle = 'Fitur khusus pelanggan';
   static const guestLockBody =
       'Mau lanjut? Login atau daftar dulu ya…\n'
@@ -37,7 +33,6 @@ class Strings {
   static const guestLockPending =
       'Akunmu masih menunggu persetujuan admin.';
 
-  // Pencarian & katalog
   static const cariBarang = 'Cari barang...';
   static const semua = 'Semua';
   static const tambahKeranjang = 'Tambah ke Keranjang';
@@ -45,7 +40,6 @@ class Strings {
   static const habis = 'Habis';
   static const stokMenipis = 'Stok menipis';
 
-  // Keranjang & checkout
   static const keranjangJudul = 'Keranjang';
   static const keranjangKosong = 'Keranjangmu masih kosong.';
   static const keranjangKosongHint =
@@ -76,24 +70,19 @@ class Strings {
   static const stokTidakCukup = 'Stok tidak cukup untuk:';
   static const checkoutGagal = 'Pesanan gagal dibuat. Coba lagi ya...';
 
-  // Beranda
   static const promoSpesial = 'Promo Spesial';
   static const infoToko = 'Info Toko';
   static const bukaSekarang = 'Buka sekarang';
   static const tutupSekarang = 'Tutup sekarang';
   static const belanjaSekarang = 'Belanja Sekarang';
 
-  // Chat
-  // (dihapus Fase 4: chat pelanggan kini nyata — Rumpi/Toko/Komunitas)
 
-  // Akun
   static const pesananSaya = 'Pesanan Saya';
   static const koinSaya = 'Koin Saya';
   static const keluar = 'Keluar';
   static const yakinKeluar = 'Yakin mau keluar dari akun?';
   static const detailPesanan = 'Detail Pesanan';
 
-  // Auth
   static const masuk = 'Masuk';
   static const daftar = 'Daftar';
   static const email = 'Email';
@@ -107,7 +96,6 @@ class Strings {
       'Akunmu belum disetujui admin. Coba lagi nanti ya...';
   static const masukGagal = 'Email atau kata sandi salah.';
 
-  // PIN Admin
   static const buatPin = 'Buat PIN Admin';
   static const buatPinHint = 'PIN 6 digit untuk membuka Mode Admin.';
   static const konfirmasiPin = 'Konfirmasi PIN';
@@ -121,7 +109,6 @@ class Strings {
   static const pakaiSidikJari = 'Pakai sidik jari';
   static const sidikJariGagal =
       'Sidik jari tidak cocok. Coba lagi atau pakai PIN.';
-  // Pesan jujur per sebab — jangan samarkan semua jadi "tidak cocok".
   static const sidikJariBelumTerdaftar =
       'Belum ada sidik jari terdaftar di HP ini. Daftarkan dulu di Pengaturan HP, lalu coba lagi.';
   static const sidikJariTerkunciSementara =
@@ -133,14 +120,12 @@ class Strings {
   static const sidikJariTidakTersedia =
       'Sidik jari tidak bisa dipakai di HP ini saat ini. Pakai PIN saja.';
   static const sidikJariDibatalkan = 'Dibatalkan.';
-  // Saklar sidik jari di Pengaturan (Akun).
   static const bukaDenganSidikJari = 'Buka dengan sidik jari';
   static const bukaDenganSidikJariHint = 'Masuk Mode Admin tanpa ketik PIN';
   static const sidikJariTakDidukung =
       'Sidik jari tidak tersedia di HP ini';
   static const alasanAktifkanSidikJari =
       'Aktifkan buka sidik jari untuk Mode Admin';
-  // Fingerprint Jalur Tercepat — login cepat sidik jari.
   static const loginCepatSidikJari = 'Login cepat sidik jari';
   static const loginCepatSidikJariHint =
       'Masuk tanpa ketik sandi setelah verifikasi sidik jari';
@@ -152,7 +137,6 @@ class Strings {
   static const sidikJariTersimpan = 'Sidik jari tersimpan untuk login cepat';
   static const sidikJariDihapus = 'Login cepat sidik jari dimatikan';
 
-  // Empty state (jujur — tanpa angka/data contoh)
   static const belumAdaPesanan = 'Belum ada pesanan';
   static const belumAdaPesananAktif = 'Belum ada pesanan aktif';
   static const belumAdaPelanggan = 'Belum ada data pelanggan';
@@ -160,7 +144,6 @@ class Strings {
   static const belumAdaTransaksi = 'Belum ada transaksi';
   static const belumAdaProduk = 'Belum ada produk';
 
-  // State galat (beda dari kosong — jangan klaim "belum ada" saat gagal muat)
   static const gagalMuatProduk = 'Gagal memuat produk';
   static const gagalMuatPesanan = 'Gagal memuat pesanan';
   static const periksaKoneksi = 'Periksa koneksi internet, lalu coba lagi.';
@@ -177,27 +160,23 @@ class Strings {
   static const nilaiPersen = 'Nilai (mis. 10 untuk 10%)';
   static const nilaiNominal = 'Nilai (Rp)';
 
-  // Tab pelanggan
   static const tabBeranda = 'Beranda';
   static const tabProduk = 'Produk';
   static const tabKeranjang = 'Keranjang';
   static const tabChat = 'Chat';
   static const tabAkun = 'Akun';
 
-  // Tab admin
   static const tabKasir = 'Kasir';
   static const tabInbox = 'Inbox';
   static const tabCatatan = 'Catatan';
   static const tabMenu = 'Menu';
 
-  // Status
   static const menunggu = 'MENUNGGU';
   static const disetujui = 'DISETUJUI';
   static const ditolak = 'DITOLAK';
   static const selesai = 'SELESAI';
   static const dibatalkan = 'DIBATALKAN';
 
-  // Admin — umum
   static const adminMasuk = 'Masuk sebagai Admin';
   static const adminMasukHint = 'Khusus pemilik toko. Akun dibuat manual.';
   static const bukanAdmin = 'Akun ini bukan admin.';
@@ -207,14 +186,12 @@ class Strings {
   static const berhasilDisimpan = 'Berhasil disimpan.';
   static const berhasilDihapus = 'Berhasil dihapus';
 
-  // Admin — Beranda
   static const omzetHariIni = 'Omzet hari ini';
   static const transaksiHariIni = 'Transaksi hari ini';
   static const pesananMenunggu = 'Pesanan menunggu';
   static const stokMenipisJudul = 'Stok menipis';
   static const lihatSemua = 'Lihat semua';
 
-  // Admin — Kasir
   static const kasirKosong = 'Belum ada barang di kasir';
   static const kasirKosongHint = 'Cari barang atau pindai barcode.';
   static const cariAtauPindai = 'Cari produk kasir';
@@ -236,7 +213,6 @@ class Strings {
   static const terimaKasih = 'Terima kasih sudah belanja!';
   static const penjualanTersimpan = 'Penjualan tersimpan.';
 
-  // Admin — Inbox
   static const inboxKosong = 'Belum ada notifikasi';
   static const inboxKosongHint =
       'Pendaftaran, pesanan, dan kabar baru akan tampil di sini.';
@@ -259,7 +235,6 @@ class Strings {
   static const pendaftarDisetujui = 'Pendaftar disetujui.';
   static const pendaftarDitolak = 'Pendaftar ditolak.';
 
-  // Admin — Catatan Belanja Harian
   static const catatanHarian = 'Catatan Belanja Harian';
   static const modalBelanja = 'Modal belanja';
   static const isiModal = 'Isi modal';
@@ -298,15 +273,11 @@ class Strings {
       'Satu barang per baris, contoh: Minyak 2 dus';
   static const contohTotal = 'Contoh: 725.000';
 
-  /// "3 jenis barang"
   static String labelJenisBarang(int n) => '$n jenis barang';
 
-  /// "2 catatan · total Rp50.000"
   static String labelCatatanHari(int n, String totalRp) =>
       '$n catatan · total $totalRp';
 
-  // Admin — Menu & modul
-  // Struktur menu mengikuti PWA: KELOLA WARUNG / LACI ALAT / PENGATURAN.
   static const menuKelolaWarung = 'KELOLA WARUNG';
   static const menuLaciAlat = 'LACI ALAT';
   static const menuKelolaPelanggan = 'KELOLA PELANGGAN';
@@ -360,7 +331,6 @@ class Strings {
   static const modulBerandaPelanggan = 'Beranda Pelanggan';
   static const modulPengaturan = 'Pengaturan';
 
-  // Admin — Data Barang
   static const tambahProduk = 'Tambah produk';
   static const ubahProduk = 'Ubah produk';
   static const namaProduk = 'Nama produk';
@@ -380,11 +350,10 @@ class Strings {
   static const hapusProdukTanya = 'Hapus produk ini?';
   static const produkNonaktif = 'Nonaktif';
 
-  // Admin — Kasir Online & Data
   static const semuaStatus = 'Semua status';
   static const ubahStatus = 'Ubah status';
   static const pelanggan = 'Pelanggan';
-  static const pesananKosong = belumAdaPesanan; // alias
+  static const pesananKosong = belumAdaPesanan;
   static const pesananKosongHint =
       'Pesanan dari aplikasi pelanggan muncul di sini.';
   static const statusMenunggu = 'Menunggu';
@@ -401,11 +370,10 @@ class Strings {
   static const kurangKoin = 'Kurangi koin';
   static const koinTersimpan = 'Koin tersimpan.';
 
-  // Admin — Pembukuan
   static const pemasukan = 'Pemasukan';
   static const pengeluaran = 'Pengeluaran';
   static const saldo = 'Saldo';
-  static const tambahCatatanKeuangan = tambahCatatan; // alias
+  static const tambahCatatanKeuangan = tambahCatatan;
   static const jenisTransaksi = 'Jenis';
   static const penjualan = 'Penjualan';
   static const kulakan = 'Kulakan';
@@ -434,10 +402,8 @@ class Strings {
   static const belumAdaTransaksiPeriode =
       'Belum ada transaksi pada periode ini.';
 
-  /// "3 pergerakan"
   static String labelPergerakan(int n) => '$n pergerakan';
 
-  // Admin — Laporan
   static const tujuhHariTerakhir = '7 hari terakhir';
   static const omzet = 'Omzet';
   static const laba = 'Laba';
@@ -445,7 +411,6 @@ class Strings {
   static const laporanKosong = 'Belum ada transaksi pada periode ini';
   static const transaksi = 'Transaksi';
 
-  // Admin — Belanja Stok
   static const perluDikulak = 'Perlu dikulak';
   static const saranJumlah = 'Saran';
   static const isiPerKemasan = 'Isi per kemasan';
@@ -463,15 +428,12 @@ class Strings {
   static const modalBaru = 'Modal baru/pcs (Rp)';
   static const produkTerkait = 'Produk terkait';
 
-  // Admin — Koin Warga
   static const koinWargaHint =
       'Ubah saldo koin pelanggan. Tercatat di riwayat.';
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
-  // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.109+123';
+  static const versiApp = 'KasirQuh v3.6.110+124';
 
-  // Admin — Profil Toko
   static const namaToko = 'Nama toko';
   static const alamat = 'Alamat';
   static const telepon = 'Telepon';
@@ -480,7 +442,6 @@ class Strings {
   static const infoTokoLabel = 'Info toko';
   static const teksBerjalan = 'Teks berjalan';
 
-  // Admin — Beranda Pelanggan
   static const promo = 'Promo';
   static const tambahPromo = 'Tambah promo';
   static const judulPromo = 'Judul promo';
@@ -488,7 +449,6 @@ class Strings {
   static const tampilkanPromo = 'Tampilkan';
   static const promoAktif = 'Aktif';
 
-  // Admin — Pengaturan
   static const grupTampilan = 'Tampilan';
   static const grupNotifikasi = 'Notifikasi';
   static const grupDeveloper = 'Developer';
@@ -503,7 +463,6 @@ class Strings {
   static const notifChat = 'Chat masuk';
   static const notifStokMenipis = 'Stok menipis';
 
-  // Admin — Catatan Toko
   static const tambahCatatanToko = 'Tambah catatan toko';
   static const isiCatatan = 'Isi catatan';
   static const belumAdaCatatanToko = 'Belum ada catatan toko';
@@ -514,26 +473,20 @@ class Strings {
   static const konfirmasiPurgeJudul = 'Bersihkan salinan lokal?';
   static const yaBersihkan = 'Ya, bersihkan';
 
-  /// "Bersihkan 7 salinan lokal"
   static String bersihkanSalinanLokal(int n) =>
       'Bersihkan $n salinan lokal';
 
-  /// "7 catatan di HP ini sudah tersalin ke cloud dan akan dihapus
-  /// dari HP. Data di cloud tidak tersentuh."
   static String konfirmasiPurgeIsi(int n) =>
       '$n catatan di HP ini sudah tersalin ke cloud dan akan dihapus '
       'dari HP. Data di cloud tidak tersentuh.';
 
-  /// "7 salinan lokal dibersihkan. Catatan di cloud aman."
   static String purgeSelesai(int n) =>
       '$n salinan lokal dibersihkan. Catatan di cloud aman.';
 
-  // Admin — Chat
   static const belumAdaPercakapan = 'Belum ada percakapan';
   static const chatKosongHint = 'Pesan dari pelanggan muncul di sini.';
   static const ketikPesan = 'Ketik pesan...';
 
-  // Fase 4 — Chat pelanggan (Rumpi / Toko / Komunitas)
   static const tabRumpi = 'Rumpi';
   static const tabToko = 'Toko';
   static const lencanaAdmin = 'Admin';
@@ -563,13 +516,11 @@ class Strings {
       'Mulai obrolan pertama dengan warga lainnya di sini.';
   static const warga = 'Warga';
 
-  // Fase 4 — Koin
   static const riwayatKoin = 'Riwayat Koin';
   static const koinKosong = 'Belum ada riwayat koin';
   static const koinKosongHint =
       'Koin bertambah saat admin memberi bonus atau kamu belanja.';
 
-  // Fase 4 — Notifikasi
   static const notifIzinJudul = 'Aktifkan notifikasi?';
   static const notifIzinIsi =
       'Agar kamu tahu saat status pesanan berubah atau ada kabar '

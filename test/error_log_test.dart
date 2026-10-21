@@ -16,7 +16,6 @@ void main() {
       ErrorLog.log('test', 'error $i');
     }
     expect(ErrorLog.entries.length, 50);
-    // Yang tersisa adalah 50 terakhir.
     expect(ErrorLog.entries.first.message, 'error 10');
     expect(ErrorLog.entries.last.message, 'error 59');
   });

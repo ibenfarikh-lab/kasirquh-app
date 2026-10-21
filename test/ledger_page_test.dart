@@ -12,7 +12,6 @@ JournalEntry _e(String label, int amount, DateTime at) => JournalEntry(
       createdAt: at,
     );
 
-/// Penyelarasan Pembukuan — helper murni.
 void main() {
   test('batasPeriode hari: 00:00 hari ini s/d 00:00 besok', () {
     final (from, to) = batasPeriode(0, DateTime(2026, 10, 7, 15, 30));
@@ -21,7 +20,6 @@ void main() {
   });
 
   test('batasPeriode minggu: Senin 00:00 s/d Senin berikutnya', () {
-    // 7 Okt 2026 = Rabu → minggu 5–12 Okt 2026.
     final (from, to) = batasPeriode(1, DateTime(2026, 10, 7, 15, 30));
     expect(from, DateTime(2026, 10, 5));
     expect(to, DateTime(2026, 10, 12));
@@ -37,7 +35,7 @@ void main() {
     final semua = [
       _e('a', 1000, DateTime(2026, 10, 7, 10)),
       _e('b', -500, DateTime(2026, 10, 6, 10)),
-      _e('c', 2000, DateTime(2026, 10, 8, 0, 0)), // tepat di batas to
+      _e('c', 2000, DateTime(2026, 10, 8, 0, 0)), 
     ];
     final hasil = filterJurnalPeriode(
         semua, DateTime(2026, 10, 7), DateTime(2026, 10, 8));

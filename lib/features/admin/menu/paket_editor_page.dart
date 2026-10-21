@@ -9,10 +9,6 @@ import '../../../data/models/paket_belanja.dart';
 import '../../../data/models/product.dart';
 import '../../../data/repositories/admin_repository.dart';
 
-/// Editor Paket (admin) — dipakai untuk Paket Rutin & Paket Hajatan.
-/// Mengikuti PWA (initRutinAdmin/renderRutinAdminList, initHajatanAdmin):
-/// nama + deskripsi + daftar produk (pilih dari katalog + qty),
-/// simpan baru / ubah / hapus (soft delete).
 enum JenisPaket { rutin, hajatan }
 
 class PaketEditorPage extends ConsumerStatefulWidget {
@@ -174,7 +170,6 @@ class _PaketEditorPageState extends ConsumerState<PaketEditorPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Form buat/ubah paket.
           Text(
             _editingId == null ? 'Buat paket baru' : 'Ubah paket',
             style: const TextStyle(

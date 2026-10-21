@@ -1,10 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-/// Pencatat error ala PWA (2026-10-16).
-/// Error tidak lagi cuma di console — dicatat agar terlihat.
-/// - [entries]: 50 error terakhir di memori (untuk halaman Log Error admin)
-/// - Firestore `client_errors`: untuk pantau remote (throttle 1/menit)
 class ErrorEntry {
   final DateTime at;
   final String source;
@@ -23,10 +19,8 @@ class ErrorLog {
   static final List<ErrorEntry> _entries = [];
   static DateTime? _lastRemoteAt;
 
-  /// 50 error terakhir (terbaru di akhir).
   static List<ErrorEntry> get entries => List.unmodifiable(_entries);
 
-  /// Catat error. Throttle kirim remote 1/menit, best-effort.
   static void log(String source, Object? error, [StackTrace? stack]) {
     String msg;
     if (error is String) {
@@ -49,7 +43,6 @@ class ErrorLog {
       _entries.removeRange(0, _entries.length - 50);
     }
 
-    // Kirim remote: throttle 1/menit, hanya saat login.
     try {
       final now = DateTime.now();
       if (_lastRemoteAt != null &&
@@ -66,11 +59,9 @@ class ErrorLog {
         'uid': user.uid,
       }).then((_) {}).catchError((_) {});
     } catch (_) {
-      // best-effort: jangan crash karena gagal catat
     }
   }
 
-  /// Hapus semua log lokal.
   static void clear() {
     _entries.clear();
   }

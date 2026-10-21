@@ -17,9 +17,6 @@ import '../customer_shell.dart';
 import '../session.dart';
 import 'cart_provider.dart';
 
-/// Tab Keranjang — tamu boleh isi; kunci HANYA di checkout.
-/// Setelah login/daftar, checkout dilanjutkan otomatis.
-/// Layout mengikuti PWA: judul + ringkasan + menu tersimpan + note grosir.
 class CartTab extends ConsumerWidget {
   const CartTab({super.key});
 
@@ -29,7 +26,6 @@ class CartTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Header ala PWA: "Belanjaanmu" / "Keranjang" + tombol Kosongkan.
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -70,7 +66,6 @@ class CartTab extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 12),
-        // Area menu tersimpan ala PWA.
         _savedMenuArea(context, ref),
         if (cart.isEmpty)
           const EmptyState(
@@ -107,7 +102,6 @@ class CartTab extends ConsumerWidget {
     );
   }
 
-  /// Konfirmasi kosongkan keranjang ala PWA.
   Future<void> _kosongkan(BuildContext context, WidgetRef ref) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -138,7 +132,6 @@ class CartTab extends ConsumerWidget {
     }
   }
 
-  /// Area "Menu belanja rumah" ala PWA (tampil bila ada menu tersimpan).
   Widget _savedMenuArea(BuildContext context, WidgetRef ref) {
     final saved = ref.watch(savedMenuProvider);
     if (saved.isEmpty) return const SizedBox.shrink();
@@ -172,7 +165,6 @@ class CartTab extends ConsumerWidget {
     );
   }
 
-  /// Baris item ala PWA: foto + nama + "harga × qty unit" + note + stepper.
   Widget _cartLineCard(
       BuildContext context, WidgetRef ref, CartLine line) {
     final p = line.product;
@@ -183,7 +175,6 @@ class CartTab extends ConsumerWidget {
       padding: const EdgeInsets.all(10),
       child: Row(
         children: [
-          // Foto 60px.
           SizedBox(
             width: 60,
             height: 60,
@@ -255,8 +246,6 @@ class CartTab extends ConsumerWidget {
               ],
             ),
           ),
-          // Stepper ala PWA ?v=20261012v: timbangan step 0,1,
-          // di 0,1 klik "-" → item langsung hilang.
           IconButton(
             onPressed: () {
               final notifier = ref.read(cartProvider.notifier);
@@ -293,13 +282,11 @@ class CartTab extends ConsumerWidget {
     );
   }
 
-  /// Kartu ringkasan ala PWA: Harga barang / Hemat / Subtotal / Total pesanan.
   Widget _summaryCard(
       BuildContext context, WidgetRef ref, List<CartLine> cart) {
     final notifier = ref.read(cartProvider.notifier);
     final total = notifier.total;
     final qty = notifier.totalQty;
-    // Hemat: selisih harga normal vs harga aktual (grosir/promo).
     final gross = cart.fold<int>(
         0, (s, e) => s + (e.product.price * e.qty).round());
     final hemat = gross - total;
@@ -357,7 +344,6 @@ class CartTab extends ConsumerWidget {
     );
   }
 
-  /// Tombol "Simpan jadi menu" & "Isi menu tersimpan" ala PWA.
   Widget _savedMenuButtons(BuildContext context, WidgetRef ref) {
     final saved = ref.watch(savedMenuProvider);
     return Row(
@@ -419,7 +405,6 @@ class CartTab extends ConsumerWidget {
     final notifier = ref.read(cartProvider.notifier);
     notifier.clear();
     for (final line in saved) {
-      // Tambah ulang sekaligus agar batas stok tetap dihormati.
       notifier.add(line.product,
           harga: line.hargaSatuan, qty: line.qty);
     }
@@ -448,7 +433,7 @@ class _CheckoutPage extends ConsumerStatefulWidget {
 }
 
 class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
-  String _fulfillment = 'pickup'; // pickup | delivery
+  String _fulfillment = 'pickup'; 
   String _payment = 'cod';
   final _address = TextEditingController();
   String _slot = 'Secepatnya · 15–30 menit';
@@ -473,7 +458,6 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
     final belanja = ref.read(cartProvider.notifier).total;
     final ongkir = _fulfillment == 'delivery' ? _ongkir : 0;
     final koinDipakai = _koinDipakai(ref, belanja);
-    // Nilai koin dari pengaturan admin (jangan hardcoded).
     final coinSettings = ref.read(coinSettingsProvider).valueOrNull ??
         const CoinSettings();
     final potonganKoin = koinDipakai * coinSettings.coinRate;
@@ -487,7 +471,6 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-              // Metode ambil/diantar.
               _segmented(
                 context,
                 options: const [
@@ -499,7 +482,6 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
                     setState(() => _fulfillment = v),
               ),
               const SizedBox(height: 8),
-              // Metode pembayaran.
               _segmented(
                 context,
                 options: const [
@@ -509,7 +491,6 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
                 value: _payment,
                 onChanged: (v) => setState(() => _payment = v),
               ),
-              // Referensi transfer (kondisional).
               if (_payment == 'transfer') ...[
                 const SizedBox(height: 12),
                 TextField(
@@ -527,7 +508,6 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
                       color: context.teksRedup, fontSize: 12),
                 ),
               ],
-              // Field antar (kondisional).
               if (_fulfillment == 'delivery') ...[
                 const SizedBox(height: 12),
                 TextField(
@@ -567,10 +547,8 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              // Box Tukar Koin Warga ala PWA.
               const SizedBox(height: 12),
               _koinBox(context, ref, belanja),
-              // Ringkasan ala PWA.
               const SizedBox(height: 16),
               _ringkasRow('Belanja', formatRp(belanja)),
               const SizedBox(height: 6),
@@ -610,8 +588,6 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
     );
   }
 
-  /// Box Tukar Koin Warga ala PWA.
-  /// Rumus: maksimal = total × redeemLimit% / 100; koin = min(saldo, maksimal).
   Widget _koinBox(BuildContext context, WidgetRef ref, int belanja) {
     final session = ref.watch(sessionProvider).valueOrNull;
     final saldo = session?.coins ?? 0;
@@ -621,11 +597,9 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
       return const SizedBox.shrink();
     }
 
-    // Batas dari pengaturan admin (jangan hardcoded).
     final maksimal = (belanja * coinSettings.redeemLimit ~/ 100);
     final koinBisa = saldo < maksimal ? saldo : maksimal;
 
-    // Aturan tema: background ikut tema (tidak hardcoded terang).
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
@@ -669,7 +643,6 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
     );
   }
 
-  /// Hitung koin yang dipakai (0 jika tidak dicentang).
   int _koinDipakai(WidgetRef ref, int belanja) {
     if (!_pakaiKoin) return 0;
     final session = ref.read(sessionProvider).valueOrNull;
@@ -677,13 +650,11 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
     final coinSettings = ref.read(coinSettingsProvider).valueOrNull ??
         const CoinSettings();
     if (!coinSettings.enabled || coinSettings.coinRate <= 0) return 0;
-    // Rumus Web: nilai maks = total × batas%; koin = nilai maks ÷ nilai koin.
     final maxValue = belanja * coinSettings.redeemLimit ~/ 100;
     final koin = maxValue ~/ coinSettings.coinRate;
     return saldo < koin ? saldo : koin;
   }
 
-  /// Segmented control ala PWA.
   Widget _segmented(
     BuildContext context, {
     required List<(String, String)> options,
@@ -751,7 +722,6 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
   }
 
   Future<void> _submit(BuildContext context, WidgetRef ref) async {
-    // Validasi: diantar wajib isi patokan rumah.
     if (_fulfillment == 'delivery' && _address.text.trim().isEmpty) {
       setState(() => _error = 'Isi patokan rumah untuk diantar.');
       return;
@@ -776,10 +746,6 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
                 price: e.harga,
               ))
           .toList();
-      // Catatan mengikuti format Web: 'Diantar · {patokan}' atau
-      // 'Ambil di warung', ditambah info Native (waktu antar + catatan user).
-      // Referensi transfer TIDAK lagi dilipat ke catatan — kini field
-      // `transferReference` sendiri di dokumen order (skema Web).
       final info = <String>[];
       if (_fulfillment == 'delivery') {
         info.add('Diantar · ${_address.text.trim()}');
@@ -793,15 +759,11 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
       final belanjaTotal =
           ref.read(cartProvider.notifier).total;
       final koinDipakai = _koinDipakai(ref, belanjaTotal);
-      // Aturan koin diteruskan ke repository — nilai akhir dihitung
-      // ulang dari total SERVER di dalam transaksi (P1-11, persis Web).
       final coinSettings = ref.read(coinSettingsProvider).valueOrNull ??
           const CoinSettings();
       final spendAktif = coinSettings.enabled &&
           (coinSettings.events['spend'] ?? false) &&
           coinSettings.spendRule > 0;
-      // Harga promo kilat aktif (persis Web `promoUnitPrice`): hanya
-      // produk flash yang belum kedaluwarsa.
       final store = ref.read(storeInfoProvider).valueOrNull;
       final promoUnitPrice = <String, int>{};
       String? flashId;
@@ -851,8 +813,6 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
       setState(() =>
           _error = '${Strings.stokTidakCukup} ${e.productNames.join(', ')}');
     } catch (e) {
-      // ALAT DIAGNOSIS: tampilkan jenis error asli (bukan generik).
-      // Log lengkap ke console untuk analisis.
       // ignore: avoid_print
       print('[checkout] ERROR ASLI: $e');
       final kode = _kodeError(e);
@@ -862,8 +822,6 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
     }
   }
 
-  /// Ambil kode error singkat dari exception untuk diagnosis.
-  /// Contoh: "permission-denied", "not-found", "unavailable".
   String _kodeError(Object e) {
     final s = e.toString().toLowerCase();
     if (s.contains('permission-denied')) return 'permission-denied';
@@ -874,7 +832,6 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
     if (s.contains('already-exists')) return 'sudah-ada';
     if (s.contains('failed-precondition')) return 'gagal-prasyarat';
     if (s.contains('aborted')) return 'dibatalkan';
-    // Potong 60 karakter pertama sebagai fallback.
     final raw = e.toString();
     return raw.length > 60 ? '${raw.substring(0, 60)}…' : raw;
   }

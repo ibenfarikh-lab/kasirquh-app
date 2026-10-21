@@ -8,10 +8,6 @@ import 'package:sqflite/sqflite.dart';
 
 import '../local/app_database.dart';
 
-/// Mesin sinkron offline-first:
-/// - tulis lokal dulu → masuk [sync_queue] → push ke Firestore saat online
-/// - pull koleksi publik (products, promos, store_settings) via snapshot listener
-/// - konflik stok/status pesanan: server menang
 class SyncEngine {
   final FirebaseFirestore _firestore;
   StreamSubscription? _connSub;
@@ -40,25 +36,19 @@ class SyncEngine {
     }
   }
 
-  /// Antrekan operasi tulis lokal → push ke Firestore.
   Future<void> enqueue(
       String collection, String docId, String op, Map<String, dynamic> payload) async {
     final db = await AppDatabase.db;
     await db.insert('sync_queue', {
       'collection': collection,
       'docId': docId,
-      'op': op, // set | update | delete
+      'op': op, 
       'payload': jsonEncode(payload),
       'createdAt': DateTime.now().millisecondsSinceEpoch,
     });
     await drainQueue();
   }
 
-  /// Kirim semua antrean tertunda (hanya saat online).
-  /// Item yang gagal dikirim dilewati di sisa putaran ini (tetap di DB,
-  /// dicoba lagi saat ada perubahan koneksi / aplikasi dibuka berikutnya)
-  /// agar satu item bermasalah tidak memacetkan seluruh antrean
-  /// (head-of-line blocking).
   Future<void> drainQueue() async {
     final conn = await Connectivity().checkConnectivity();
     if (conn.contains(ConnectivityResult.none)) return;
@@ -83,9 +73,6 @@ class SyncEngine {
           case 'delete':
             await ref.delete();
           case 'increment':
-            // Delta atomik: {'deltas': {field: n}, 'sets': {field: v}}.
-            // FieldValue.increment tidak bisa di-JSON-kan, jadi payload
-            // antrean memakai struktur ini lalu dibangkitkan di sini.
             final sets =
                 Map<String, dynamic>.from(payload['sets'] as Map? ?? {});
             final deltas =
@@ -93,8 +80,6 @@ class SyncEngine {
             await ref.set(
               {
                 ...sets,
-                // JANGAN .toInt(): delta stok bisa desimal (cth. +2,5 kg).
-                // FieldValue.increment menerima num apa adanya.
                 for (final e in deltas.entries)
                   e.key: FieldValue.increment(e.value as num),
               },
@@ -103,17 +88,11 @@ class SyncEngine {
         }
         await db.delete('sync_queue', where: 'id = ?', whereArgs: [id]);
       } catch (_) {
-        // Gagal → catat, lewati item ini di putaran ini, lanjut ke
-        // item berikutnya. Item tetap di antrean untuk dicoba lagi nanti.
         gagal.add(id);
       }
     }
   }
 
-  /// Kembalikan sentinel menjadi nilai Firestore:
-  /// - `{'__sv': '__sv_timestamp'}` → FieldValue.serverTimestamp()
-  /// - `{'__ts': ms}` → Timestamp.fromMillisecondsSinceEpoch(ms)
-  ///   (kebalikan dari _queueSafe di repository).
   Map<String, dynamic> _reviveTimestamps(Map<String, dynamic> m) {
     Object? revive(Object? v) {
       if (v is Map) {
@@ -135,11 +114,8 @@ class SyncEngine {
     return Map<String, dynamic>.from(revive(m) as Map);
   }
 
-  /// Pull koleksi publik → tulis ke SQLite lokal (server menang).
-  /// Anti-gagal-diam-diam: error listener dicatat (bukan ditelan).
   void _startPullListeners() {
     void onPullError(Object e, String koleksi) {
-      // Catat agar kegagalan sync terlihat di log, bukan hilang diam-diam.
       // ignore: avoid_print
       print('[SyncEngine] Gagal pull $koleksi: $e');
     }
@@ -190,7 +166,6 @@ class SyncEngine {
           {
             'id': doc.doc.id,
             'title': data['title'] ?? '',
-            // Skema Web menulis teks promo di 'copy' (P1-10).
             'subtitle': data['copy'] ?? data['subtitle'],
             'productId': data['productId'],
             'discountType': data['discountType'],
@@ -206,7 +181,6 @@ class SyncEngine {
     }
   }
 
-  /// Ambil millis dari Timestamp/num untuk kolom lokal (null bila tak ada).
   int? _tsMillis(Object? v) {
     if (v is Timestamp) return v.millisecondsSinceEpoch;
     if (v is num) return v.toInt();

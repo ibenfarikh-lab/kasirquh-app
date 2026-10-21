@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kasirquh_app/data/models/store_note.dart';
 
-/// Domain A: skema terkunci `store_memos` = title, body, createdAt.
 void main() {
   test('fromDoc membaca title/body/createdAt dari Timestamp', () {
     final t = DateTime(2026, 10, 7, 10, 30);

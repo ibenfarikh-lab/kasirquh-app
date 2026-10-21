@@ -1,5 +1,3 @@
-/// Model Resep (Ide Masak Warga) — mirror koleksi Firestore `recipes`.
-/// Skema selaras PWA (js/store.js `mapRecipe`).
 class RecipeItem {
   final String productId;
   final int qty;
@@ -29,7 +27,6 @@ class Recipe {
     this.items = const [],
   });
 
-  /// Mapping dari Firestore — selaras PWA `mapRecipe`.
   factory Recipe.fromDoc(String id, Map<String, dynamic> d) => Recipe(
         id: id,
         nama: (d['nama'] as String? ?? '').trim(),
@@ -42,15 +39,11 @@ class Recipe {
             .toList(),
       );
 
-  /// Total perkiraan harga dari daftar produk (selaras PWA `recipeTotal`).
-  /// [hargaProduk]: map productId → harga jual.
   int totalHarga(Map<String, int> hargaProduk) => items.fold(
       0,
       (sum, it) =>
           sum + (hargaProduk[it.productId] ?? 0) * it.qty);
 
-  /// Teks bahan: "Nama ×qty, ..." (selaras PWA `recipeIngredientsText`).
-  /// [namaProduk]: map productId → nama produk.
   String teksBahan(Map<String, String> namaProduk) => items
       .map((it) {
         final nama = namaProduk[it.productId];

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Skala tipografi Nunito Sans — dari DESIGN_SYSTEM.md.
 class AppText {
   static TextTheme textTheme(ColorScheme scheme) {
     final base = GoogleFonts.nunitoSansTextTheme().apply(

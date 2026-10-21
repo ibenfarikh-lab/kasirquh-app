@@ -4,9 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_theme.dart';
 
-/// Pilihan tema — 2 TEMA FINAL (keputusan user 2026-10-12):
-/// Terang / Gelap (full black AMOLED) / Otomatis.
-/// Opsi OLED dihapus, digabung ke Gelap.
 enum TemaPilihan {
   terang,
   gelap,
@@ -27,14 +24,11 @@ enum TemaPilihan {
   static TemaPilihan fromString(String? s) => switch (s) {
         'gelap' => TemaPilihan.gelap,
         'sistem' => TemaPilihan.sistem,
-        // Migrasi: pengguna OLED lama ikut Gelap (full black).
         'oled' => TemaPilihan.gelap,
         _ => TemaPilihan.terang,
       };
 }
 
-/// Pengaturan tema yang persisten (SharedPreferences).
-/// Satu instance per mode (pelanggan / admin).
 class ThemeSettings extends StateNotifier<TemaPilihan> {
   final String _key;
 
@@ -59,20 +53,16 @@ class ThemeSettings extends StateNotifier<TemaPilihan> {
   }
 }
 
-/// Tema Mode Pelanggan (default: Terang).
 final temaPelangganProvider =
     StateNotifierProvider<ThemeSettings, TemaPilihan>((ref) {
   return ThemeSettings('temaPelanggan', TemaPilihan.terang);
 });
 
-/// Tema Mode Admin (default: Gelap).
 final temaAdminProvider =
     StateNotifierProvider<ThemeSettings, TemaPilihan>((ref) {
   return ThemeSettings('temaAdmin', TemaPilihan.gelap);
 });
 
-/// Putuskan gelap/terang dari pilihan + kecerahan sistem.
-/// Fungsi pure — bisa di-unit-test tanpa Flutter.
 bool resolveGelap(TemaPilihan pilihan, Brightness sistem) =>
     switch (pilihan) {
       TemaPilihan.terang => false,
@@ -80,15 +70,12 @@ bool resolveGelap(TemaPilihan pilihan, Brightness sistem) =>
       TemaPilihan.sistem => sistem == Brightness.dark,
     };
 
-/// ThemeData Mode Pelanggan berdasar pilihan + kecerahan sistem.
-/// Gelap = full black AMOLED #000000 (keputusan user 2026-10-12).
 ThemeData temaPelangganAktif(TemaPilihan pilihan, Brightness sistem) {
   return resolveGelap(pilihan, sistem)
       ? AppTheme.customerDarkTheme()
       : AppTheme.customerTheme();
 }
 
-/// ThemeData Mode Admin berdasar pilihan + kecerahan sistem.
 ThemeData temaAdminAktif(TemaPilihan pilihan, Brightness sistem) {
   return resolveGelap(pilihan, sistem)
       ? AppTheme.adminTheme()

@@ -7,9 +7,6 @@ import '../../data/models/chat.dart';
 import '../../data/models/rumpi.dart';
 import '../../data/remote/firestore_service.dart';
 
-/// Repository sosial (Mode Pelanggan): Rumpi, Chat Toko, Chat Komunitas,
-/// riwayat koin. Baca realtime via snapshot Firestore; tulis butuh online
-/// (jujur: tanpa antrean siluman — chat/posting butuh server).
 class SocialRepository {
   final FirebaseFirestore? _db;
 
@@ -17,10 +14,7 @@ class SocialRepository {
 
   bool get online => _db != null;
 
-  // ============ RUMPI ============
 
-  /// Feed Rumpi terbaru dulu. Seed contoh (isSeed) disaring di UI berlabel —
-  /// aplikasi tidak pernah membuatnya (toFirestore selalu isSeed=false).
   Stream<List<RumpiPost>> watchRumpiPosts({int limit = 50}) async* {
     final db = _db;
     if (db == null) {
@@ -41,7 +35,6 @@ class SocialRepository {
     }
   }
 
-  /// Set id postingan yang disukai uid (untuk status tombol like).
   Stream<Set<String>> watchMyLikes(String uid) async* {
     final db = _db;
     if (db == null) {
@@ -49,8 +42,6 @@ class SocialRepository {
       return;
     }
     try {
-      // Catatan: documentId di collectionGroup = path penuh, jadi filter
-      // memakai field 'uid' yang ditulis saat toggleLike.
       yield* db
           .collectionGroup('likes')
           .where('uid', isEqualTo: uid)
@@ -70,13 +61,11 @@ class SocialRepository {
     required String text,
     String? imageUrl,
     String authorRole = 'customer',
-    // Foto profil penulis (P2-9) — Web menuliskan authorPhoto.
     String authorPhoto = '',
   }) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk posting.');
     final bersih = text.trim();
-    // Teks boleh kosong bila ada foto (postingan foto saja, persis Web).
     if (bersih.isEmpty && (imageUrl == null || imageUrl.isEmpty)) {
       throw StateError('Tulis kabar dulu ya.');
     }
@@ -92,8 +81,6 @@ class SocialRepository {
         ).toFirestore());
   }
 
-  /// Hapus postingan Rumpi (moderasi admin) beserta like-nya.
-  /// Rules: hanya admin atau penulis yang boleh hapus.
   Future<void> deletePost(String postId) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk menghapus.');
@@ -107,9 +94,6 @@ class SocialRepository {
     await batch.commit();
   }
 
-  /// Suka / batal suka. Transaksi: doc likes/{uid} + likeCount.
-  /// BUTUH rules tambahan (lihat laporan): update likeCount oleh member
-  /// dan baca/tulis subkoleksi likes.
   Future<void> toggleLike({
     required String postId,
     required String uid,
@@ -139,16 +123,13 @@ class SocialRepository {
     });
   }
 
-  // ============ CHAT TOKO (pelanggan) ============
 
-  /// Thread toko milik pelanggan (id doc = uid; dibuat admin saat menyetujui).
   Stream<ChatThread?> watchMyThread(String uid) async* {
     final db = _db;
     if (db == null) {
       yield null;
       return;
     }
-    // Anti-gagal-diam-diam: error DITERUSKAN ke UI.
     yield* db.collection('chat_threads').doc(uid).snapshots().map((doc) {
       final data = doc.data();
       if (data == null) return null;
@@ -162,7 +143,6 @@ class SocialRepository {
       yield const [];
       return;
     }
-    // Anti-gagal-diam-diam: error DITERUSKAN ke UI.
     yield* db
         .collection('chat_threads')
         .doc(threadId)
@@ -183,7 +163,6 @@ class SocialRepository {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk chat.');
     final bersih = text.trim();
-    // Pesan foto boleh tanpa teks (persis Web); keduanya kosong = batal.
     if (bersih.isEmpty && imageUrl.isEmpty) return;
     final msgRef = db
         .collection('chat_threads')
@@ -221,7 +200,6 @@ class SocialRepository {
     } catch (_) {}
   }
 
-  // ============ RIWAYAT KOIN ============
 
   Stream<List<CoinEntry>> watchCoinLedger(String uid,
       {int limit = 50}) async* {
@@ -231,9 +209,6 @@ class SocialRepository {
       return;
     }
     try {
-      // Tanpa orderBy di Firestore: query where+orderBy butuh composite index
-      // khusus (tanpanya query gagal total — insiden 2026-10-09).
-      // Urutkan di Dart (terbaru dulu).
       yield* db
           .collection('coin_ledger')
           .where('customerId', isEqualTo: uid)
@@ -251,10 +226,7 @@ class SocialRepository {
     }
   }
 
-  // ============ PROFIL PELANGGAN ============
 
-  /// Update profil sendiri: nama, No. WA, alamat, foto.
-  /// Selaras Web ?v=20261020ar + foto profil (2026-10-18).
   Future<void> updateProfil({
     required String uid,
     String? name,
@@ -274,11 +246,7 @@ class SocialRepository {
     await db.collection('customers').doc(uid).update(data);
   }
 
-  // ============ GAME (Misi Koin) ============
 
-  /// Kunci tanggal hari ini di Asia/Jakarta (P2-3) — kuota game Web
-  /// memakai todayKey Jakarta; perangkat di zona lain tidak boleh
-  /// bergeser hari. Pola sama seperti weekKeyOf misi (UTC+7).
   static String todayJakartaKey() {
     final jkt = DateTime.now().toUtc().add(const Duration(hours: 7));
     return '${jkt.year.toString().padLeft(4, '0')}-'
@@ -286,9 +254,6 @@ class SocialRepository {
         '${jkt.day.toString().padLeft(2, '0')}';
   }
 
-  /// Hasil klaim koin game.
-  /// Ikut pola Web (Store.grantGameCoins): transaction atomik,
-  /// kuota 500 koin/hari DIPISAH per game (via dateField/todayField).
   Future<({int granted, bool capped})> grantGameCoins(
     String uid,
     int requestedCoins, {
@@ -297,7 +262,7 @@ class SocialRepository {
     required String label,
     required String dateField,
     required String todayField,
-    required String eventKey, // 'tangkapDiskon' atau 'buruDiskon'
+    required String eventKey,
   }) async {
     final db = _db;
     requestedCoins = requestedCoins.clamp(0, 100000);
@@ -307,7 +272,6 @@ class SocialRepository {
     const maxPerDay = 500;
     final today = todayJakartaKey();
     return db.runTransaction((tx) async {
-      // Cek program koin & event aktif — selaras Web.
       final settingsSnap =
           await tx.get(db.collection('store_settings').doc('main'));
       final settings = settingsSnap.data() ?? {};
@@ -346,7 +310,6 @@ class SocialRepository {
     });
   }
 
-  /// Progres koin game hari ini (untuk tile progres).
   Future<int> gameCoinsToday(
       String uid, String dateField, String todayField) async {
     final db = _db;

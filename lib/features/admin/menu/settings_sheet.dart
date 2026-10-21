@@ -20,7 +20,6 @@ import '../../admin/admin_session.dart';
 import '../../auth/biometric_messages.dart';
 import '../../auth/login_cepat_toggle.dart';
 
-/// Pengaturan — 5 grup global (Tampilan, Notifikasi, Developer, Tentang, Akun).
 class SettingsSheet extends ConsumerStatefulWidget {
   const SettingsSheet({super.key});
 
@@ -42,7 +41,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     _muatSidikJari();
   }
 
-  /// Muat saklar sidik jari + kemampuan perangkat.
   Future<void> _muatSidikJari() async {
     final prefs = await SharedPreferences.getInstance();
     final didukung = await sidikJariTersedia();
@@ -53,8 +51,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     });
   }
 
-  /// Saklar sidik jari: menyalakan = "daftar" (buktikan sidik jari
-  /// terdaftar & berfungsi); mematikan = langsung mati.
   Future<void> _toggleSidikJari(bool v) async {
     if (v) {
       try {
@@ -71,7 +67,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
           await prefs.setBool(kunciSidikJariAktif, true);
           setState(() => _sidikJariAktif = true);
         }
-        // Dibatalkan → biarkan mati, tanpa pesan seram.
       } on PlatformException catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -224,7 +219,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                       final rate =
                           ref.watch(storeInfoProvider).valueOrNull?.coinRate ??
                               0;
-                      // Jujur: belum diatur (0) ≠ Rp0 per koin.
                       if (rate <= 0) return Strings.belumDiatur;
                       return '${formatRp(rate)} per koin';
                     }(),
@@ -281,7 +275,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   onTap: () => showDialog<void>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      // Aturan 1&3: ikut dialogTheme (adaptif).,
                       title: Text(
                         'Aturan & privasi',
                         style: TextStyle(color: context.teksUtama),
@@ -316,7 +309,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   onChanged:
                       _sidikJariDidukung ? _toggleSidikJari : null,
                 ),
-                // Login cepat sidik jari (Alur B/C) — widget reusable.
                 LoginCepatToggle(
                   accountId: 'admin',
                   verifySignIn: (email, password) async {
@@ -356,8 +348,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
 
   Widget _kartu(List<Widget> children) {
     return Card(
-      // Aturan 3: kartu = L2.
-      // Aturan 1&3: ikut cardTheme (adaptif).
       margin: const EdgeInsets.only(bottom: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Column(children: children),
@@ -378,7 +368,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        // Aturan 1&3: ikut dialogTheme (adaptif).,
         title: Text(
           Strings.infoSesi,
           style: TextStyle(color: context.teksUtama),
@@ -400,7 +389,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     );
   }
 
-  /// Dialog Log Error ala PWA: 50 galat terakhir, terbaru dulu.
   void _dialogLogError(BuildContext context) {
     showDialog<void>(
       context: context,
@@ -420,7 +408,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        // Aturan 1&3: ikut dialogTheme (adaptif).,
         title: Text(
           judul,
           style: TextStyle(color: context.teksUtama),
@@ -433,8 +420,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
           style: TextStyle(color: context.teksUtama),
           decoration: InputDecoration(
             filled: true,
-            // Aturan 3: input = L3.
-            fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
+            fillColor: context.permukaanKartu,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             enabledBorder: OutlineInputBorder(
@@ -486,7 +472,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        // Aturan 1&3: ikut dialogTheme (adaptif).,
         title: Text(
           Strings.yakinKeluar,
           style: TextStyle(color: context.teksUtama),
@@ -513,7 +498,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     final auth = ref.read(authServiceProvider);
     await auth?.signOut();
     if (!context.mounted) return;
-    // Keluar → kembali ke gateway (perintah user 2026-10-17).
     ref.read(modeAktifProvider.notifier).state = 'gateway';
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const GatewayScreen()),
@@ -522,7 +506,6 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
   }
 }
 
-/// Dialog Log Error ala PWA: 50 galat terakhir, terbaru dulu + tombol hapus.
 class _LogErrorDialog extends StatefulWidget {
   final BuildContext parentContext;
 

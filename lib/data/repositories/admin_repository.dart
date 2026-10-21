@@ -27,8 +27,6 @@ import '../sync/sync_engine.dart';
 
 const _uuid = Uuid();
 
-/// Sentinel untuk FieldValue.serverTimestamp() di payload antrean
-/// (JSON tidak bisa mengenkode FieldValue; dibangkitkan lagi di drainQueue).
 const _tsSentinel = '__sv_timestamp';
 
 Object? _queueSafe(Object? v) {
@@ -39,13 +37,10 @@ Object? _queueSafe(Object? v) {
     };
   }
   if (v is List) return v.map(_queueSafe).toList();
-  // DateTime dipertahankan sebagai Timestamp Firestore (bukan integer),
-  // agar field tanggal tetap bertipe timestamp sesuai skema.
   if (v is DateTime) return {'__ts': 'ts', 'ms': v.millisecondsSinceEpoch};
   return v;
 }
 
-/// Ringkasan pembukuan — dihitung dari data nyata, bukan contoh.
 class JournalSummary {
   final int masuk;
   final int keluar;
@@ -60,8 +55,6 @@ class JournalSummary {
   int get saldo => masuk - keluar;
 }
 
-/// Repository Mode Admin: baca Firestore (admin butuh data live),
-/// tulis lokal-dulu + antrean sinkron (offline-first).
 class AdminRepository {
   final FirebaseFirestore? _db;
   final SyncEngine? _sync;
@@ -70,18 +63,12 @@ class AdminRepository {
 
   bool get online => _db != null;
 
-  /// Kunci tanggal hari ini di Asia/Jakarta (P2-3) — pola UTC+7 yang
-  /// sama dengan kunci tanggal game; Web memakai todayKey() Jakarta
-  /// untuk anti-dobel check-in & tebak harga.
   static String jakartaTodayKey() {
     final jkt = DateTime.now().toUtc().add(const Duration(hours: 7));
     return '${jkt.year}-${jkt.month.toString().padLeft(2, '0')}-'
         '${jkt.day.toString().padLeft(2, '0')}';
   }
 
-  /// Ubah nama panggilan pelanggan di `customers/{uid}`.
-  /// Dipakai form Pengaturan Pelanggan (laporan user 2026-10-12:
-  /// tombol "Terapkan" tidak menyimpan apa-apa).
   Future<void> updateNamaCustomer(String uid, String nama) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet.');
@@ -90,7 +77,6 @@ class AdminRepository {
     await db.collection('customers').doc(uid).update({'name': bersih});
   }
 
-  // ============ TULIS LOKAL + ANTREAN ============
 
   Future<void> _writeLocalThenQueue({
     required String table,
@@ -110,7 +96,6 @@ class AdminRepository {
     if (_sync != null) {
       await _sync.enqueue(collection, docId, op, safe);
     } else {
-      // Mode lokal: simpan di antrean; terkirim saat online berikutnya.
       await db.insert('sync_queue', {
         'collection': collection,
         'docId': docId,
@@ -150,10 +135,7 @@ class AdminRepository {
     return _uuid.v4();
   }
 
-  // ============ TITIP BELANJA (Domain B) ============
 
-  /// Daftar titipan live dari `titip_requests`, urut terbaru.
-  /// Skema SAMA PERSIS dengan PWA.
   Stream<List<TitipRequest>> watchTitipRequests({int limit = 50}) async* {
     final db = _db;
     if (db == null) {
@@ -170,10 +152,6 @@ class AdminRepository {
             .toList());
   }
 
-  /// Ubah status titipan (keputusan user: ADMIN MANUAL).
-  /// Rantai status PERSIS Web (P1-3): baru → diproses → tersedia →
-  /// selesai / dibatalkan. Kata lama Native ('dicari'/'ditolak') tidak
-  /// dikenal daftar sah Web — jangan menulisnya lagi.
   Future<void> setTitipStatus(String id, String status) async {
     const allowed = ['baru', 'diproses', 'tersedia', 'selesai', 'dibatalkan'];
     if (!allowed.contains(status)) {
@@ -187,10 +165,7 @@ class AdminRepository {
     });
   }
 
-  // ============ PATUNGAN WARGA ============
 
-  /// Daftar patungan aktif live dari `patungan` (status aktif/penuh, limit 20).
-  /// Skema SAMA PERSIS dengan PWA. Hemat kuota.
   Stream<List<Patungan>> watchPatungan({int limit = 20}) async* {
     final db = _db;
     if (db == null) {
@@ -207,7 +182,6 @@ class AdminRepository {
             .toList());
   }
 
-  /// Buat patungan baru (admin). Skema SAMA PERSIS dengan PWA.
   Future<void> createPatungan({
     required String title,
     required String productName,
@@ -233,15 +207,11 @@ class AdminRepository {
     });
   }
 
-  /// Ikut patungan (pelanggan) — transaksi aman ala PWA.
-  /// Melempar StateError dengan pesan yang bisa ditampilkan ke user.
   Future<void> joinPatungan({
     required String patunganId,
     required String customerId,
     required String customerName,
     required int slots,
-    // Metode bayar pilihan peserta (P2-4, skema Web):
-    // 'transfer' | selainnya → 'tunai'.
     String paymentMethod = 'tunai',
   }) async {
     final db = _db;
@@ -272,8 +242,6 @@ class AdminRepository {
         'name': customerName.isEmpty ? 'Warga' : customerName,
         'slots': want,
         'joinedAt': DateTime.now().toIso8601String(),
-        // Keputusan user: ikut patungan → status "menunggu bayar"
-        // (tulisan Web, diseragamkan 2026-10-21).
         'paymentStatus': 'menunggu bayar',
         'paymentMethod': paymentMethod == 'transfer' ? 'transfer' : 'tunai',
       });
@@ -286,7 +254,6 @@ class AdminRepository {
     });
   }
 
-  /// Ubah status patungan (admin): 'selesai' | 'batal'.
   Future<void> setPatunganStatus(String id, String status) async {
     final db = _db;
     if (db == null) throw StateError('Firestore belum siap');
@@ -296,9 +263,6 @@ class AdminRepository {
     });
   }
 
-  /// Konfirmasi pembayaran peserta patungan (admin).
-  /// Keputusan user: bayar tunai saat ambil barang atau transfer,
-  /// admin yang konfirmasi lunas. [lunas]=true → 'lunas'.
   Future<void> setPatunganPayment(
       String patunganId, String customerId, bool lunas) async {
     final db = _db;
@@ -328,9 +292,6 @@ class AdminRepository {
     });
   }
 
-  // ============ PAKET RUTIN & HAJATAN ============
-  // Skema SAMA PERSIS dengan PWA (koleksi rutinPackages/hajatanPackages).
-  // Publik baca yang isActive==true; hapus = soft delete.
 
   Stream<List<PaketBelanja>> _watchPaket(String koleksi) async* {
     final db = _db;
@@ -396,9 +357,7 @@ class AdminRepository {
   Future<void> deleteHajatanPackage(String id) =>
       _deletePaket('hajatanPackages', id);
 
-  // ============ PRODUK ============
 
-  /// Semua produk termasuk nonaktif (admin boleh lihat arsip).
   Stream<List<Product>> watchAllProducts() async* {
     final db = _db;
     if (db == null) {
@@ -482,8 +441,6 @@ class AdminRepository {
     return null;
   }
 
-  /// Cari pelanggan berdasarkan kode member (KQ-XXXXXXXX).
-  /// Dipakai scanner kasir — cek prefix KQ- dulu sebelum cari produk.
   Future<Customer?> findCustomerByMemberCode(String code) async {
     final q = code.trim().toUpperCase();
     if (q.isEmpty) return null;
@@ -503,7 +460,6 @@ class AdminRepository {
         }
       } catch (_) {}
     }
-    // Fallback lokal: hitung dari UID (kode deterministik).
     try {
       final sq = await AppDatabase.db;
       final rows = await sq.query('customers', limit: 200);
@@ -519,9 +475,6 @@ class AdminRepository {
     return null;
   }
 
-  /// Backfill memberCode untuk pelanggan lama yang belum punya.
-  /// Kode deterministik dari UID — aman dijalankan berulang (idempotent).
-  /// Dipanggil sekali saat halaman Data Pelanggan dibuka.
   Future<int> backfillMemberCodes() async {
     final db = _db;
     if (db == null) return 0;
@@ -547,12 +500,6 @@ class AdminRepository {
     return count;
   }
 
-  /// Simpan produk (baru / ubah). Mengembalikan id.
-  /// Impor produk dari CSV (P1-7, port `importFromCsv` Web):
-  /// upsert berdasarkan barcode dalam WriteBatch per 400 item —
-  /// barcode yang sudah ada diperbarui (merge), selainnya dibuat
-  /// baru. [existing] = daftar produk admin saat ini (untuk peta
-  /// barcode → id). Mengembalikan hitungan (created, updated, total).
   Future<({int created, int updated, int total})> importProductsCsv(
     List<CsvProductItem> items,
     List<Product> existing,
@@ -691,11 +638,6 @@ class AdminRepository {
         docId: id,
       );
 
-  /// Sesuaikan stok (mis. belanja stok / koreksi). [costPrice] opsional.
-  ///
-  /// Stok dikirim sebagai DELTA atomik (FieldValue.increment) — bukan nilai
-  /// absolut dari DB lokal — agar dua perangkat yang mengubah bersamaan
-  /// tidak saling menimpa (lost-update). Cermin lokal di-update optimistis.
   Future<void> adjustStock(String productId, num delta,
       {int? costPrice}) async {
     final sq = await AppDatabase.db;
@@ -711,8 +653,6 @@ class AdminRepository {
       where: 'id = ?',
       whereArgs: [productId],
     );
-    // Delta untuk 'stock' (atomik di server), nilai absolut untuk
-    // 'costPrice' (niat admin eksplisit) + updatedAt.
     final payload = {
       'deltas': {'stock': delta},
       'sets': {
@@ -734,7 +674,6 @@ class AdminRepository {
     }
   }
 
-  // ============ PESANAN ============
 
   Stream<List<Order>> watchAllOrders() async* {
     final db = _db;
@@ -809,10 +748,6 @@ class AdminRepository {
     }
   }
 
-  /// Selesaikan pesanan online → status 'selesai' + tulis jurnal Pembukuan.
-  /// Mengikuti PWA `settleOrder` (store.js): jurnal "Penjualan · Online"
-  /// + beban penukaran koin bila ada. Prinsip anti-keuangan-siluman:
-  /// uang masuk HARUS tercatat.
   Future<void> settleOrder(String orderId) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet');
@@ -826,7 +761,6 @@ class AdminRepository {
       if (st != 'menunggu' && st != 'dikemas' && st != 'dikirim') {
         throw StateError('Pesanan tidak dapat diselesaikan');
       }
-      // Laba: harga jual − modal saat ini, per item.
       var profit = 0;
       var itemCount = 0;
       for (final it in (d['items'] as List? ?? [])) {
@@ -886,8 +820,6 @@ class AdminRepository {
     });
   }
 
-  /// Batalkan pesanan: kembalikan stok + koin, tulis coin_ledger.
-  /// Mengikuti PWA `cancelOrder` (store.js). Hanya dari status menunggu.
   Future<void> cancelOrder(String orderId) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet');
@@ -949,12 +881,6 @@ class AdminRepository {
     });
   }
 
-  /// Hapus pesanan — pola aman Web (P1-7, port `deleteOrder`):
-  /// SATU transaksi. Pesanan SELESAI/DIBATALKAN sudah final (jurnal,
-  /// stok, koin tidak diubah) → hanya dokumennya dihapus. Pesanan
-  /// BELUM selesai → stok & koin dikembalikan persis seperti
-  /// cancelOrder (ledger 'Koin kembali · #kode' / 'Bonus dibatalkan ·
-  /// #kode' dengan detail 'Pesanan dihapus'), baru dokumen dihapus.
   Future<void> deleteOrder(String orderId) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet');
@@ -1018,8 +944,6 @@ class AdminRepository {
     });
   }
 
-  /// Tolak bukti transfer: status penolakan persisten agar kartu
-  /// tidak hilang dari pantauan. Mengikuti PWA `rejectTransfer`.
   Future<void> rejectTransfer(String orderId, String reason) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet');
@@ -1037,8 +961,6 @@ class AdminRepository {
     });
   }
 
-  /// Verifikasi ulang transfer yang ditolak: hapus status penolakan
-  /// lalu lanjut ke status yang diminta (ikut PWA).
   Future<void> clearTransferRejection(
       String orderId, OrderStatus lanjut) async {
     final db = _db;
@@ -1051,7 +973,6 @@ class AdminRepository {
     });
   }
 
-  // ============ PERSETUJUAN & PELANGGAN ============
 
   Stream<List<Customer>> watchPendingApprovals() async* {
     final db = _db;
@@ -1111,7 +1032,6 @@ class AdminRepository {
   Future<void> setApproval(String uid, bool approved) async {
     final status = approved ? 'approved' : 'rejected';
     final sq = await AppDatabase.db;
-    // Saat disetujui: tulis memberCode (format identik PWA).
     final localUpdate = {
       'approvalStatus': status,
       if (approved) 'memberCode': memberCodeFromUid(uid),
@@ -1134,9 +1054,6 @@ class AdminRepository {
         'createdAt': DateTime.now().millisecondsSinceEpoch,
       });
     }
-    // Saat disetujui: siapkan thread Chat Toko (1 per pelanggan, id = uid).
-    // Pelanggan tidak bisa membuat thread sendiri (rules: hanya admin
-    // atau pemilik thread yang sudah ada), jadi admin yang membuatnya.
     if (approved) {
       final db = _db;
       if (db != null) {
@@ -1154,24 +1071,11 @@ class AdminRepository {
             'updatedAt': FieldValue.serverTimestamp(),
           });
         } catch (_) {
-          // Thread gagal dibuat (offline) → pelanggan lihat empty state
-          // jujur; admin bisa setujui ulang saat online.
         }
       }
     }
   }
 
-  /// Beri koin ke pelanggan (ikut PWA grantCoins).
-  /// Setiap pemberian WAJIB ada entri ledger + pakai increment atomik.
-  /// [reason]: 'harian' | 'tebak_harga' | 'belanja' | 'misi'
-  /// [claimKey]: untuk misi (cegah klaim ganda via missionClaims)
-  ///
-  /// Untuk 'harian' dan 'tebak_harga': cek dulu apakah sudah klaim hari ini.
-  /// Jika sudah → throw StateError('Sudah diklaim hari ini').
-  ///
-  /// Anti race condition: cek + tulis dalam SATU transaksi Firestore,
-  /// bukan baca-lalu-batch. Dua pemanggilan bersamaan tidak bisa
-  /// sama-sama lolos cek (audit 2026-10-12).
   Future<void> grantCoins(
     String uid,
     int amount, {
@@ -1184,11 +1088,9 @@ class AdminRepository {
     if (db == null) throw StateError('Butuh internet.');
     if (amount <= 0) return;
 
-    // Kunci hari Asia/Jakarta (P2-3) — sama seperti Web todayKey().
     final todayKey = jakartaTodayKey();
 
     await db.runTransaction((tx) async {
-      // Cek klaim ganda (ikut PWA) — di dalam transaksi.
       final custRef = db.collection('customers').doc(uid);
       final custSnap = await tx.get(custRef);
       final data = custSnap.data();
@@ -1228,12 +1130,6 @@ class AdminRepository {
     });
   }
 
-  /// Check-in harian untuk pelanggan (P1-1): mengembalikan nominal
-  /// yang berhasil diklaim, 0 bila sudah klaim / program nonaktif /
-  /// belum disetujui / gagal. Web mengklaim otomatis saat Beranda
-  /// aktif — jalur ini dipakai pemicu otomatis di Beranda Native.
-  /// Anti-dobel dijamin [grantCoins] (cek `lastCheckin` dalam
-  /// transaksi yang sama).
   Future<int> claimCheckinHarian(String uid, int reward) async {
     final todayKey = jakartaTodayKey();
     try {
@@ -1252,16 +1148,6 @@ class AdminRepository {
     }
   }
 
-  /// Sesuaikan koin pelanggan + catat di coin_ledger (append-only).
-  ///
-  /// Bila [delta] negatif (= koin ditukar/dipakai pelanggan), penukaran
-  /// dicatat sebagai BEBAN PROMOSI di jurnal (wajib skema), memakai
-  /// coinRate dari store_settings (default Rp1/koin). Satu batch atomik:
-  /// ledger + saldo koin + jurnal beban.
-  /// Koreksi saldo koin oleh admin (P0-3, selaras Web `adjustCoins`):
-  /// `reason` SELALU berkode `'koreksi_admin'` — alasan bebas admin masuk
-  /// `detail`, BUKAN reason. (Versi lama menulis teks alasan ke reason
-  /// sehingga agregasi ledger per reason dan riwayat pelanggan menyimpang.)
   Future<void> adjustCoins(String uid, int delta,
       {String? reason, String? label, String? detail}) async {
     final db = _db;
@@ -1272,8 +1158,6 @@ class AdminRepository {
       'customerId': uid,
       'amount': delta,
       'reason': reason ?? 'koreksi_admin',
-      // Selaras Web: label & detail agar riwayat koin pelanggan tampil
-      // konsisten dari kedua pintu.
       'label': label ?? 'Koreksi admin',
       'detail': detail ?? '',
       'createdAt': FieldValue.serverTimestamp(),
@@ -1293,7 +1177,6 @@ class AdminRepository {
         'type': 'pengeluaran',
         'category': 'beban_promosi',
         'amount': beban,
-        // Skema jurnal beban mengikuti Web persis.
         'note': 'Penukaran koin · ${formatAngka(-delta)} koin',
         'refId': '',
         'method': 'Koin Warga',
@@ -1305,9 +1188,6 @@ class AdminRepository {
     await batch.commit();
   }
 
-  /// Bonus koin untuk SEMUA pelanggan yang disetujui (event).
-  /// Dipakai "Event bonus" di Koin Warga. Satu batch per pelanggan
-  /// (ledger + saldo); tanpa jurnal karena bukan penukaran.
   Future<int> grantBonusToAll({
     required int amount,
     required String alasan,
@@ -1326,9 +1206,6 @@ class AdminRepository {
       batch.set(ledgerRef, {
         'customerId': doc.id,
         'amount': amount,
-        // Item bersama Web↔Native: reason SELALU kode tetap 'bonus_event',
-        // alasan bebas admin masuk detail (kesepakatan sinkron dua pintu —
-        // kode disiapkan sekarang, rilis menunggu aba-aba Tim Utama).
         'reason': 'bonus_event',
         'label': 'Bonus event',
         'detail': alasan,
@@ -1343,9 +1220,6 @@ class AdminRepository {
     return count;
   }
 
-  /// Simpan pengaturan Koin Warga — selaras Web (?v=20261020ai).
-  /// Menulis ke store_settings/main: coinProgramEnabled, coinRedeemLimit,
-  /// coinEvents (map), coinRewards (map), coinSpendRule, coinRule.
   Future<void> updateCoinSettings({
     required bool enabled,
     required int redeemLimit,
@@ -1366,10 +1240,7 @@ class AdminRepository {
     }, SetOptions(merge: true));
   }
 
-  // ============ JURNAL / PEMBUKUAN ============
 
-  /// kind lokal: penjualan | kulakan | beban | modal
-  /// → Firestore: type pemasukan/pengeluaran + category.
   Map<String, dynamic> _journalToFirestore(JournalEntry e) {
     final category = switch (e.kind) {
       'penjualan' => 'penjualan',
@@ -1417,9 +1288,7 @@ class AdminRepository {
     );
   }
 
-  // ============ CATATAN TOKO (kasbon digital) ============
 
-  /// Catatan toko milik satu pelanggan (admin: semua, dipakai di Data).
   Stream<List<CustomerNote>> watchCustomerNotes(String uid) async* {
     final db = _db;
     if (db == null) {
@@ -1443,10 +1312,9 @@ class AdminRepository {
     }
   }
 
-  /// Tambah catatan toko untuk pelanggan (admin saja — rules).
   Future<void> saveCustomerNote({
     required String customerId,
-    required String type, // tagihan | pembayaran | catatan
+    required String type,
     required int amount,
     required String note,
   }) async {
@@ -1518,7 +1386,6 @@ class AdminRepository {
         keluar += -e.amount;
       }
     }
-    // Jika online, hitung dari server (lebih lengkap).
     final db = _db;
     if (db != null) {
       try {
@@ -1539,19 +1406,17 @@ class AdminRepository {
           }
         }
       } catch (_) {
-        // pakai hasil lokal
       }
     }
     return JournalSummary(masuk: masuk, keluar: keluar, transaksi: n);
   }
 
-  /// Tambah entri jurnal jujur (label sesuai fitur nyata).
   Future<String> addJournal({
-    required String kind, // penjualan | kulakan | beban | modal
+    required String kind,
     required String label,
-    required int amount, // positif = masuk, negatif = keluar
-    String? refId, // rujukan: id pesanan / nota / dokumen terkait
-    String? customerId, // member yang dilayani (kasir scan kartu)
+    required int amount,
+    String? refId,
+    String? customerId,
     String? customerName,
   }) async {
     final id = _newId('journal');
@@ -1580,7 +1445,6 @@ class AdminRepository {
     return id;
   }
 
-  // ============ CATATAN BELANJA HARIAN ============
 
   Stream<List<StockNote>> watchStockNotes() async* {
     final db = _db;
@@ -1624,7 +1488,6 @@ class AdminRepository {
     }
   }
 
-  /// Simpan catatan belanja harian (baru / ubah arsip).
   Future<String> saveStockNote(StockNote note) async {
     final id = note.id.isEmpty ? _newId('stock_notes') : note.id;
     final n = StockNote(
@@ -1647,7 +1510,6 @@ class AdminRepository {
     return id;
   }
 
-  /// Hapus arsip catatan (tidak menghitung ulang pembukuan/stok).
   Future<void> deleteStockNote(String id) => _deleteLocalThenQueue(
         table: 'stock_notes',
         pkColumn: 'id',
@@ -1656,7 +1518,6 @@ class AdminRepository {
         docId: id,
       );
 
-  // ============ CHAT ============
 
   Stream<List<ChatThread>> watchThreads() async* {
     final db = _db;
@@ -1697,10 +1558,6 @@ class AdminRepository {
     }
   }
 
-  /// Pin/batalkan pin thread Chat Toko (P1-2, persis Web): daftar id
-  /// persisten di `store_settings/main.pinnedChatIds`, urutan =
-  /// prioritas (yang baru di-pin di depan). Dibaca segar dari server
-  /// sebelum ditulis agar tidak menimpa perubahan pintu lain.
   Future<void> togglePinChat(String threadId) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk pin chat.');
@@ -1749,7 +1606,6 @@ class AdminRepository {
       'unreadAdmin': 0,
     });
     await batch.commit();
-    // cermin lokal (riwayat offline)
     try {
       final sq = await AppDatabase.db;
       await sq.insert(
@@ -1778,19 +1634,8 @@ class AdminRepository {
     } catch (_) {}
   }
 
-  // ============ TOKO & PROMO ============
 
-  // ---- Catatan Toko (cloud: Firestore `store_memos`) ----
-  // Skema terkunci Domain A: title, body, createdAt.
-  // SQLite `store_notes` kini hanya outbox (tulisan saat cloud gagal) dan
-  // backup pra-verifikasi: baris ber-flag migrated=1 dihapus HANYA setelah
-  // verifikasi Tim Utama (aturan keras pola Tahap 1).
 
-  /// Migrasi lazy + idempoten: salin baris lokal yang belum ber-flag ke
-  /// `store_memos` dengan ID dokumen deterministik `local_<id>` (tulis ulang
-  /// aman bila flag gagal tersimpan). Best-effort: gagal (offline/rules
-  /// belum terbit) → baris tetap tak ber-flag, dicoba lagi di akses berikut.
-  /// Tidak pernah melempar.
   Future<void> _migrateStoreNotes() async {
     final db = _db;
     if (db == null) return;
@@ -1812,13 +1657,11 @@ class AdminRepository {
           whereArgs: [note.id],
         );
       } catch (_) {
-        break; // coba lagi di akses berikutnya
+        break;
       }
     }
   }
 
-  /// Catatan lokal yang belum termigrasi (outbox) — dipakai saat cloud
-  /// tak terjangkau agar catatan user tidak tampak hilang.
   Future<List<StoreNote>> _readLocalPendingNotes() async {
     final sq = await AppDatabase.db;
     final rows = await sq.query('store_notes',
@@ -1843,11 +1686,8 @@ class AdminRepository {
             .toList();
       }
     } catch (_) {
-      // Cloud tak terjangkau (offline/rules belum terbit) →
-      // tampilkan yang lokal, jangan daftar kosong.
       yield await _readLocalPendingNotes();
     }
-    // UI memanggil ref.invalidate(storeNotesProvider) setelah tulis/hapus.
   }
 
   Future<String> saveStoreNote({String? id, required String title, required String body}) async {
@@ -1864,11 +1704,9 @@ class AdminRepository {
             ).toFirestore());
         return ref.id;
       } catch (_) {
-        // jatuh ke outbox lokal di bawah; dimigrasi otomatis saat cloud pulih
       }
     }
     if (db != null && id != null) {
-      // Upsert catatan cloud yang sudah ada.
       await db.collection('store_memos').doc(id).set(StoreNote(
             id: id,
             title: bersihJudul,
@@ -1877,7 +1715,6 @@ class AdminRepository {
           ).toFirestore());
       return id;
     }
-    // Outbox lokal: belum ada ID cloud; baris ini dimigrasi lazy.
     final sq = await AppDatabase.db;
     final docId = _newId('store_notes');
     await sq.insert(
@@ -1897,22 +1734,15 @@ class AdminRepository {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk menghapus.');
     await db.collection('store_memos').doc(id).delete();
-    // Bersihkan juga baris lokal (outbox/backup) agar tak muncul lagi
-    // saat fallback offline — ini hapus atas perintah user, bukan
-    // pembersihan migrasi (yang tetap menunggu verifikasi).
     final sq = await AppDatabase.db;
     await sq.delete('store_notes', where: 'id = ?', whereArgs: [id]);
   }
 
-  /// Pembersihan pasca-verifikasi: hapus baris lokal yang sudah ber-flag
-  /// migrated=1. HANYA dipanggil setelah Tim Utama memverifikasi isi cloud
-  /// (aturan keras pola Tahap 1).
   Future<int> purgeMigratedStoreNotes() async {
     final sq = await AppDatabase.db;
     return sq.delete('store_notes', where: 'migrated = 1');
   }
 
-  /// Jumlah baris lokal ber-flag migrated=1 (untuk tombol purge).
   Future<int> countMigratedStoreNotes() async {
     final sq = await AppDatabase.db;
     final r = await sq.rawQuery(
@@ -1943,24 +1773,15 @@ class AdminRepository {
   Future<void> setModal(int value) =>
       saveStoreSettings({'modal': value});
 
-  /// Hitung ulang agregat "Sedang laris" dari pesanan (Firestore, admin
-  /// bisa baca semua), simpan 8 teratas ke store_settings.topProductIds.
-  /// Pelanggan hanya membaca hasilnya (tak bisa baca semua orders).
-  /// Tanpa pesanan → daftar kosong (section disembunyikan, bukan angka 0).
-  /// Offline → lewati diam-diam (agregat lama tetap dipakai).
   Future<void> refreshTopProducts() async {
     try {
       final orders = await watchAllOrders().first;
       final top = topProductsByQty(orders);
       await saveStoreSettings({'topProductIds': top});
     } catch (_) {
-      // Offline / gagal → agregat lama tetap dipakai.
     }
   }
 
-  /// Kurangi/tambah modal belanja sebagai DELTA atomik (FieldValue.increment)
-  /// via antrean — tidak pernah dilewati diam-diam saat offline; diterapkan
-  /// saat online kembali. Untuk pengurangan modal oleh belanja/catatan.
   Future<void> adjustModal(int delta) async {
     final sq = await AppDatabase.db;
     final payload = {
@@ -2013,10 +1834,7 @@ class AdminRepository {
     await db.collection('promos').doc(id).delete();
   }
 
-  // ============ IDE MASAK (resep) — selaras PWA saveRecipe/deleteRecipe ============
 
-  /// Simpan resep Ide Masak Warga (maksimal 5, dicek di UI).
-  /// [items]: list {productId, qty}.
   Future<String> saveRecipe(Map<String, dynamic> data, {String? id}) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk menyimpan resep.');
@@ -2049,8 +1867,6 @@ class AdminRepository {
     await db.collection('recipes').doc(id).delete();
   }
 
-  /// Simpan "Ide Masakku" pelanggan ke subkoleksi `customers/{uid}/my_recipes`.
-  /// Selaras PWA `saveMyRecipe` (2026-10-16).
   Future<String> saveMyRecipe(String uid, Map<String, dynamic> data) async {
     final db = _db;
     if (db == null) {
@@ -2082,7 +1898,6 @@ class AdminRepository {
     return doc.id;
   }
 
-  /// Hapus "Ide Masakku" pelanggan.
   Future<void> deleteMyRecipe(String uid, String id) async {
     final db = _db;
     if (db == null) {
@@ -2096,23 +1911,10 @@ class AdminRepository {
         .delete();
   }
 
-  // ============ KASIR (POS) ============
 
-  /// Selesaikan penjualan tunai kasir — SATU WriteBatch Firestore,
-  /// port `completeCashSale` Web (P0-3 + P0-4):
-  /// stok + `totalTerjual` per produk, jurnal penjualan lengkap
-  /// (profit/method/itemCount/coinUsed/coinValue/earnedCoins), saldo koin
-  /// satu delta, ledger tukar/bonus berlabel kasir, jurnal beban promosi.
-  /// Member & saldo koin divalidasi ULANG dari server sebelum batch —
-  /// bila member tidak lagi approved, transaksi dibatalkan; bila saldo
-  /// kurang, redeem di-clamp dan total dihitung ulang (persis Web).
-  ///
-  /// Mengembalikan kode struk lokal (KSR-yyyymmdd-HHmmss) untuk tampilan
-  /// struk; jurnal server mengikuti skema Web (refId kosong).
-  /// Melempar [StateError] bila offline / member tidak valid.
   Future<String> completeCashSale({
     required List<OrderItem> items,
-    required int rawTotal, // total bruto sebelum potongan koin
+    required int rawTotal,
     required int profit,
     required num itemCount,
     int redeemCoins = 0,
@@ -2132,7 +1934,6 @@ class AdminRepository {
     var total = rawTotal - redeem * rate;
     if (total < 0) total = 0;
 
-    // Validasi ulang member & saldo koin saat bayar (satu read, persis Web).
     if (memberUid != null) {
       final snap = await db.collection('customers').doc(memberUid).get();
       final data = snap.data();
@@ -2153,8 +1954,6 @@ class AdminRepository {
     final ts = FieldValue.serverTimestamp();
     final batch = db.batch();
 
-    // Stok + totalTerjual per produk (totalTerjual menggerakkan
-    // "Sedang Laris" Web — P1-6 untuk jalur kasir ditutup di sini).
     for (final item in items) {
       final ref = db.collection('products').doc(item.productId);
       batch.update(ref, {
@@ -2164,7 +1963,6 @@ class AdminRepository {
       });
     }
 
-    // Jurnal penjualan — skema Web lengkap.
     batch.set(db.collection('journal').doc(), {
       'type': 'pemasukan',
       'category': 'penjualan',
@@ -2190,7 +1988,6 @@ class AdminRepository {
         });
       }
       if (redeem > 0) {
-        // Ledger tukar — label kasir (P0-3), BUKAN lewat koreksi admin.
         batch.set(db.collection('coin_ledger').doc(), {
           'customerId': memberUid,
           'amount': -redeem,
@@ -2199,7 +1996,6 @@ class AdminRepository {
           'detail': 'Potongan ${formatRp(redeem * rate)}',
           'createdAt': ts,
         });
-        // Jurnal beban promosi penukaran koin (skema Web).
         batch.set(db.collection('journal').doc(), {
           'type': 'pengeluaran',
           'category': 'beban_promosi',
@@ -2215,7 +2011,6 @@ class AdminRepository {
         });
       }
       if (earned > 0) {
-        // Ledger bonus — detail = nilai belanja bruto (total neto + tukar).
         batch.set(db.collection('coin_ledger').doc(), {
           'customerId': memberUid,
           'amount': earned,
@@ -2244,25 +2039,20 @@ final adminRepositoryProvider = Provider<AdminRepository>((ref) {
   return AdminRepository(ref.watch(firestoreOrNullProvider), sync);
 });
 
-// ============ PROVIDER TURUNAN (dipakai tab & badge) ============
 
 final adminProductsProvider = StreamProvider<List<Product>>((ref) {
   return ref.watch(adminRepositoryProvider).watchAllProducts();
 });
 
-/// Daftar titipan belanja (Domain B) — live dari `titip_requests`.
 final titipRequestsProvider =
     StreamProvider<List<TitipRequest>>((ref) {
   return ref.watch(adminRepositoryProvider).watchTitipRequests();
 });
 
-/// Daftar patungan aktif — live dari `patungan` (limit 20, hemat kuota).
-/// Skema SAMA PERSIS dengan PWA.
 final patunganListProvider = StreamProvider<List<Patungan>>((ref) {
   return ref.watch(adminRepositoryProvider).watchPatungan();
 });
 
-/// Paket Rutin & Hajatan — live dari DB (isActive==true), ikut PWA.
 final rutinPackagesProvider =
     StreamProvider<List<PaketBelanja>>((ref) {
   return ref.watch(adminRepositoryProvider).watchRutinPackages();
@@ -2297,8 +2087,6 @@ final storeNotesProvider = StreamProvider<List<StoreNote>>((ref) {
   return ref.watch(adminRepositoryProvider).watchStoreNotes();
 });
 
-/// Semua promo (termasuk yang nonaktif) — untuk kelola admin.
-/// promosProvider (store) hanya menampilkan yang aktif untuk pelanggan.
 final adminPromosProvider = StreamProvider<List<Promo>>((ref) {
   return ref.watch(adminRepositoryProvider).watchAllPromos().map(
         (list) => list
@@ -2312,7 +2100,6 @@ final chatThreadsProvider = StreamProvider<List<ChatThread>>((ref) {
   return ref.watch(adminRepositoryProvider).watchThreads();
 });
 
-/// Produk stok menipis: stok <= batas global (store_settings.lowStockDefault).
 final lowStockProductsProvider = Provider<List<Product>>((ref) {
   final products =
       ref.watch(adminProductsProvider).valueOrNull ?? const <Product>[];
@@ -2321,11 +2108,6 @@ final lowStockProductsProvider = Provider<List<Product>>((ref) {
   return products.where((p) => p.active && p.stock <= limit).toList();
 });
 
-/// Badge Inbox: persetujuan + pesanan menunggu + chat belum dibaca + stok menipis.
-/// Badge Inbox — ikut PWA: hanya hitung item yang BELUM DIBACA.
-/// Status dibaca disimpan per ID item (persist di SharedPreferences).
-/// "Tandai semua dibaca" → semua ID saat ini ditandai → badge = 0.
-/// Item baru (ID baru) otomatis belum dibaca → badge bertambah lagi.
 class InboxReadNotifier extends StateNotifier<Set<String>> {
   static const _key = 'inbox_read_ids';
 
@@ -2344,13 +2126,11 @@ class InboxReadNotifier extends StateNotifier<Set<String>> {
   Future<void> _save() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      // Batasi 200 ID terakhir (ikut PWA).
       final ids = state.take(200).toList();
       await prefs.setStringList(_key, ids);
     } catch (_) {}
   }
 
-  /// Tandai daftar ID sebagai dibaca.
   Future<void> markRead(Iterable<String> ids) async {
     state = {...state, ...ids};
     await _save();
@@ -2364,8 +2144,6 @@ final inboxReadProvider =
   return InboxReadNotifier();
 });
 
-/// Kumpulkan semua ID item inbox saat ini (untuk badge & tandai dibaca).
-/// Format ID persis Web (P1-8): stock-/order-/titip-/chat-/signup-.
 Set<String> collectInboxIds(Ref ref) {
   final ids = <String>{};
   final approvals =
@@ -2394,9 +2172,6 @@ Set<String> collectInboxIds(Ref ref) {
   return ids;
 }
 
-/// Status baca EFEKTIF (P1-8): gabungan salinan lokal perangkat
-/// (SharedPreferences) dan daftar persisten di store_settings —
-/// mengikuti Web yang menyimpan `inboxReadIds` di kedua tempat.
 final inboxReadEffectiveProvider = Provider<Set<String>>((ref) {
   final lokal = ref.watch(inboxReadProvider);
   final server =
@@ -2407,6 +2182,5 @@ final inboxReadEffectiveProvider = Provider<Set<String>>((ref) {
 final inboxBadgeProvider = Provider<int>((ref) {
   final readIds = ref.watch(inboxReadEffectiveProvider);
   final allIds = collectInboxIds(ref);
-  // Badge = item yang belum dibaca.
   return allIds.where((id) => !readIds.contains(id)).length;
 });

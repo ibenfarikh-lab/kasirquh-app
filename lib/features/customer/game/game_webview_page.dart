@@ -11,7 +11,6 @@ import '../../../data/repositories/social_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../session.dart';
 
-/// Konfigurasi game — ikut skema Web (Misi Koin).
 class GameConfig {
   final String id;
   final String title;
@@ -56,14 +55,11 @@ const gameBuruDiskon = GameConfig(
   todayField: 'buruGameCoinsToday',
 );
 
-/// Aturan anti-cheat — ikut Web (coins.js).
 const _pointsPerCoin = 1000;
 const _maxPoints = 60000;
 const _minDurationMs = 20000;
 const _maxCoinsPerDay = 500;
 
-/// Mode Pelanggan > Misi Koin > Game — WebView + panel klaim.
-/// Pola Web: iframe → postMessage skor → validasi → klaim via grantGameCoins.
 class GameWebViewPage extends ConsumerStatefulWidget {
   final GameConfig config;
 
@@ -103,8 +99,6 @@ class _GameWebViewPageState extends ConsumerState<GameWebViewPage> {
     await _controller.loadHtmlString(html);
   }
 
-  /// Bridge: override parent.postMessage agar diteruskan ke Flutter.
-  /// (Di WebView tidak ada parent frame seperti di iframe Web.)
   Future<void> _injectBridge() async {
     await _controller.runJavaScript('''
       (function() {
@@ -136,7 +130,6 @@ class _GameWebViewPageState extends ConsumerState<GameWebViewPage> {
       final durationMs = (data['durationMs'] as num?)?.toInt() ?? 0;
       _onScore(points, durationMs);
     } catch (_) {
-      // Abaikan pesan yang tidak bisa diparse.
     }
   }
 

@@ -11,8 +11,6 @@ import 'package:kasirquh_app/features/admin/admin_session.dart';
 import 'package:kasirquh_app/features/admin/menu/chat_page.dart';
 import 'package:kasirquh_app/l10n/strings_id.dart';
 
-/// Bukti Lapis 1: nama + pratinjau pesan di daftar thread Chat admin
-/// wajib terbaca di tema terang maupun gelap (tidak hardcode).
 final _threadContoh = ChatThread(
   id: 'uid-iben',
   customerId: 'uid-iben',

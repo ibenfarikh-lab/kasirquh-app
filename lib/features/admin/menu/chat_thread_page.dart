@@ -9,7 +9,6 @@ import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../../admin/admin_session.dart';
 
-/// Mode Admin > Chat — isi percakapan satu thread + kirim pesan.
 class ChatThreadPage extends ConsumerStatefulWidget {
   final ChatThread thread;
   const ChatThreadPage({super.key, required this.thread});
@@ -25,7 +24,6 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
   @override
   void initState() {
     super.initState();
-    // Tandai thread sudah dibaca admin (abaikan bila offline).
     ref.read(adminRepositoryProvider).markThreadRead(widget.thread.id).catchError(
           (_) {},
         );
@@ -37,7 +35,6 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
     super.dispose();
   }
 
-  /// Pilih foto (kompres 300px PNG data URI — pola Web, P1-2).
   Future<void> _pilihFoto() async {
     final url = await pickProductPhoto();
     if (url != null && mounted) setState(() => _fotoUrl = url);
@@ -118,9 +115,6 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
                         margin: const EdgeInsets.symmetric(vertical: 4),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          // Aturan 3: bubble ≈ kartu = L2. Ikut tema
-                          // (fix 2026-10-17: sebelumnya AppColors.panel
-                          // hardcoded gelap → melanggar aturan di theme light).
                           color: mine
                               ? AppColors.orange
                               : (context.temaGelap
@@ -132,7 +126,6 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Foto terlampir (skema Web imageUrl, P1-2).
                             if (m.punyaFoto) ...[
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
@@ -159,7 +152,6 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
               },
             ),
           ),
-          // Pratinjau foto yang akan dikirim (P1-2).
           if (_fotoUrl.isNotEmpty)
             Container(
               color: context.permukaanKartu,
@@ -187,7 +179,7 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
               ),
             ),
           Container(
-            color: context.permukaanKartu, // Aturan 1&3: adaptif.
+            color: context.permukaanKartu,
             padding: const EdgeInsets.all(12),
             child: SafeArea(
               child: Row(
@@ -222,7 +214,6 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
     );
   }
 
-  /// Gambar pesan dari data URI/URL — kosong rapi bila gagal muat.
   Widget _fotoAdmin(String url) {
     final provider = photoImageProvider(url);
     if (provider == null) return const SizedBox.shrink();

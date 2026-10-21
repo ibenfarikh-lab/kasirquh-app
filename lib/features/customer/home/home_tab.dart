@@ -33,23 +33,9 @@ import '../catalog/catalog_tab.dart';
 import '../customer_shell.dart';
 import '../session.dart';
 
-/// Tab Beranda — plek-plek PWA live (2026-10-10), urutan dikunci:
-/// 0. Teks berjalan (running-info, di bawah header)
-/// 1. Carousel promo 5 slot tetap (KILAT/KOIN/RESEP/HEMAT/PAKET)
-/// 2. Ide masak warga (+ tombol Buat Ide Masakku)
-/// 3. Kabar Warung (carousel status warung)
-/// 4. Belanjaan siap diantar (banner pesanan aktif, hidden bila kosong)
-/// 5. Promo Kilat (flash sale + countdown)
-/// 6. Layanan warga (grid 3 kolom, 7 kartu)
-/// 7. Sedang laris (agregat pesanan)
-/// 8. Stok rumah habis? (catatan lokal)
-/// Header: gradient oranye + sapaan + badge BUKA/TUTUP + chip koin (di shell).
-/// Section tanpa data → disembunyikan atau empty state jujur.
-/// Tanpa angka/data siluman.
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
 
-  /// Kunci scroll target carousel promo (ala PWA: scroll-flash/scroll-recipe).
   static final _flashKey = GlobalKey();
   static final _recipeKey = GlobalKey();
 
@@ -62,14 +48,10 @@ class HomeTab extends ConsumerWidget {
     }
     final store = storeAsync.valueOrNull ?? const StoreInfo();
     final session = ref.watch(sessionProvider).valueOrNull;
-    // Anti-gagal-diam-diam: error produk ditampilkan eksplisit (bukan kosong).
     final productsAsync = ref.watch(productsProvider);
     final products = productsAsync.valueOrNull ?? const <Product>[];
     final uid = memberUid(session ?? const Session.guest());
 
-    // Section yang bisa diatur via Pusat Kendali Beranda (selaras PWA):
-    // restock = Stok Rumah Habis, recipe = Ide Masak, popular = Sedang Laris.
-    // Default PWA: restock=1, recipe=2, popular=3, semua tampil.
     Widget sectionOrEmpty(String key, Widget w, int defaultOrder) {
       final cfg = store.homeSections[key];
       if (cfg != null && !cfg.show) return const SizedBox.shrink();
@@ -81,7 +63,6 @@ class HomeTab extends ConsumerWidget {
       return cfg?.order ?? defaultOrder;
     }
 
-    // Default urutan PWA live: recipe=1, popular=2, restock=3.
     final orderedSections = [
       (
         sectionOrder('restock', 3),
@@ -106,7 +87,6 @@ class HomeTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Check-in koin otomatis saat Beranda aktif (P1-1, ala Web).
         if (uid != null) _AutoCheckin(uid: uid),
         if (productsAsync.hasError)
           _ErrorBanner(
@@ -114,10 +94,7 @@ class HomeTab extends ConsumerWidget {
             hint: Strings.periksaKoneksi,
             onRetry: () => ref.invalidate(productsProvider),
           ),
-        // Teks berjalan ala PWA (di bawah header).
         _runningBar(store),
-        // Urutan PWA live (2026-10-10): carousel → Ide Masak → Kabar →
-        // pesanan aktif → Promo Kilat → Layanan → Sedang Laris → Stok Habis.
         _promoCarousel(context, ref, store),
         for (final s in orderedSections.where((e) => e.$3 == 'recipe')) s.$2,
         _kabarWarungSection(store),
@@ -136,14 +113,10 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  // ---------- Teks berjalan (marquee ala PWA, 18 detik) ----------
-  /// Teks mengalir mulus dari kanan ke kiri, infinite.
-  /// Kalau teks muat dalam lebar layar, tampil statis (tanpa animasi).
   Widget _marqueeText(String teks, TextStyle style) {
     return _MarqueeText(teks: teks, style: style);
   }
 
-  // ---------- Teks berjalan (running-info ala PWA) ----------
   Widget _runningBar(StoreInfo store) {
     final teks = (store.runningText ?? '').trim();
     if (teks.isEmpty) return const SizedBox.shrink();
@@ -172,7 +145,6 @@ class HomeTab extends ConsumerWidget {
   }
 
 
-  // ---------- 3. Belanjaan siap diantar ----------
   Widget _pesananAktifSection(
       BuildContext context, WidgetRef ref, String? uid) {
     if (uid == null) return const SizedBox.shrink();
@@ -202,7 +174,6 @@ class HomeTab extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: AppCard(
-                    // Ketuk → Tab Akun (daftar Pesanan Saya).
                     onTap: () => ref
                         .read(customerTabProvider.notifier)
                         .state = 4,
@@ -245,9 +216,6 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  // ---------- Carousel promo 5 slot tetap (ala PWA live 2026-10-10) ----------
-  // Slot: flash/coin/recipe/budget/hajatan — teks dari store.carouselSlots,
-  // kosong = default PWA. Auto-rotate + dots + swipe (PageView).
   Widget _promoCarousel(
       BuildContext context, WidgetRef ref, StoreInfo store) {
     final slots = _carouselSlots(store);
@@ -304,7 +272,6 @@ class HomeTab extends ConsumerWidget {
         ),
       ];
 
-  /// Aksi tombol "Lihat →" tiap slide carousel (selaras PWA).
   void _jalankanAksiCarousel(
       BuildContext context, WidgetRef ref, String action) {
     switch (action) {
@@ -320,7 +287,6 @@ class HomeTab extends ConsumerWidget {
           requireLogin(context, ref, () async {});
           return;
         }
-        // Ala PWA: slide koin -> Dompet loyalti (satu pintu masuk).
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const DompetKoinPage()),
         );
@@ -339,10 +305,6 @@ class HomeTab extends ConsumerWidget {
     if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 500));
   }
 
-  // ---------- Kabar Warung (carousel ala PWA) ----------
-  // Urutan PWA: setelah promo carousel, sebelum layanan warga.
-  // Slide 1: status operasional warung (live dot + buka/tutup).
-  // Slide 2: saran suasana berdasarkan jam.
   Widget _kabarWarungSection(StoreInfo store) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -350,10 +312,6 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  // ---------- 6. Promo Kilat (flash sale ala PWA) ----------
-  // Urutan PWA: setelah Kabar Warung, sebelum Layanan Warga.
-  // Sumber: store_settings/main (flashProductId, flashPrice, flashRule,
-  // flashEndsAt) — selaras PWA. Tanpa flash aktif → disembunyikan.
   Widget _promoKilatSection(
       BuildContext context, WidgetRef ref, List<Product> products) {
     final store = ref.watch(storeInfoProvider).valueOrNull;
@@ -361,8 +319,6 @@ class HomeTab extends ConsumerWidget {
     if (flashId == null || flashId.isEmpty) {
       return const SizedBox.shrink();
     }
-    // Keputusan user: promo kilat MATI OTOMATIS saat waktu habis.
-    // Admin menyalakan lagi manual di pengaturan (atur ulang flash).
     final endsAt = store?.flashEndsAt;
     if (endsAt != null && endsAt.isBefore(DateTime.now())) {
       return const SizedBox.shrink();
@@ -389,9 +345,6 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  // ---------- Layanan warga (horizontal swipeable ala PWA) ----------
-  // 7 kartu: Titip belanja (featured) · Mode anggaran · Patungan ·
-  // Harga grosir · Belanja rutin · Paket hajatan · Pantau harga.
   Widget _layananSection(
       BuildContext context, WidgetRef ref, String? uid) {
     return Padding(
@@ -481,14 +434,12 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  /// Bungkus kartu layanan untuk baris horizontal scrollable.
   Widget _serviceCardWrap(Widget card, {bool last = false}) {
     return Padding(
       padding: EdgeInsets.only(right: last ? 0 : 8),
       child: SizedBox(width: 112, child: card),
     );
   }
-  /// Harga grosir otomatis ala PWA: daftar produk ber-grosir.
   Future<void> _hargaGrosirSheet(BuildContext context, WidgetRef ref) async {
     final products = ref.read(productsProvider).valueOrNull ?? const <Product>[];
     final grosir = products.where((p) => p.adaGrosir).toList();
@@ -581,7 +532,6 @@ class HomeTab extends ConsumerWidget {
   );
   }
 
-  /// Header bottom sheet ala PWA: eyebrow oranye + judul + tombol ×.
   Widget _sheetHeader(
       BuildContext sheetCtx, String eyebrow, String title) {
     return Row(
@@ -615,7 +565,6 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  /// Mode Anggaran ala PWA: pilih budget → susun rekomendasi ke keranjang.
   Future<void> _modeAnggaranSheet(
       BuildContext context, WidgetRef ref) async {
     final budgets = [
@@ -743,9 +692,6 @@ class HomeTab extends ConsumerWidget {
                                       .read(productsProvider)
                                       .valueOrNull ??
                                   const <Product>[];
-                              // Kelayakan Mode Anggaran gaya Web
-                              // (P1-5): stok > 0, harga > 0, dan
-                              // budgetEligible tidak dimatikan admin.
                               final murah = products
                                   .where((p) =>
                                       p.stock > 0 &&
@@ -759,9 +705,6 @@ class HomeTab extends ConsumerWidget {
                               var sisa = nominal;
                               for (final p in murah) {
                                 if (sisa < p.price) break;
-                                // Qty per produk gaya Web
-                                // (calculateBudget): min(budgetMaxQty,
-                                // stok, sisa dana).
                                 var maxQ = p.budgetMaxQty <= 0
                                     ? 4.0
                                     : p.budgetMaxQty.toDouble();
@@ -814,7 +757,6 @@ class HomeTab extends ConsumerWidget {
     nominalCtrl.dispose();
   }
 
-  /// Patungan Warga ala PWA: daftar patungan aktif dalam sheet.
   Future<void> _patunganSheet(
       BuildContext context, WidgetRef ref, String? uid) async {
     if (!context.mounted) return;
@@ -941,7 +883,6 @@ class HomeTab extends ConsumerWidget {
   );
   }
 
-  /// Belanja Rutin ala PWA: paket cepat + jadwal tersimpan lokal.
   Future<void> _belanjaRutinSheet(
       BuildContext context, WidgetRef ref) async {
     final prefs = await SharedPreferences.getInstance();
@@ -970,7 +911,6 @@ class HomeTab extends ConsumerWidget {
                 _sheetHeader(sheetCtx2, 'Tak perlu mengingat ulang',
                     'Belanja Rutin'),
                 const SizedBox(height: 12),
-                // Paket dari DB (ikut PWA renderRutinPackages).
                 Consumer(
                   builder: (ctx, ref2, _) {
                     final paket =
@@ -1138,7 +1078,6 @@ class HomeTab extends ConsumerWidget {
     namaCtrl.dispose();
   }
 
-  /// Paket Hajatan ala PWA: paket siap acara.
   Future<void> _paketHajatanSheet(
       BuildContext context, WidgetRef ref) async {
     if (!context.mounted) return;
@@ -1155,7 +1094,6 @@ class HomeTab extends ConsumerWidget {
             _sheetHeader(
                 sheetCtx, 'Belanja acara lebih tenang', 'Paket Hajatan'),
             const SizedBox(height: 12),
-            // Paket dari DB (ikut PWA renderHajatanPackages).
             Consumer(
               builder: (ctx, ref2, _) {
                 final paket =
@@ -1201,7 +1139,6 @@ class HomeTab extends ConsumerWidget {
   );
   }
 
-  /// Kartu paket ala PWA.
   Widget _paketCard(BuildContext sheetCtx, String nama, String isi,
       VoidCallback onTap) {
     return AppCard(
@@ -1235,8 +1172,6 @@ class HomeTab extends ConsumerWidget {
   }
 
 
-  /// Masukkan paket dari DB ke keranjang (productId langsung, ikut PWA).
-  /// Menggantikan keyword-matching yang rentan salah cocok.
   Future<void> _masukkanPaketDb(BuildContext context, WidgetRef ref,
       PaketBelanja paket) async {
     final products =
@@ -1261,7 +1196,6 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  /// Daftar pantau harga dari SharedPreferences ala PWA.
   Future<void> _pantauHargaSheet(BuildContext context, WidgetRef ref) async {
     final prefs = await SharedPreferences.getInstance();
     final watched = prefs.getStringList('pantau_harga') ?? <String>[];
@@ -1364,7 +1298,6 @@ class HomeTab extends ConsumerWidget {
     required VoidCallback onTap,
     bool featured = false,
   }) {
-    // Featured ala PWA: background gelap #2f241f, teks putih.
     Widget isi = Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -1420,8 +1353,6 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  /// Titip belanja terstruktur (Domain B): form barang + catatan + metode
-  /// → tulis ke `titip_requests`. Titip via pesan Chat Toko DICABUT.
   Future<void> _titipSheet(
       BuildContext context, WidgetRef ref, String? uid) async {
     if (uid == null) {
@@ -1576,7 +1507,6 @@ class HomeTab extends ConsumerWidget {
     noteCtrl.dispose();
   }
 
-  // ---------- 6. Stok rumah habis? ----------
   Widget _stokRumahSection(BuildContext context, WidgetRef ref) {
     final stockAsync = ref.watch(homeStockProvider);
     return Padding(
@@ -1759,8 +1689,6 @@ class HomeTab extends ConsumerWidget {
     ctrl.dispose();
   }
 
-  // ---------- 7. Ide masak warga ----------
-  // ---------- 7. Ide Masak Warga (resep publik, selaras PWA) ----------
   Widget _ideMasakSection(BuildContext context, WidgetRef ref,
       List<Product> products, String? uid) {
     final recipesAsync = ref.watch(recipesProvider);
@@ -1812,7 +1740,6 @@ class HomeTab extends ConsumerWidget {
                 ),
               ),
             ),
-          // Tombol "+ Buat Ide Masakku" ala PWA.
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
@@ -1839,7 +1766,6 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  /// "+ Bahan": masukkan semua bahan resep ke keranjang (selaras PWA).
   void _tambahBahanResep(BuildContext context, WidgetRef ref, Recipe recipe,
       Map<String, Product> byId) {
     int masuk = 0;
@@ -1860,11 +1786,8 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  /// "Buat Ide Masakku" ala PWA: form resep (nama + foto + bahan).
-  /// Selaras PWA: guest ditolak, simpan ke `customers/{uid}/my_recipes`.
   Future<void> _buatIdeMasakSheet(
       BuildContext context, WidgetRef ref) async {
-    // Selaras PWA: guest tidak bisa buat Ide Masakku.
     final session = ref.read(sessionProvider).valueOrNull;
     final uid = session == null ? null : memberUid(session);
     if (uid == null) {
@@ -1919,7 +1842,6 @@ class HomeTab extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Foto resep (opsional) — selaras PWA.
                 const Text('Foto resep (opsional)',
                     style: TextStyle(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
@@ -1999,7 +1921,6 @@ class HomeTab extends ConsumerWidget {
                   label: const Text('Tambah bahan'),
                 ),
                 const SizedBox(height: 4),
-                // Ringkasan live ala PWA: "N bahan · perkiraan total RpX".
                 Builder(
                   builder: (_) {
                     final hargaById = {
@@ -2057,7 +1978,6 @@ class HomeTab extends ConsumerWidget {
       return;
     }
     try {
-      // Selaras PWA: simpan ke `customers/{uid}/my_recipes`.
       await ref.read(adminRepositoryProvider).saveMyRecipe(uid, {
         'nama': n,
         'foto': foto ?? '',
@@ -2076,7 +1996,6 @@ class HomeTab extends ConsumerWidget {
     }
   }
 
-  /// "Bagikan": kirim resep ke Rumpi (selaras PWA `sendRumpi`).
   Future<void> _bagikanResep(
       BuildContext context,
       WidgetRef ref,
@@ -2109,7 +2028,6 @@ class HomeTab extends ConsumerWidget {
     }
   }
 
-  // ---------- 8. Sedang laris ----------
   Widget _larisSection(BuildContext context, WidgetRef ref,
       StoreInfo store, List<Product> products) {
     final ids = store.topProductIds;
@@ -2148,10 +2066,6 @@ class HomeTab extends ConsumerWidget {
   }
 }
 
-/// Kartu resep Ide Masak Warga — selaras PWA `recipeCard`.
-/// Foto (bila ada), label "Warga", nama, deskripsi,
-/// tombol "+ Bahan", tombol bagikan, dan info bahan + total.
-/// Foto resep: dukung base64 data URL (format PWA) & URL http biasa.
 Widget _fotoResep(String foto) {
   const tinggi = 110.0;
   if (foto.startsWith('data:image')) {
@@ -2285,7 +2199,6 @@ class _RecipeCard extends StatelessWidget {
   }
 }
 
-/// Judul section ala prototipe: kicker kecil + judul tebal.
 class _SectionTitle extends StatelessWidget {
   final String kicker;
   final String title;
@@ -2317,7 +2230,6 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-/// Kartu produk horizontal untuk section Beranda.
 class _HomeProductCard extends ConsumerWidget {
   final Product product;
 
@@ -2354,7 +2266,6 @@ class _HomeProductCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Center(
-                      // Stok habis: foto greyout ringan (P2-6, Web).
                       child: habis &&
                               (product.photoPath ?? '').isNotEmpty
                           ? fotoHabisGreyout(foto)
@@ -2389,7 +2300,6 @@ class _HomeProductCard extends ConsumerWidget {
   }
 }
 
-/// Slot carousel promo 5 tetap ala PWA.
 class _CarouselSlot {
   final String key;
   final String badge;
@@ -2406,8 +2316,6 @@ class _CarouselSlot {
   });
 }
 
-/// Teks berjalan (marquee) ala PWA: mengalir mulus kanan → kiri,
-/// 18 detik, infinite. Kalau teks muat, tampil statis.
 class _MarqueeText extends StatefulWidget {
   final String teks;
   final TextStyle style;
@@ -2479,8 +2387,6 @@ class _MarqueeTextState extends State<_MarqueeText>
   }
 }
 
-/// Carousel promo ala PWA: PageView auto-rotate + dots + swipe.
-/// Style light: bg #fff7ed, border #f0d9b5, rounded 18px.
 class _PromoCarouselView extends StatefulWidget {
   final List<_CarouselSlot> slots;
   final void Function(String action) onAction;
@@ -2545,8 +2451,6 @@ class _PromoCarouselViewState extends State<_PromoCarouselView> {
               onPageChanged: (i) => setState(() => _idx = i),
               itemBuilder: (_, i) {
                 final s = widget.slots[i];
-                // Layout ala PWA: badge di atas, headline + tombol sebaris,
-                // subheadline di bawah. Kanan disisakan untuk dots vertikal.
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(16, 10, 40, 10),
                   child: Column(
@@ -2657,8 +2561,6 @@ class _PromoCarouselViewState extends State<_PromoCarouselView> {
   }
 }
 
-/// Kartu Promo Kilat ala PWA: countdown live + harga coret + tombol Ambil.
-/// Harga promo dikunci saat masuk keranjang (seperti PWA).
 class _PromoKilatCard extends ConsumerStatefulWidget {
   final Product product;
   final int hargaPromo;
@@ -2682,7 +2584,6 @@ class _PromoKilatCardState extends ConsumerState<_PromoKilatCard> {
 
   DateTime _defaultEnd() {
     final now = DateTime.now();
-    // PWA: default akhir hari bila flashEndsAt tidak diatur.
     return DateTime(now.year, now.month, now.day, 24);
   }
 
@@ -2726,8 +2627,6 @@ class _PromoKilatCardState extends ConsumerState<_PromoKilatCard> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        // Warna PWA light: bg #fff0df, border #f0cc9f.
-        // Dark: ikut tema (tidak hardcoded terang).
         color: Theme.of(context).brightness == Brightness.dark
             ? const Color(0xFF0A0908)
             : const Color(0xFFFFF0DF),
@@ -2839,13 +2738,11 @@ class _PromoKilatCardState extends ConsumerState<_PromoKilatCard> {
   }
 }
 
-/// Pesanan saya (member) — dipakai banner "Belanjaan siap diantar".
 final _myOrdersProvider =
     StreamProvider.family<List<Order>, String>((ref, uid) {
   return ref.watch(orderRepositoryProvider).watchMyOrders(uid);
 });
 
-/// Filter katalog yang diminta dari Beranda (kategori cepat / pencarian).
 class CatalogFilter {
   final String query;
   final String category;
@@ -2855,8 +2752,6 @@ class CatalogFilter {
 final catalogFilterProvider =
     StateProvider<CatalogFilter>((ref) => const CatalogFilter());
 
-/// Banner error inline — anti-gagal-diam-diam.
-/// Tampil saat stream data gagal, dengan tombol coba lagi.
 class _ErrorBanner extends StatelessWidget {
   final String title;
   final String hint;
@@ -2900,11 +2795,6 @@ class _ErrorBanner extends StatelessWidget {
   }
 }
 
-/// Carousel "Kabar Warung" ala PWA.
-///
-/// Slide 1: status operasional warung (live dot hijau/abu + buka/tutup).
-/// Slide 2: saran suasana berdasarkan jam (pagi/siang/sore/malam).
-/// Auto-rotasi tiap 5,6 detik; jeda 8,5 detik setelah interaksi manual.
 class _KabarCarousel extends StatefulWidget {
   final StoreInfo store;
 
@@ -2976,8 +2866,6 @@ class _KabarCarouselState extends State<_KabarCarousel> {
     _pauseAuto();
   }
 
-  /// Status buka/tutup — PWA default "buka" bila jam tak bisa dihitung.
-  /// Override via Pusat Kendali (kabarStatus) bila diisi.
   bool get _open => widget.store.isOpenNow ?? true;
 
   String get _statusTitle {
@@ -2991,7 +2879,6 @@ class _KabarCarouselState extends State<_KabarCarousel> {
       : 'Buka lagi pukul ${widget.store.openTime} · '
           'pesanan bisa disiapkan nanti';
 
-  /// Saran suasana berdasarkan jam — logika persis PWA (renderKabar).
   (String, String) get _mood {
     final hour = DateTime.now().hour;
     if (hour < 10) {
@@ -3019,8 +2906,6 @@ class _KabarCarouselState extends State<_KabarCarousel> {
     );
   }
 
-  /// Copy suasana — override via Pusat Kendali (kabarMood) bila diisi.
-  /// PWA: override mengganti copy, judul tetap berdasar jam.
   String get _moodCopy {
     final override = widget.store.kabarMood?.trim();
     if (override != null && override.isNotEmpty) return override;
@@ -3105,7 +2990,6 @@ class _KabarCarouselState extends State<_KabarCarousel> {
                     ),
                   ],
                 ),
-                // Dots vertikal ala PWA (kanan bawah).
                 Positioned(
                   right: 11,
                   bottom: 10,
@@ -3181,10 +3065,6 @@ class _KabarCarouselState extends State<_KabarCarousel> {
   }
 }
 
-/// Pemicu check-in koin otomatis saat Beranda pelanggan tampil
-/// (P1-1, mengikuti Web yang mengklaim saat Beranda aktif).
-/// Sekali per uid per proses aplikasi; toast HANYA saat berhasil
-/// mengklaim (sudah klaim / event nonaktif / offline = diam).
 class _AutoCheckin extends ConsumerStatefulWidget {
   const _AutoCheckin({required this.uid});
 

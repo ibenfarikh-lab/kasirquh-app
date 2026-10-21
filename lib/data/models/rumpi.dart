@@ -1,18 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Postingan Rumpi — mirror koleksi Firestore `rumpi_posts`.
-/// Foto disimpan sebagai data URI PNG (base64, ≤300px) di field `imageUrl`
-/// karena Firebase Storage tidak dipakai (keputusan user: tanpa Blaze).
-/// Tidak ada data contoh: `isSeed` selalu false dari aplikasi.
 class RumpiPost {
   final String id;
   final String authorId;
   final String authorName;
 
-  /// Peran penulis: 'admin' atau 'customer'. Dokumen lama tanpa field ini
-  /// diperlakukan sebagai 'customer' (tanpa backfill).
   final String authorRole;
-  // Foto profil penulis saat posting (P2-9, skema Web `authorPhoto`).
   final String authorPhoto;
   final String text;
   final String? imageUrl;
@@ -68,7 +61,6 @@ class RumpiPost {
       };
 }
 
-/// Entri riwayat koin — mirror koleksi Firestore `coin_ledger` (baca saja).
 class CoinEntry {
   final String id;
   final String customerId;
@@ -108,7 +100,6 @@ class CoinEntry {
   }
 }
 
-/// Label alasan koin dalam Bahasa Indonesia (fungsi murni — di-test).
 String labelAlasanKoin(String reason) => switch (reason) {
       'harian' => 'Koin harian',
       'belanja' => 'Bonus belanja',
@@ -118,7 +109,6 @@ String labelAlasanKoin(String reason) => switch (reason) {
       _ => reason.isEmpty ? 'Lainnya' : reason,
     };
 
-/// Waktu relatif Bahasa Indonesia, mis. "5 mnt lalu" (fungsi murni — di-test).
 String waktuRelatif(DateTime t, {DateTime? sekarang}) {
   final now = sekarang ?? DateTime.now();
   final diff = now.difference(t);

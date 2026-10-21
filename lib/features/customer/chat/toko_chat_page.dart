@@ -10,15 +10,11 @@ import '../../../data/repositories/social_repository.dart';
 import '../../../l10n/strings_id.dart';
 import 'chat_widgets.dart';
 
-/// Mode Pelanggan > Chat > Toko — percakapan dengan Warunge Mimi.
-/// Thread dibuat admin saat menyetujui pendaftaran (1 thread per pelanggan).
 class TokoChatPage extends ConsumerStatefulWidget {
   final String uid;
 
-  /// true bila di dalam sheet modal ala PWA.
   final bool modeSheet;
 
-  /// ScrollController dari DraggableScrollableSheet (opsional).
   final ScrollController? scrollController;
 
   const TokoChatPage({
@@ -45,15 +41,12 @@ class _TokoChatPageState extends ConsumerState<TokoChatPage> {
       ),
       data: (thread) {
         if (thread == null) {
-          // Thread dibuat admin saat persetujuan; belum ada = belum dibuat.
           return const EmptyState(
             icon: Icons.storefront_outlined,
             title: Strings.chatTokoKosong,
             hint: Strings.chatTokoKosongHint,
           );
         }
-        // Tandai dibaca ditangani _IsiThread (initState + pesan baru),
-        // bukan di build() — tulis Firestore di build() memicu loop.
         return _IsiThread(thread: thread, uid: widget.uid);
       },
     );
@@ -76,7 +69,6 @@ class _IsiThreadState extends ConsumerState<_IsiThread> {
   @override
   void initState() {
     super.initState();
-    // Tandai dibaca sekali saat thread dibuka (di luar build agar tak loop).
     WidgetsBinding.instance.addPostFrameCallback((_) => _tandaiDibaca());
   }
 
@@ -90,7 +82,6 @@ class _IsiThreadState extends ConsumerState<_IsiThread> {
     super.dispose();
   }
 
-  /// Pilih foto (kompres 300px PNG data URI — pola Web, P1-2).
   Future<void> _pilihFoto() async {
     final url = await pickProductPhoto();
     if (url != null && mounted) setState(() => _fotoUrl = url);
@@ -121,7 +112,6 @@ class _IsiThreadState extends ConsumerState<_IsiThread> {
   Widget build(BuildContext context) {
     final msgsAsync =
         ref.watch(tokoMessagesProvider(widget.thread.id));
-    // Pesan baru masuk saat halaman terbuka → tandai dibaca.
     ref.listen(tokoMessagesProvider(widget.thread.id), (prev, next) {
       final sblm = prev?.valueOrNull?.length ?? 0;
       final skrg = next.valueOrNull?.length ?? 0;
@@ -181,7 +171,6 @@ class _IsiThreadState extends ConsumerState<_IsiThread> {
             },
           ),
         ),
-        // Pratinjau foto yang akan dikirim (P1-2).
         if (_fotoUrl.isNotEmpty)
           Container(
             color: context.permukaanKartu,

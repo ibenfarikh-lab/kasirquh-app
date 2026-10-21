@@ -83,7 +83,6 @@ void main() {
         text: 'Halo',
         createdAt: DateTime(2026, 1, 1),
       ).toFirestore();
-      // createdAt diisi server; pastikan field kunci ada.
       expect(m['isSeed'], false);
       expect(m['likeCount'], 0);
       expect(m['authorId'], 'u1');

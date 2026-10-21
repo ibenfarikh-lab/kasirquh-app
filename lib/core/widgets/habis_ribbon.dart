@@ -2,13 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// Penanda HABIS gaya Web (keputusan user 2026-10-20, P2-6):
-/// pita diagonal merah (#d63a2f) di pojok kiri-atas + foto greyout
-/// ringan. Menggantikan pill abu-abu lama. Pasang di dalam Stack
-/// yang di-clip (ClipRRect/ClipRect) agar pita terpotong rapi
-/// di tepi kartu — persis `.out-ribbon` Web.
 class HabisRibbon extends StatelessWidget {
-  /// Varian kecil untuk kartu mini (quick/popular Web).
   final bool kecil;
 
   const HabisRibbon({super.key, this.kecil = false});
@@ -49,10 +43,8 @@ class HabisRibbon extends StatelessWidget {
   }
 }
 
-/// Greyout ringan foto produk habis (Web: grayscale(.7) opacity(.8))
-/// — foto tetap terlihat, hanya dibuat pucat.
 Widget fotoHabisGreyout(Widget child) {
-  const s = 0.3; // sisa saturasi (grayscale 0.7)
+  const s = 0.3;
   return Opacity(
     opacity: 0.8,
     child: ColorFiltered(

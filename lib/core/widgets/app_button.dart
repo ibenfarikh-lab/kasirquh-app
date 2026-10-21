@@ -2,16 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// Tombol primer gradien oranye / Setujui (hijau) / Tolak (merah).
 class AppButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final AppButtonKind kind;
   final bool fullWidth;
 
-  /// Saat true: tombol nonaktif + tampil spinner.
-  /// (Temuan uji HP 2026-10-06: tanpa indikator loading, user mengira
-  /// tap-nya tidak masuk lalu men-tap berkali-kali.)
   final bool isLoading;
 
   const AppButton({
@@ -72,8 +68,6 @@ class AppButton extends StatelessWidget {
     return SizedBox(width: double.infinity, child: button);
   }
 
-  /// Label tombol — jadi spinner saat loading agar user tahu
-  /// tap-nya sudah masuk dan aplikasi sedang bekerja.
   Widget _labelChild() {
     if (!isLoading) return Text(label);
     return const SizedBox(
@@ -106,7 +100,6 @@ class _GradientButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        // Aturan 2: oranye tunggal solid (0xFFF49A24), bukan gradient.
         color:
             onPressed == null ? Colors.grey.shade400 : AppColors.orange,
         borderRadius: BorderRadius.circular(14),

@@ -10,10 +10,6 @@ import '../../data/repositories/admin_repository.dart';
 import '../../data/repositories/store_repository.dart';
 import '../../l10n/strings_id.dart';
 
-/// Bootstrap push & heads-up Mode Admin (dipasang di AdminShell).
-/// - Simpan token FCM ke store_settings/main.adminFcmTokens.
-/// - Pesanan baru (status menunggu) → heads-up, sesuai pengaturan
-///   notifikasi admin (notif_pesanan_baru).
 class AdminPushBootstrap extends ConsumerStatefulWidget {
   const AdminPushBootstrap({super.key});
 
@@ -36,8 +32,6 @@ class _AdminPushBootstrapState extends ConsumerState<AdminPushBootstrap> {
     _jalan = true;
     await Notify.init();
     final messaging = ref.read(messagingServiceProvider);
-    // Admin: izin diminta langsung oleh sistem (tanpa dialog penjelasan
-    // tambahan — pengaturan notifikasi ada di Menu > Pengaturan).
     final token = await messaging.init(
       mintaIzinDulu: () async => true,
       onForeground: (judul, isi) {
@@ -61,7 +55,6 @@ class _AdminPushBootstrapState extends ConsumerState<AdminPushBootstrap> {
       const _PesananBaruWatcher();
 }
 
-/// Pantau pesanan menunggu: ada yang baru → heads-up (bila diizinkan).
 class _PesananBaruWatcher extends ConsumerStatefulWidget {
   const _PesananBaruWatcher();
 
@@ -91,7 +84,7 @@ class _PesananBaruWatcherState
         };
         final lalu = _terakhir;
         _terakhir = menunggu;
-        if (lalu == null) return; // snapshot pertama: jangan berisik
+        if (lalu == null) return;
         final baru = menunggu.difference(lalu);
         if (baru.isEmpty) return;
         final prefs = await SharedPreferences.getInstance();
@@ -101,8 +94,6 @@ class _PesananBaruWatcherState
           orElse: () => orders.first,
         );
         if (!mounted) return;
-        // Bunyi mengikuti adminSoundSettings (ditulis Web, kini
-        // dibaca & diterapkan Native): jenis 'order' + saklar getar.
         final suara =
             ref.read(storeInfoProvider).valueOrNull?.soundSettings;
         Notify.headsUp(

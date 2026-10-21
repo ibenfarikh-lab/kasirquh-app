@@ -1,10 +1,7 @@
-// File ini dibuat otomatis dari google-services.json (Firebase Console).
-// Project: kasirquh-app | Package: com.kasirquh.app
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform;
 
-/// Opsi Firebase untuk aplikasi KasirQuh-app.
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     switch (defaultTargetPlatform) {

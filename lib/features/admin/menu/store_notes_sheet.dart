@@ -9,7 +9,6 @@ import '../../../data/models/store_note.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Sheet Catatan Toko: coretan admin, tersimpan di cloud (`store_memos`).
 class StoreNotesSheet extends ConsumerStatefulWidget {
   const StoreNotesSheet({super.key});
 
@@ -23,8 +22,6 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
   bool _showForm = false;
   bool _busy = false;
 
-  /// Baris lokal ber-flag migrated=1 (salinan yang sudah pindah ke cloud).
-  /// Tombol purge hanya tampil bila > 0.
   int? _sisaMigrasi;
 
   @override
@@ -44,8 +41,6 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
     }
   }
 
-  /// Purge pasca-verifikasi (instruksi Tim Utama, ACC user):
-  /// hapus HANYA baris lokal migrated=1. Cloud tidak tersentuh.
   Future<void> _purge() async {
     final n = _sisaMigrasi ?? 0;
     if (n <= 0 || _busy) return;
@@ -123,8 +118,6 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        // Aturan 3: dialog = L3.
-        // Aturan 1&3: ikut dialogTheme (adaptif).,
         title: Text(
           'Hapus catatan ini?',
           style: TextStyle(color: context.teksUtama),
@@ -158,7 +151,7 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
         hintText: hint,
         hintStyle: TextStyle(color: context.teksRedup),
         filled: true,
-        fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
+        fillColor: context.permukaanKartu,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
@@ -214,8 +207,6 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
               itemBuilder: (_, i) {
                 final n = notes[i];
                 return Card(
-                  // Aturan 3: kartu = L2.
-                  // Aturan 1&3: ikut cardTheme (adaptif).
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -266,9 +257,6 @@ class _StoreNotesSheetState extends ConsumerState<StoreNotesSheet> {
           label: Strings.tambahCatatanToko,
           onPressed: () => setState(() => _showForm = true),
         ),
-        // Tombol purge: hanya tampil bila ada salinan lokal yang
-        // sudah pindah ke cloud (migrated=1). Hilang sendiri setelah
-        // dibersihkan.
         if ((_sisaMigrasi ?? 0) > 0) ...[
           const SizedBox(height: 8),
           AppButton(

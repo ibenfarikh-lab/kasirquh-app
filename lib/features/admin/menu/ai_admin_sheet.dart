@@ -12,16 +12,12 @@ import '../../../data/models/product.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Satu saran berbasis data — ikon + teks. Fungsi pure di bawah.
 class AiSaran {
   final IconData ikon;
   final String teks;
   const AiSaran(this.ikon, this.teks);
 }
 
-/// Hasilkan saran dari data lokal (tanpa backend AI).
-/// Aturan jujur: hanya bicara berdasar data yang ada; tanpa data → saran
-/// umum yang tidak mengklaim angka.
 List<AiSaran> hasilkanSaran({
   required int omzetHariIni,
   required int transaksiHariIni,
@@ -66,8 +62,6 @@ List<AiSaran> hasilkanSaran({
   return saran;
 }
 
-/// AI Admin — ringkasan & saran berbasis data lokal.
-/// Bukan AI generatif: semua angka dari jurnal/pesanan/produk yang nyata.
 class AiAdminSheet extends ConsumerWidget {
   const AiAdminSheet({super.key});
 
@@ -130,7 +124,6 @@ class AiAdminSheet extends ConsumerWidget {
         orders.where((o) => o.status == OrderStatus.menunggu).length;
     final namaMenipis = lowStock.map((p) => p.name).toList();
     final laris = topProductsByQty(orders, limit: 3);
-    // Nama produk laris dari orders (nama item, bukan id).
     final namaLaris = <String>[];
     for (final id in laris) {
       for (final o in orders) {

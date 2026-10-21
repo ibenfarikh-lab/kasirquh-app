@@ -6,8 +6,6 @@ import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/chat.dart';
 import '../../../data/models/rumpi.dart';
 
-/// Gelembung pesan — dipakai Chat Toko & Chat Komunitas.
-/// Warna ngikutin tema aktif (aturan: tema gelap tanpa background terang).
 class ChatBubble extends StatelessWidget {
   final ChatMessage message;
   final bool milikSaya;
@@ -54,7 +52,6 @@ class ChatBubble extends StatelessWidget {
                   ),
                 ),
               ),
-            // Foto terlampir (skema Web imageUrl, P1-2).
             if (message.punyaFoto)
               Padding(
                 padding: EdgeInsets.only(bottom: message.text.isEmpty ? 0 : 6),
@@ -89,7 +86,6 @@ class ChatBubble extends StatelessWidget {
   }
 }
 
-/// Gambar pesan chat dari data URI/URL — kosong rapi bila gagal muat.
 Widget _fotoPesan(String url) {
   final provider = photoImageProvider(url);
   if (provider == null) return const SizedBox.shrink();
@@ -102,8 +98,6 @@ Widget _fotoPesan(String url) {
   );
 }
 
-/// Bar input pesan — dipakai Chat Toko & Chat Komunitas.
-/// [onPickPhoto] opsional: tombol foto di kiri kolom teks (Chat Toko).
 class ChatInputBar extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSend;

@@ -4,15 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/customer_note.dart';
 import '../remote/firestore_service.dart';
 
-/// Catatan toko (kasbon digital) — baca untuk pemilik.
-/// Tulis hanya lewat AdminRepository (admin saja, sesuai rules).
 class CustomerNoteRepository {
   final FirebaseFirestore? _db;
 
   CustomerNoteRepository(this._db);
 
-  /// Catatan tokoku — hanya yang login sebagai pemilik yang bisa baca
-  /// (rules: pemilik + admin).
   Stream<List<CustomerNote>> watchMyNotes(String uid) async* {
     final db = _db;
     if (db == null) {

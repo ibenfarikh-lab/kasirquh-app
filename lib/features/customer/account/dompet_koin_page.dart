@@ -14,10 +14,6 @@ import '../session.dart';
 import 'coin_history_page.dart';
 import 'misi_koin_page.dart';
 
-/// Dompet Koin Warga — satu pintu masuk koin ala PWA (coinModal).
-/// Tampil: tagline + saldo + nilai Rp, banner promo bergantian,
-/// aturan program, shortcut Misi Koin, tautan Riwayat Koin.
-/// Selaras Web ?v=20261020ap (2026-10-18).
 class DompetKoinPage extends ConsumerStatefulWidget {
   const DompetKoinPage({super.key});
 
@@ -36,8 +32,6 @@ class _DompetKoinPageState extends ConsumerState<DompetKoinPage> {
     super.dispose();
   }
 
-  /// Susun pesan banner dari event game yang AKTIF (jujur ikut settingan).
-  /// Ikut Web renderCoinBanner: rotasi tiap 4 detik, sembunyi bila kosong.
   void _updateBanner(CoinSettings settings) {
     final msgs = <String>[];
     if (settings.enabled) {
@@ -56,7 +50,6 @@ class _DompetKoinPageState extends ConsumerState<DompetKoinPage> {
     }
     _bannerTimer?.cancel();
     _bannerTimer = null;
-    // Reset bila daftar berubah.
     if (msgs.join('|') != _bannerMsgs.join('|')) {
       _bannerMsgs = msgs;
       _bannerIdx = 0;
@@ -87,7 +80,6 @@ class _DompetKoinPageState extends ConsumerState<DompetKoinPage> {
     }
     final settings =
         ref.watch(coinSettingsProvider).valueOrNull ?? const CoinSettings();
-    // Update banner setiap build (ikut perubahan settingan).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _updateBanner(settings);
     });
@@ -99,7 +91,6 @@ class _DompetKoinPageState extends ConsumerState<DompetKoinPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Tagline — selaras Web ?v=20261020ap.
           Text(
             'Belanja dapat koin, main game dapat koin — semua jadi diskon!',
             style: TextStyle(
@@ -109,7 +100,6 @@ class _DompetKoinPageState extends ConsumerState<DompetKoinPage> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
-          // Kartu saldo.
           AppCard(
             child: Column(
               children: [
@@ -127,7 +117,6 @@ class _DompetKoinPageState extends ConsumerState<DompetKoinPage> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                // Nilai koin dikunci Rp1 (tetap).
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -149,7 +138,6 @@ class _DompetKoinPageState extends ConsumerState<DompetKoinPage> {
               ],
             ),
           ),
-          // Banner promo bergantian (hanya event aktif).
           if (_bannerMsgs.isNotEmpty) ...[
             const SizedBox(height: 12),
             AnimatedSwitcher(
@@ -184,7 +172,6 @@ class _DompetKoinPageState extends ConsumerState<DompetKoinPage> {
                   fontSize: 12,
                   fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
-          // Shortcut: Misi Koin (ala PWA).
           Row(
             children: [
               Expanded(

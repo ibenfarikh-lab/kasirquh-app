@@ -1,27 +1,19 @@
-/// Model Produk — mirror koleksi Firestore `products`.
 class Product {
   final String id;
   final String name;
   final String category;
-  final int price; // harga jual (Rp, integer)
-  final int cost; // modal/pcs (Rp, integer)
-  /// Stok desimal — kg/liter WAJIB mempertahankan presisi
-  /// (cth. 3,75); pcs/dus tampil bulat. Jangan .toInt()/.round().
+  final int price;
+  final int cost;
   final double stock;
-  final int lowStockAt; // batas menipis per produk (default 5)
+  final int lowStockAt;
   final String? barcode;
   final String? photoPath;
   final bool active;
-  /// Satuan produk (pcs/dus/kg/liter/dll) — dari PWA.
   final String unit;
-  /// Harga grosir: min qty, harga/item, dan label — dari PWA.
   final int wholesaleQty;
   final int wholesalePrice;
   final String wholesaleLabel;
-  /// Mode Anggaran (skema Web): produk boleh masuk rekomendasi anggaran
-  /// (bawaan true; admin Web bisa mematikan per produk).
   final bool budgetEligible;
-  /// Batas qty per produk dalam Mode Anggaran (bawaan Web 4).
   final int budgetMaxQty;
 
   const Product({
@@ -43,7 +35,6 @@ class Product {
     this.budgetMaxQty = 4,
   });
 
-  /// Ada harga grosir?
   bool get adaGrosir => wholesaleQty > 0 && wholesalePrice > 0;
 
   Map<String, dynamic> toMap() => {
@@ -84,8 +75,6 @@ class Product {
         budgetMaxQty: (m['budgetMaxQty'] as num?)?.toInt() ?? 4,
       );
 
-  /// Payload Firestore — NAMA FIELD SELARAS SKEMA
-  /// (costPrice / photoUrl / isActive / lowStockAt; tanpa 'id').
   Map<String, dynamic> toFirestore() => {
         'name': name,
         'category': category,

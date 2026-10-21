@@ -1,9 +1,5 @@
-// Impor produk dari CSV — port setia fungsi Web
-// (ProductsPage.tsx: parseCsvText, parseCsvNumber, mapCsvRows).
-// Fungsi murni, tanpa Flutter — bisa di-unit-test.
 library;
 
-/// Satu baris produk hasil parse CSV.
 class CsvProductItem {
   final String barcode;
   final String name;
@@ -26,14 +22,12 @@ class CsvProductItem {
   });
 }
 
-/// Hasil pemetaan baris CSV: item valid + baris yang dilewati.
 class CsvParseResult {
   final List<CsvProductItem> items;
   final List<({int row, String reason})> skipped;
   const CsvParseResult(this.items, this.skipped);
 }
 
-/// Alias judul kolom (Indonesia/Inggris), persis Web.
 const csvHeaderAliases = <String, List<String>>{
   'barcode': ['kode', 'barcode', 'kode barang', 'kode produk', 'sku', 'plu'],
   'name': ['nama', 'nama produk', 'nama barang', 'produk'],
@@ -45,8 +39,6 @@ const csvHeaderAliases = <String, List<String>>{
   'photo': ['foto', 'photo', 'gambar', 'image', 'photourl', 'foto url'],
 };
 
-/// Parse angka format campuran: "1.500" = 1500 (ribuan titik),
-/// "2,5" = 2.5 (desimal koma) — persis parseCsvNumber Web.
 double parseCsvNumber(Object? value) {
   var s = (value?.toString() ?? '').trim().replaceAll(RegExp(r'\s+'), '');
   if (s.isEmpty) return 0;
@@ -58,8 +50,6 @@ double parseCsvNumber(Object? value) {
   return double.tryParse(s) ?? 0;
 }
 
-/// Pecah teks CSV menjadi baris-baris sel — sadar tanda kutip
-/// ("" = kutip lepas), pemisah koma, baris kosong dibuang.
 List<List<String>> parseCsvText(Object? text) {
   final rows = <List<String>>[];
   var row = <String>[];
@@ -95,7 +85,6 @@ List<List<String>> parseCsvText(Object? text) {
     } else if (ch == ',') {
       pushField();
     } else if (ch == '\r') {
-      // ikut \n
     } else if (ch == '\n') {
       pushField();
       pushRow();
@@ -108,8 +97,6 @@ List<List<String>> parseCsvText(Object? text) {
   return rows;
 }
 
-/// Petakan baris CSV (baris pertama = judul) menjadi item produk.
-/// Dedup per barcode di dalam file (baris terakhir menang), persis Web.
 CsvParseResult mapCsvRows(List<List<String>> rows) {
   final items = <CsvProductItem>[];
   final skipped = <({int row, String reason})>[];

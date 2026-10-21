@@ -20,8 +20,6 @@ import '../chat/toko_chat_page.dart';
 import '../home/home_tab.dart';
 import '../session.dart';
 
-/// Tab Produk — katalog barang kemasan.
-/// Harga & stok TERBUKA untuk tamu (keputusan dikunci).
 class CatalogTab extends ConsumerStatefulWidget {
   const CatalogTab({super.key});
 
@@ -36,7 +34,6 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
   @override
   void initState() {
     super.initState();
-    // Filter yang diminta dari Beranda (kategori cepat).
     final preset = ref.read(catalogFilterProvider);
     _category = preset.category;
     _search.text = preset.query;
@@ -56,7 +53,6 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
     final asyncProducts = ref.watch(productsProvider);
     return Column(
       children: [
-        // Header ala PWA: kicker + judul + search.
         Container(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
           child: Column(
@@ -95,7 +91,6 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
           ),
         ),
         const SizedBox(height: 8),
-        // Judul "Kategori" ala PWA.
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Align(
@@ -124,7 +119,6 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
           ),
         ),
         const SizedBox(height: 4),
-        // Header: "{Kategori}" + tombol Muat ulang (ala PWA).
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
@@ -152,7 +146,6 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
           ),
         ),
         const SizedBox(height: 4),
-        // Hero promo kilat ala PWA (kondisional: hanya bila flash aktif).
         _flashHero(ref),
         Expanded(
           child: asyncProducts.when(
@@ -171,19 +164,15 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
                 query: _search.text,
                 category: _category,
               );
-              // Urut abjad A-Z (selaras PWA).
               filtered.sort((a, b) => a.name
                   .toLowerCase()
                   .compareTo(b.name.toLowerCase()));
               if (filtered.isEmpty) {
                 return const EmptyState(
                   icon: Icons.inventory_2_outlined,
-                  // Teks PWA persis.
                   title: 'Produk tidak ditemukan.',
                 );
               }
-              // Tampilan produk ikut pengaturan pelanggan:
-              // ringkas = grid 3, lega = grid 2, daftar = list.
               final density = DensityPilihan.fromString(
                   ref.watch(densityPelangganProvider));
               if (density == DensityPilihan.daftar) {
@@ -219,7 +208,6 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
     );
   }
 
-  /// Hero promo kilat ala PWA: gradient oranye, hanya bila flash aktif.
   Widget _flashHero(WidgetRef ref) {
     final store = ref.watch(storeInfoProvider).valueOrNull;
     final flashId = store?.flashProductId;
@@ -328,12 +316,9 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
     );
   }
 
-  /// Chip kategori ala PWA: border, aktif = krem #fdeeda, "✓ " utk Semua aktif.
   Widget _chip(String label, String value) {
     final active = _category == value;
     final text = (label == 'Semua' && active) ? '✓ $label' : label;
-    // Aturan tema: selected = border orange saja (bukan bg terang).
-    // Background ikut tema (tidak hardcoded terang/gelap).
     final bg = Theme.of(context).brightness == Brightness.dark
         ? const Color(0xFF0A0908)
         : Colors.white;
@@ -358,7 +343,6 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              // Aturan tema: teks kontras ikut tema (bukan hardcoded gelap).
               color: context.teksUtama,
             ),
           ),
@@ -368,8 +352,6 @@ class _CatalogTabState extends ConsumerState<CatalogTab> {
   }
 }
 
-/// Harga jual aktif produk: harga promo bila ada promo produk yang aktif,
-/// selain itu harga normal. Skema: "harga tampilan = harga keranjang".
 int hargaJualAktif(Product p, List<Promo> promos) {
   for (final pr in promos) {
     if (pr.isActive && pr.productId == p.id && pr.discountType != null) {
@@ -380,8 +362,6 @@ int hargaJualAktif(Product p, List<Promo> promos) {
   return p.price;
 }
 
-/// Kartu produk ala PWA: flag PROMO/HABIS, foto, nama, harga, stok,
-/// tombol "+" bulat kanan-bawah. Tap kartu → detail, tap "+" → +1 keranjang.
 class _ProductCard extends ConsumerWidget {
   final Product product;
 
@@ -418,7 +398,6 @@ class _ProductCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Foto full-width 90px.
                 SizedBox(
                   height: 90,
                   width: double.infinity,
@@ -461,7 +440,6 @@ class _ProductCard extends ConsumerWidget {
                       );
                       return ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        // Stok habis: foto greyout ringan (P2-6, Web).
                         child: out ? fotoHabisGreyout(foto) : foto,
                       );
                     },
@@ -501,13 +479,10 @@ class _ProductCard extends ConsumerWidget {
                     color: out ? AppColors.danger : context.teksRedup,
                   ),
                 ),
-                // Ruang untuk tombol "+" absolute.
                 const SizedBox(height: 28),
               ],
             ),
           ),
-          // Penanda HABIS = pita diagonal gaya Web (P2-6); PROMO
-          // tetap pill merah seperti sebelumnya.
           if (out)
             const HabisRibbon()
           else if (adaDiskon)
@@ -531,7 +506,6 @@ class _ProductCard extends ConsumerWidget {
                 ),
               ),
             ),
-          // Tombol "+" bulat kanan-bawah.
           Positioned(
             right: 8,
             bottom: 8,
@@ -576,7 +550,6 @@ class _ProductCard extends ConsumerWidget {
   }
 }
 
-/// Tile horizontal untuk mode "Daftar" — foto + nama + harga + tambah.
 class _ProductListTile extends ConsumerWidget {
   final Product product;
 
@@ -685,7 +658,6 @@ class ProductDetailSheetState
   @override
   void initState() {
     super.initState();
-    // Default ala PWA: timbangan 0,5 · lainnya 1.
     _qty = isWeightUnit(widget.product.unit) ? 0.5 : 1;
   }
 
@@ -703,7 +675,6 @@ class ProductDetailSheetState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Foto produk (bila ada) + badge PROMO ala PWA.
             if (p.photoPath != null)
               Center(
                 child: Padding(
@@ -743,10 +714,8 @@ class ProductDetailSheetState
                 style: const TextStyle(
                     fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            // KATEGORI: X (format PWA).
             Text('KATEGORI: ${p.category.isEmpty ? '-' : p.category}',
                 style: TextStyle(color: context.teksRedup, fontSize: 13)),
-            // SATUAN: X (format PWA).
             Text('SATUAN: ${p.unit}',
                 style: TextStyle(color: context.teksRedup, fontSize: 13)),
             const SizedBox(height: 12),
@@ -770,7 +739,6 @@ class ProductDetailSheetState
                   ),
                 ),
                 const Spacer(),
-                // STOK: N pcs (format PWA).
                 Text(
                   out
                       ? Strings.habis
@@ -782,7 +750,6 @@ class ProductDetailSheetState
                 ),
               ],
             ),
-            // Label GROSIR (ala PWA) — jika ada harga grosir.
             if (p.adaGrosir) ...[
               const SizedBox(height: 8),
               Container(
@@ -816,7 +783,6 @@ class ProductDetailSheetState
                 const Text(Strings.jumlah,
                     style: TextStyle(fontWeight: FontWeight.w700)),
                 const Spacer(),
-                // Stepper ala PWA ?v=20261012v: timbangan step 0,1.
                 IconButton(
                   onPressed: () {
                     final timbang = isWeightUnit(p.unit);
@@ -882,14 +848,12 @@ class ProductDetailSheetState
                     },
             ),
             const SizedBox(height: 8),
-            // Tanya Toko + Pantau harga (ala PWA).
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      // Tanya Toko butuh login — tamu diarahkan ke gate.
                       final session = ref
                           .read(sessionProvider)
                           .valueOrNull;
@@ -933,7 +897,6 @@ class ProductDetailSheetState
     );
   }
 
-  /// Pantau harga: simpan ke lokal, notifikasi saat harga turun.
   Future<void> _pantauHarga(
       BuildContext context, WidgetRef ref, Product p) async {
     try {
@@ -949,7 +912,6 @@ class ProductDetailSheetState
         }
         return;
       }
-      // Simpan id + harga saat ini.
       list.add('${p.id}:${p.price}');
       await prefs.setStringList('pantau_harga', list);
       if (context.mounted) {

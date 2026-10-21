@@ -2,16 +2,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../utils/dering.dart';
 
-/// Notifikasi lokal (heads-up) — dipicu listener Firestore saat aplikasi
-/// berjalan: pesanan baru (admin), status pesanan berubah (pelanggan),
-/// chat belum dibaca. Push background sungguhan butuh Cloud Functions
-/// (Blaze) — belum dipakai sesuai keputusan user.
-///
-/// Bunyi mengikuti pilihan dering pemilik mode (perbaikan 2026-10-21:
-/// sebelumnya pilihan dering hanya disimpan, tidak pernah diterapkan):
-/// - bawaan → kanal 'kasirquh' (nada bawaan perangkat),
-/// - khas   → kanal 'kasirquh_khas' (bunyi mimi_chime di res/raw),
-/// - hening → kanal 'kasirquh_hening' (tanpa suara, getar saja).
 class Notify {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _siap = false;
@@ -54,14 +44,11 @@ class Notify {
       );
       _siap = true;
     } catch (_) {
-      // Notifikasi gagal init → aplikasi tetap jalan tanpa heads-up.
     }
   }
 
   static int _id = 0;
 
-  /// Tampilkan heads-up sekali dengan bunyi sesuai [dering].
-  /// Gagal diam-diam bila belum init.
   static Future<void> headsUp(
     String title,
     String body, {

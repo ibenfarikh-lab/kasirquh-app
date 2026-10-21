@@ -1,19 +1,15 @@
-/// Entri jurnal — satu kas terpusat (Pembukuan).
-/// kind: 'penjualan' | 'kulakan' | 'beban' | 'modal'
 class JournalEntry {
   final String id;
   final String kind;
   final String label;
-  final int amount; // positif = masuk, negatif = keluar (Rp integer)
-  final String? refId; // rujukan: id pesanan / nota / dokumen terkait
-  final String? customerId; // member yang dilayani (kasir scan kartu)
+  final int amount;
+  final String? refId;
+  final String? customerId;
   final String? customerName;
   final DateTime createdAt;
-  // Field laporan gaya Web (P1-4): jurnal penjualan Web membawa
-  // profit/method/itemCount — Laporan membaca ini, BUKAN menebak.
-  final int profit; // laba kotor entri penjualan (Rp)
-  final String method; // metode bayar ('Tunai', dst.)
-  final num itemCount; // jumlah item terjual pada entri ini
+  final int profit;
+  final String method;
+  final num itemCount;
 
   const JournalEntry({
     required this.id,

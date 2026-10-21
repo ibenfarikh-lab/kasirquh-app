@@ -6,9 +6,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../l10n/strings_id.dart';
 
-/// Sheet Scanner: pindai barcode pakai kamera, atau ketik manual.
-/// Mengembalikan String barcode (atau null bila batal).
-/// Izin kamera diminta oleh sistem saat pertama dipakai.
 class ScannerSheet extends StatefulWidget {
   const ScannerSheet({super.key});
 
@@ -113,7 +110,6 @@ class _CameraError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Aturan 1&3: ikut theme (adaptif).
       alignment: Alignment.center,
       padding: const EdgeInsets.all(24),
       child: Text(

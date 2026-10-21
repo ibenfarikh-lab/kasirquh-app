@@ -52,7 +52,7 @@ void main() {
       expect(beras.cost, 9500);
       expect(beras.price, 12000);
       expect(beras.cat, 'Sembako');
-      expect(beras.unit, 'pcs'); // bawaan Web
+      expect(beras.unit, 'pcs'); 
     });
 
     test('tanpa kolom Nama -> dilewati dengan alasan', () {

@@ -14,7 +14,6 @@ import '../../../l10n/strings_id.dart';
 import '../admin_nav.dart';
 import 'csv_import_page.dart';
 
-/// Halaman Data Barang (Mode Admin): daftar produk + tambah/ubah/hapus.
 class ProductsPage extends ConsumerWidget {
   const ProductsPage({super.key});
 
@@ -41,7 +40,6 @@ class ProductsPage extends ConsumerWidget {
   }
 
   static void _openForm(BuildContext context, [Product? existing]) {
-    // Halaman penuh (migrasi dari bottom sheet).
     openAdminPage(
       context,
       Scaffold(
@@ -155,7 +153,6 @@ class _ProductsBodyState extends ConsumerState<_ProductsBody> {
                         ),
                       ),
                       subtitle: Text(
-                        // formatRp SUDAH ber-prefix "Rp" — jangan tambah literal.
                         '${formatRp(p.price)} · stok ${formatStok(p.stock)} · ${p.category}',
                         style: TextStyle(
                             color: context.teksRedup),
@@ -182,7 +179,6 @@ class _ProductsBodyState extends ConsumerState<_ProductsBody> {
   }
 }
 
-/// Formulir tambah/ubah produk dalam bottom sheet.
 class ProductFormSheet extends ConsumerStatefulWidget {
   final Product? existing;
   final ScrollController? scrollController;
@@ -208,7 +204,6 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
   late final TextEditingController _photoUrlCtrl;
   late bool _active;
   bool _saving = false;
-  // Foto lokal per-perangkat (data URI) — dipilih dari HP, resize ≤300px.
   String? _localPhoto;
   bool _pickingPhoto = false;
 
@@ -225,7 +220,6 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
     _stockCtrl = TextEditingController(
         text: p == null ? '' : formatStok(p.stock));
     _barcodeCtrl = TextEditingController(text: p?.barcode ?? '');
-    // URL online vs data URI dipisah: URL bisa diedit, data URI tidak.
     final existing = p?.photoPath ?? '';
     _photoUrlCtrl = TextEditingController(
         text: existing.startsWith('http') ? existing : '');
@@ -248,7 +242,6 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
   int _parseDigits(String text) =>
       int.tryParse(text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
 
-  /// Stok boleh desimal (cth. 3,75 kg) — terima koma maupun titik.
   double _parseDesimal(String text) {
     final t =
         text.replaceAll(',', '.').replaceAll(RegExp(r'[^0-9.]'), '');
@@ -260,7 +253,6 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
         .showSnackBar(SnackBar(content: Text(message)));
   }
 
-  /// Foto efektif: lokal (dari HP) menang atas URL online.
   String? get _photoPath {
     if (_localPhoto != null) return _localPhoto;
     final url = _photoUrlCtrl.text.trim();
@@ -392,7 +384,6 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
               labelText: Strings.barcodeOpsional),
         ),
         const SizedBox(height: 16),
-        // Foto produk: pilih dari HP (lokal) atau tempel URL online.
         Text(
           Strings.fotoProduk,
           style: TextStyle(

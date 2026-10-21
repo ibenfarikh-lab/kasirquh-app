@@ -4,12 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import '../theme/theme_settings.dart';
 
-/// Pemilih tema (Terang / Gelap / Ikuti HP) — dipakai Pengaturan admin
-/// dan sisi pelanggan. Bukan tile mati: pilihan tersimpan persisten.
-///
-/// Migrasi v3.6.98 (keputusan user): halaman penuh, bukan bottom sheet.
 class ThemePickerSheet extends ConsumerWidget {
-  /// Provider yang dipakai (temaPelangganProvider / temaAdminProvider).
   final StateNotifierProvider<ThemeSettings, TemaPilihan> provider;
 
   const ThemePickerSheet({super.key, required this.provider});
@@ -57,7 +52,6 @@ class ThemePickerSheet extends ConsumerWidget {
   }
 }
 
-/// Tampilkan pemilih tema sebagai halaman penuh.
 Future<void> showThemePicker(
   BuildContext context,
   StateNotifierProvider<ThemeSettings, TemaPilihan> provider,

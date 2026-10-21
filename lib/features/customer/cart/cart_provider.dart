@@ -2,22 +2,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/product.dart';
 
-/// Satuan berat (timbangan) — qty desimal, stepper 0,1 (selaras PWA).
 bool isWeightUnit(String unit) =>
     const ['kg', 'ons', 'gram'].contains(unit);
 
-/// Satu baris keranjang. Qty desimal (selaras PWA ?v=20261012v):
-/// produk timbangan (kg/ons/gram) memakai kelipatan 0,1, sisanya bulat.
 class CartLine {
   final Product product;
   final double qty;
-  final int? hargaSatuan; // override harga (mis. harga promo saat ditambah)
+  final int? hargaSatuan;
 
   const CartLine({required this.product, required this.qty, this.hargaSatuan});
 
   int get harga => hargaSatuan ?? product.price;
 
-  /// Subtotal: harga proporsional, dibulatkan (Rp16.000/kg × 0,2 = Rp3.200).
   int get subtotal => (harga * qty).round();
 
   CartLine copyWith({Product? product, double? qty, int? hargaSatuan}) =>
@@ -27,15 +23,9 @@ class CartLine {
           hargaSatuan: hargaSatuan ?? this.hargaSatuan);
 }
 
-/// Keranjang belanja — draf lokal per perangkat (tidak disinkronkan).
-/// Qty dibatasi stok produk (tak bisa melebihi).
 class CartNotifier extends StateNotifier<List<CartLine>> {
   CartNotifier() : super(const []);
 
-  /// Tambah ke keranjang. [qty]: jumlah yang ditambah (default 1;
-  /// produk timbangan dari detail memakai 0,5 dst.).
-  /// Mengembalikan false bila stok habis/tercapai.
-  /// [harga]: harga satuan override (mis. harga promo); disimpan di baris.
   bool add(Product product, {int? harga, double qty = 1}) {
     if (product.stock <= 0) return false;
     final tambah = qty <= 0 ? 1.0 : qty;
@@ -59,7 +49,6 @@ class CartNotifier extends StateNotifier<List<CartLine>> {
     return true;
   }
 
-  /// Atur qty langsung (<= 0 = hapus baris). Dibatasi stok.
   void setQty(String productId, double qty) {
     final i = state.indexWhere((e) => e.product.id == productId);
     if (i < 0) return;
@@ -88,7 +77,5 @@ final cartProvider =
   return CartNotifier();
 });
 
-/// Menu belanja tersimpan — sesi ini saja (ala PWA: `S.savedMenu`).
-/// Menyimpan salinan baris keranjang agar bisa dimuat ulang nanti.
 final savedMenuProvider =
     StateProvider<List<CartLine>>((ref) => const []);

@@ -27,10 +27,6 @@ import 'store_notes_sheet.dart';
 import 'store_profile_sheet.dart';
 import 'transfer_orders_page.dart';
 
-/// Tab Menu: "Semua alat & pengaturan" — pengelompokan mengikuti
-/// Web persis (P2-7): KELOLA WARUNG (11) / KELOLA PELANGGAN (7) /
-/// PENGATURAN (2). Pemindai Barcode tidak lagi di Menu (Web tidak
-/// mencantumkannya; fungsinya tetap di Kasir).
 class MenuTab extends ConsumerWidget {
   const MenuTab({super.key});
 
@@ -39,7 +35,6 @@ class MenuTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Kepala: kicker + judul (ikut PWA).
         Text(
           Strings.menuSemuaAlat,
           style: TextStyle(
@@ -69,7 +64,6 @@ class MenuTab extends ConsumerWidget {
     );
   }
 
-  /// KELOLA WARUNG — 11 modul, urutan persis Web (MenuPage MANAGE).
   List<_Module> _kelolaWarung(BuildContext context) => [
         _Module(
           Strings.menuProduk,
@@ -139,7 +133,6 @@ class MenuTab extends ConsumerWidget {
         ),
       ];
 
-  /// KELOLA PELANGGAN — 7 modul, urutan persis Web (MenuPage CUSTOMERS).
   List<_Module> _kelolaPelanggan(BuildContext context) => [
         _Module(
           Strings.modulBerandaPelanggan,
@@ -191,7 +184,6 @@ class MenuTab extends ConsumerWidget {
         ),
       ];
 
-  /// PENGATURAN — 2 modul (urutan PWA).
   List<_Module> _pengaturan(
       BuildContext context, WidgetRef ref) => [
         _Module(
@@ -212,17 +204,12 @@ class MenuTab extends ConsumerWidget {
     openAdminPage(context, page);
   }
 
-  /// Ganti ke Mode Pelanggan — ikut pola Web (2026-10-17).
-  /// Alur: signOut admin → gateway (dashboard guest).
-  /// Keputusan user: admin TIDAK BOLEH jadi pelanggan (pembukuan rapih).
-  /// Yang mau jadi pelanggan wajib login sebagai akun pelanggan terpisah.
   Future<void> _gantiKeModePelanggan(
       BuildContext context, WidgetRef ref) async {
     final auth = ref.read(authServiceProvider);
     if (auth == null) return;
     await auth.signOut();
     if (!context.mounted) return;
-    // Keluar → gateway (mode tamu), ikut pola Web.
     ref.read(modeAktifProvider.notifier).state = 'gateway';
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const GatewayScreen()),
@@ -231,7 +218,6 @@ class MenuTab extends ConsumerWidget {
   }
 }
 
-/// Judul seksi menu (KELOLA WARUNG / LACI ALAT / PENGATURAN).
 class _SectionHeader extends StatelessWidget {
   final String title;
 
@@ -254,7 +240,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-/// Grid 3 kolom ala PWA untuk satu seksi.
 class _ModuleGrid extends StatelessWidget {
   final List<_Module> modules;
 
@@ -292,7 +277,7 @@ class _ModuleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: context.permukaanKartu, // Aturan 1&3: adaptif.
+      color: context.permukaanKartu,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),

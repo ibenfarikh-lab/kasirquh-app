@@ -5,7 +5,6 @@ import 'package:kasirquh_app/data/models/stock_note.dart';
 import 'package:kasirquh_app/features/admin/notes/notes_tab.dart';
 import 'package:kasirquh_app/l10n/strings_id.dart';
 
-/// Penyelarasan Catatan Belanja Harian — helper murni.
 void main() {
   test('labelSumberCatatan: impor→Impor, manual→Manual, '
       'belanja_stok→Dari Belanja Stok', () {
@@ -13,7 +12,6 @@ void main() {
     expect(labelSumberCatatan('manual'), Strings.manualTeks);
     expect(
         labelSumberCatatan('belanja_stok'), Strings.dariBelanjaStok);
-    // tak dikenal → Manual (bug lama: impor tampil Manual, kini eksplisit)
     expect(labelSumberCatatan('lain'), Strings.manualTeks);
   });
 
@@ -62,8 +60,6 @@ void main() {
   });
 
   test('nilaiStokModal: stok desimal dipertahankan (3,75 x 4000 = 15000)', () {
-    // Root cause revisi desimal: native memotong (toInt), PWA membulatkan.
-    // Yang benar: desimal dipertahankan.
     const produk = [
       Product(
           id: 'c',
@@ -77,8 +73,6 @@ void main() {
   });
 
   test('nilaiStokModal: produk nonaktif ikut dihitung (ikut PWA)', () {
-    // Root cause selisih Rp21.000: jalur lama membuang isActive == false.
-    // Kontrak: fungsi murni ini menjumlah SEMUA produk yang diberikan.
     const produk = [
       Product(
           id: 'a',

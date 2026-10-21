@@ -53,7 +53,7 @@ void main() {
       final cart = CartNotifier();
       expect(cart.add(_aqua), isTrue);
       expect(cart.add(_aqua), isTrue);
-      expect(cart.add(_aqua), isFalse); // stok cuma 2
+      expect(cart.add(_aqua), isFalse);
       expect(cart.state.first.qty, 2);
     });
 

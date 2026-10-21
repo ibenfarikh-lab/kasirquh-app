@@ -26,9 +26,6 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
   final _teksBerjalan = TextEditingController();
   bool _menyimpan = false;
 
-  // Anti-timpah-kosong (akar masalah running text hilang 2026-10-21):
-  // form diisi ulang dari snapshot settings TERBARU sampai user
-  // benar-benar mengubah sesuatu.
   bool _diubahUser = false;
   bool _mengisi = false;
 
@@ -57,9 +54,6 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
   }
 
   Future<void> _simpan() async {
-    // Tanpa perubahan dari user, JANGAN menulis apa pun — menulis
-    // snapshot form yang belum berisi data asli menimpa settings
-    // jadi kosong (kasus running text hilang, 2026-10-21).
     if (!_diubahUser) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(Strings.berhasilDisimpan)),
@@ -73,8 +67,6 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
         'storeName': _nama.text.trim(),
         'address': _alamat.text.trim(),
         'phone': _telepon.text.trim(),
-        // Field jam mengikuti Web (P0-5); field lama Native dihapus
-        // agar dokumen tidak menyimpan dua sumber kebenaran.
         'openTime': _jamBuka.text.trim(),
         'closeTime': _jamTutup.text.trim(),
         'openHour': FieldValue.delete(),
@@ -170,7 +162,7 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
           labelText: label,
           labelStyle: TextStyle(color: context.teksRedup),
           filled: true,
-          fillColor: context.permukaanKartu, // Aturan 1&3: adaptif.
+          fillColor: context.permukaanKartu,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           enabledBorder: OutlineInputBorder(

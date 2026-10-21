@@ -12,9 +12,6 @@ import 'biometric_credential_service.dart';
 import 'biometric_optin_dialogs.dart';
 import 'fingerprint_login_button.dart';
 
-/// Login KHUSUS admin: email + kata sandi SAJA (tidak ada pendaftaran).
-/// Akun admin dibuat manual di Firebase + custom claim `admin: true`.
-/// Sukses → cek claim → Mode Admin.
 class AdminLoginScreen extends ConsumerStatefulWidget {
   const AdminLoginScreen({super.key});
 
@@ -72,7 +69,6 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
         password: password,
       );
       if (!mounted) return;
-      // Alur A: tawarkan opt-in login cepat (sandi masih di memori).
       await tawarkanOptInSidikJari(
         context: context,
         ref: ref,
@@ -92,7 +88,6 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
   }
 
   void _goAdmin() {
-    // Masuk mode admin → tema admin berlaku global.
     ref.read(modeAktifProvider.notifier).state = 'admin';
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const AdminShell()),
@@ -102,8 +97,6 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Ngikutin tema admin (default: gelap) — aturan: tema gelap tanpa
-    // background terang + teks terang, tema terang kebalikannya.
     final tema = ref.watch(temaAdminProvider);
     final sistem = MediaQuery.platformBrightnessOf(context);
     final dataTema = temaAdminAktif(tema, sistem);
@@ -182,7 +175,6 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                 onPressed: _signIn,
               ),
               const SizedBox(height: 12),
-              // Fingerprint Jalur Tercepat — tampil bila ada kredensial tersimpan.
               FingerprintLoginButton(
                 accountId: 'admin',
                 onCredential: (cred) async {
@@ -199,7 +191,6 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                     );
                     if (mounted) _goAdmin();
                   } on AdminNotAuthorized {
-                    // Kredensial basi → hapus, minta login manual.
                     await ref
                         .read(biometricCredentialServiceProvider)
                         .delete('admin');

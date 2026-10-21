@@ -15,9 +15,6 @@ import '../admin/admin_shell.dart';
 import '../customer/customer_shell.dart';
 import 'hidden_hotspot.dart';
 
-/// Gateway: 3 slide promo full-bleed @4000ms, dots, swipe/tap/Lewati.
-/// Otomatis masuk Mode Pelanggan (tamu) setelah slide ke-3.
-/// Yang sudah login → langsung skip. Hotspot admin tersembunyi (tak terlihat).
 class GatewayScreen extends ConsumerStatefulWidget {
   const GatewayScreen({super.key});
 
@@ -32,8 +29,6 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
   Timer? _timer;
   bool _navigated = false;
 
-  /// Slide gateway — teks dari Pusat Kendali Beranda (store_settings/main),
-  /// selaras PWA. Kicker (label slide) tetap statis seperti PWA.
   List<_Slide> _buildSlides(StoreInfo? store) {
     return [
       _Slide(
@@ -78,17 +73,14 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
     _timer?.cancel();
     if (_navigated || !mounted) return;
     _navigated = true;
-    // Masuk mode pelanggan → tema pelanggan berlaku global.
     ref.read(modeAktifProvider.notifier).state = 'pelanggan';
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const CustomerShell()),
     );
   }
 
-  /// Hotspot admin tersembunyi: area tak terlihat di pojok kanan atas.
   void _openAdminGate() {
     _timer?.cancel();
-    // Layar PIN/gate admin → tema admin berlaku global.
     ref.read(modeAktifProvider.notifier).state = 'admin';
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const PinScreen()),
@@ -104,9 +96,7 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Auth bisa null (mode lokal) → anggap belum login.
     final auth = ref.read(authServiceProvider);
-    // Teks slide dari Pusat Kendali Beranda (live).
     final store = ref.watch(storeInfoProvider).valueOrNull;
     final slides = _buildSlides(store);
     return StreamBuilder(
@@ -114,14 +104,8 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
       builder: (context, snap) {
         final user = snap.data;
         if (user != null) {
-          // Sudah login → skip gateway.
-          // ROOT CAUSE FIX (2026-10-17): admin yang sudah login JANGAN
-          // di-skip ke CustomerShell sebagai guest — arahkan ke AdminShell.
-          // (Sebelumnya admin masuk ke mode pelanggan → chat error,
-          // kartu member muncul untuk admin.)
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (!mounted || _navigated) return;
-            // Ambil semua yang butuh context/ref SEBELUM await.
             final authService = ref.read(authServiceProvider);
             final modeNotifier = ref.read(modeAktifProvider.notifier);
             final nav = Navigator.of(context);
@@ -140,7 +124,6 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
           });
         }
         return Scaffold(
-          // Full black selaras tema gelap (keputusan user 2026-10-12).
           backgroundColor: const Color(0xFF000000),
           body: Stack(
             children: [
@@ -150,8 +133,6 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                 onPageChanged: (i) => setState(() => _index = i),
                 itemBuilder: (context, i) => _SlideView(slide: slides[i]),
               ),
-              // Header: logo toko + nama warung + tagline (kiri atas,
-              // ala prototipe). Hotspot admin tetap di kanan atas.
               Positioned(
                 top: MediaQuery.of(context).padding.top + 12,
                 left: 20,
@@ -192,7 +173,6 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                   ],
                 ),
               ),
-              // Dots + Lewati
               Positioned(
                 left: 0,
                 right: 0,
@@ -227,7 +207,6 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                   ],
                 ),
               ),
-              // Hotspot admin tersembunyi (tak terlihat, 64x64 di kanan atas).
               Positioned(
                 top: 0,
                 right: 0,
@@ -237,8 +216,6 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                   child: const SizedBox(width: 64, height: 64),
                 ),
               ),
-              // Powered by KasirQuh (brand developer — bukan header)
-              // + stempel versi build. Tap logo 1x → pintu admin (LogoTapGate).
               Positioned(
                 left: 0,
                 right: 0,
@@ -274,12 +251,11 @@ class _GatewayScreenState extends ConsumerState<GatewayScreen> {
                   ),
                 ),
               ),
-              // Peringatan bila ada init yang gagal (diagnosis, bukan error user).
               if (StartupReport.hasErrors)
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 8,
                   left: 16,
-                  right: 88, // hindari hotspot kanan atas
+                  right: 88,
                   child: GestureDetector(
                     onTap: () => showDialog(
                       context: context,
@@ -359,7 +335,6 @@ class _SlideView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Kicker ala prototipe: aksen + garis.
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -375,7 +350,6 @@ class _SlideView extends StatelessWidget {
                   Text(
                     slide.kicker,
                     style: const TextStyle(
-                      // Aturan 2: oranye tunggal.
                       color: AppColors.orange,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,

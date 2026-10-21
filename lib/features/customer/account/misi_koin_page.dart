@@ -16,7 +16,6 @@ import '../game/game_webview_page.dart';
 import 'tebak_harga_page.dart';
 import '../session.dart';
 
-/// Definisi misi — id stabil untuk penanda klaim lokal.
 class Misi {
   final String id;
   final String judul;
@@ -39,7 +38,7 @@ const kMisiList = [
     judul: 'Belanja 3x seminggu',
     deskripsi: 'Selesaikan 3 pesanan dalam seminggu.',
     target: 3,
-    hadiahKoin: 15, // Ikut coinRewards.mission (default)
+    hadiahKoin: 15,
   ),
   Misi(
     id: 'coba_produk_baru',
@@ -50,24 +49,18 @@ const kMisiList = [
   ),
 ];
 
-/// Tanggal hari ini di zona Asia/Jakarta (Web memakai `todayKeyJakarta()`).
 DateTime _todayJakarta() =>
     DateTime.now().toUtc().add(const Duration(hours: 7));
 
-/// Kunci pekan — port PERSIS `weekKeyOf()` Web
-/// (kasirquh-web src/features/customer/local.ts). Format `YYYY-Www`.
-/// JANGAN "diperbaiki" ke ISO murni: claimKey dua pintu harus identik.
 String weekKeyOf(DateTime date) {
   var t = DateTime.utc(date.year, date.month, date.day);
-  final dow = t.weekday - 1; // Senin=0 (setara (getUTCDay()+6)%7 di JS)
-  t = t.add(Duration(days: -dow + 3)); // Kamis pekan ini
-  final first = DateTime.utc(t.year, 1, 4); // 4 Januari tahun Kamis itu
+  final dow = t.weekday - 1;
+  t = t.add(Duration(days: -dow + 3));
+  final first = DateTime.utc(t.year, 1, 4);
   final week = ((t.difference(first).inDays + 1) / 7).ceil();
   return '${t.year}-W${week.toString().padLeft(2, '0')}';
 }
 
-/// claimKey misi — PERSIS Web (MissionsPage.tsx):
-/// belanja → `misi_belanja3_<kodePekan>`; coba produk → `misi_coba_produk_baru`.
 String claimKeyMisi(String misiId, DateTime now) {
   if (misiId == 'belanja_3x_minggu') {
     return 'misi_belanja3_${weekKeyOf(now)}';
@@ -75,7 +68,6 @@ String claimKeyMisi(String misiId, DateTime now) {
   return 'misi_coba_produk_baru';
 }
 
-/// Detail ledger misi — PERSIS Web (MissionsPage.tsx).
 String detailMisi(String misiId, DateTime now) {
   if (misiId == 'belanja_3x_minggu') {
     return 'Misi Belanja 3 kali · ${weekKeyOf(now)}';
@@ -83,11 +75,6 @@ String detailMisi(String misiId, DateTime now) {
   return 'Misi Coba produk baru';
 }
 
-/// Progress misi dari daftar pesanan sendiri — fungsi pure (bisa di-test).
-/// Ikut logika PWA (renderMissions):
-/// - 'belanja_3x_minggu' = jumlah pesanan dalam 7 hari terakhir.
-/// - 'coba_produk_baru' = 1 jika pesanan TERBARU berisi produk yang belum
-///   pernah dibeli di pesanan sebelumnya, selain itu 0.
 Map<String, int> misiProgress(List<Order> orders) {
   final now = DateTime.now();
   final mingguIni = orders
@@ -113,9 +100,6 @@ Map<String, int> misiProgress(List<Order> orders) {
   };
 }
 
-/// Mode Pelanggan > Akun > Misi koin — tantangan sederhana berhadiah koin.
-/// Klaim otomatis via grantCoins (ikut PWA): koin langsung masuk dompet.
-/// Penanda klaim di Firestore (missionClaims).
 class MisiKoinPage extends ConsumerStatefulWidget {
   const MisiKoinPage({super.key});
 
@@ -126,13 +110,11 @@ class MisiKoinPage extends ConsumerStatefulWidget {
 class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
   Set<String> _diminta = {};
   bool _memuat = true;
-  bool _klaimBusy = false; // Guard double-tap (audit 2026-10-12).
+  bool _klaimBusy = false;
 
   @override
   void initState() {
     super.initState();
-    // Penanda klaim dibaca dari Firestore (bukan lokal).
-    // Untuk simplicity, mulai dengan kosong — status real dibaca saat klaim.
     setState(() {
       _diminta = {};
       _memuat = false;
@@ -141,17 +123,12 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
 
   Future<void> _mintaHadiah(
       BuildContext context, WidgetRef ref, Misi misi, String uid) async {
-    // Klaim otomatis via grantCoins (ikut PWA) — tidak perlu via chat.
-    // Penanda klaim di Firestore (missionClaims), bukan SharedPreferences.
     if (_klaimBusy) return;
     setState(() => _klaimBusy = true);
     try {
       final settings = ref.read(coinSettingsProvider).valueOrNull ??
           const CoinSettings();
       final reward = settings.rewards['mission'] ?? misi.hadiahKoin;
-      // claimKey & label/detail PERSIS Web (P0-2): penanda missionClaims
-      // di dokumen pelanggan yang sama harus bertemu antar pintu,
-      // kalau tidak misi bisa diklaim dua kali (Web + Native).
       final now = _todayJakarta();
 
       await ref.read(adminRepositoryProvider).grantCoins(
@@ -227,7 +204,6 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Tagline — selaras Web ?v=20261020ap (2026-10-18).
               Text(
                 'Koinnya bisa dicari sambil main, belanjanya jadi makin murah!',
                 style: TextStyle(
@@ -243,8 +219,6 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
                     TextStyle(color: context.teksRedup, fontSize: 13),
               ),
               const SizedBox(height: 12),
-              // Game — ikut Web (Misi Koin): 2 game, kuota 500 koin/hari
-              // DIPISAH per game.
               _gameSection(context, uid),
               const SizedBox(height: 12),
               if (_memuat)
@@ -269,9 +243,6 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
     );
   }
 
-  /// Section game — 2 tile (Tangkap Diskon, Buru Diskon) + progres harian.
-  /// Ikut Web: 1000 poin = 1 koin, kuota 500/hari DIPISAH per game.
-  /// Tile disembunyikan jika program koin mati atau event-nya dimatikan.
   Widget _gameSection(BuildContext context, String uid) {
     final settings = ref.watch(coinSettingsProvider).valueOrNull;
     final programOn = settings?.enabled ?? true;
@@ -279,7 +250,6 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
     final buruOn = settings?.events['buruDiskon'] ?? true;
     final guessOn = settings?.events['guess'] ?? true;
 
-    // Jika semua game mati, sembunyikan section.
     if (!programOn || (!tangkapOn && !buruOn && !guessOn)) {
       return const SizedBox.shrink();
     }
@@ -317,7 +287,6 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
         ],
         if (guessOn) ...[
           const SizedBox(height: 8),
-          // Tebak Harga — ikut Web: akses hanya dari Misi Koin.
           AppCard(
             onTap: () {
               Navigator.of(context).push(
@@ -447,8 +416,6 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
     final tuntas = capaian >= misi.target;
     final diminta = _diminta.contains(misi.id);
     final pct = (capaian / misi.target).clamp(0.0, 1.0);
-    // Fix 2026-10-18 (ACC user): badge ikut settingan live seperti Web,
-    // biar jujur dengan yang diterima pelanggan (sebelumnya hardcoded).
     final reward = ref.watch(coinSettingsProvider).valueOrNull?.rewards['mission'] ??
         misi.hadiahKoin;
     return Padding(
@@ -522,7 +489,6 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
                         _mintaHadiah(context, ref, misi, uid),
               ),
             ] else ...[
-              // Ikut PWA: misi belum tersedia -> tombol grey out.
               const SizedBox(height: 8),
               const AppButton(
                 label: 'Belum tersedia',

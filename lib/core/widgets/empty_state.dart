@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// Empty state jujur — prinsip dikunci: "mending 'belum ada ...'
-/// daripada nilai 0". Tidak ada angka/data contoh di sini.
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;

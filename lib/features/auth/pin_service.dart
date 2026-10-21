@@ -4,8 +4,6 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// PIN Admin 6 digit — disimpan sebagai hash SHA-256 di secure storage.
-/// Pertama kali: buat + konfirmasi. Lupa PIN → alur reset (hapus + buat baru).
 class PinService {
   static const _key = 'admin_pin_hash';
   final FlutterSecureStorage _storage;

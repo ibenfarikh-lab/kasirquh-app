@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 
-// Test validasi logika saveMyRecipe tanpa Firestore.
-// Validasi yang diuji: nama kosong, items kosong, nama dipotong 54 karakter.
 
 void main() {
   test('nama dipotong maksimal 54 karakter', () {

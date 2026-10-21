@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Pilihan tampilan produk Mode Pelanggan — Ringkas / Lega / Daftar.
 enum DensityPilihan {
   ringkas,
   lega,
@@ -14,7 +13,6 @@ enum DensityPilihan {
       };
 }
 
-/// Pilihan dering notifikasi — Bawaan HP / Khas Mimi / Hening.
 enum DeringPilihan {
   bawaan,
   khas,
@@ -27,8 +25,6 @@ enum DeringPilihan {
       };
 }
 
-/// Penyimpanan string sederhana yang persisten (SharedPreferences).
-/// Dipakai untuk density & dering (pola sama seperti ThemeSettings).
 class PengaturanString extends StateNotifier<String> {
   final String _key;
 
@@ -53,13 +49,11 @@ class PengaturanString extends StateNotifier<String> {
   }
 }
 
-/// Tampilan produk Mode Pelanggan (default: ringkas).
 final densityPelangganProvider =
     StateNotifierProvider<PengaturanString, String>((ref) {
   return PengaturanString('densityPelanggan', 'ringkas');
 });
 
-/// Dering notifikasi Mode Pelanggan (default: bawaan).
 final deringPelangganProvider =
     StateNotifierProvider<PengaturanString, String>((ref) {
   return PengaturanString('deringPelanggan', 'bawaan');

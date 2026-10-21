@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Bunyi notifikasi khas dirujuk dari Dart berdasarkan NAMA resource
-     (RawResourceAndroidNotificationSound) sehingga penyusut resource
-     AGP tidak melihat rujukannya dan membuang berkasnya dari APK
-     (terbukti pada build v3.6.107+121 pertama: mimi_chime.wav hilang
-     dari APK). tools:keep mempertahankannya. -->
+
 <resources xmlns:tools="http://schemas.android.com/tools"
     tools:keep="@raw/mimi_chime" />
