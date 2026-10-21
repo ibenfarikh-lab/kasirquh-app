@@ -145,7 +145,7 @@ class _PatunganCustomerCard extends ConsumerWidget {
                     (x) => x.customerId == customerId,
                     orElse: () => p.participants.first,
                   );
-                  final lunas = saya.paymentStatus == 'lunas';
+                  final lunas = saya.sudahLunas;
                   return Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 8),

@@ -254,9 +254,9 @@ class _PatunganAdminCard extends ConsumerWidget {
                           style: const TextStyle(fontSize: 13),
                         ),
                       ),
-                      _bayarPill(ps.paymentStatus),
+                      _bayarPill(ps),
                       const SizedBox(width: 8),
-                      if (ps.paymentStatus != 'lunas')
+                      if (ps.belumLunas)
                         TextButton(
                           onPressed: () => _konfirmasiBayar(
                               context, ref, p.id, ps),
@@ -336,8 +336,10 @@ class _PatunganAdminCard extends ConsumerWidget {
     );
   }
 
-  Widget _bayarPill(String paymentStatus) {
-    final lunas = paymentStatus == 'lunas';
+  Widget _bayarPill(PatunganParticipant ps) {
+    // Definisi lunas tunggal di model — nilai warisan 'menunggu'
+    // tetap tampil "Menunggu bayar" (belum lunas).
+    final lunas = ps.sudahLunas;
     final color = lunas ? AppColors.ok : AppColors.orange;
     return Container(
       padding:

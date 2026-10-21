@@ -272,8 +272,9 @@ class AdminRepository {
         'name': customerName.isEmpty ? 'Warga' : customerName,
         'slots': want,
         'joinedAt': DateTime.now().toIso8601String(),
-        // Keputusan user: ikut patungan → status "menunggu bayar".
-        'paymentStatus': 'menunggu',
+        // Keputusan user: ikut patungan → status "menunggu bayar"
+        // (tulisan Web, diseragamkan 2026-10-21).
+        'paymentStatus': 'menunggu bayar',
         'paymentMethod': paymentMethod == 'transfer' ? 'transfer' : 'tunai',
       });
       t.update(ref, {
@@ -314,7 +315,7 @@ class AdminRepository {
       var ketemu = false;
       for (final p in parts) {
         if (p['customerId'] == customerId) {
-          p['paymentStatus'] = lunas ? 'lunas' : 'menunggu';
+          p['paymentStatus'] = lunas ? 'lunas' : 'menunggu bayar';
           ketemu = true;
           break;
         }

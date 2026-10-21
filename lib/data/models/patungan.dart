@@ -1,9 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Peserta patungan — skema SAMA PERSIS dengan PWA.
-/// paymentStatus: 'menunggu' | 'lunas' (keputusan user: bayar tunai saat
-/// ambil barang atau transfer, admin konfirmasi lunas).
+/// Peserta patungan — skema SAMA PERSIS dengan Web.
+/// paymentStatus: 'menunggu bayar' | 'lunas' (keputusan user
+/// 2026-10-21: tulisan diseragamkan ke Web; bayar tunai saat ambil
+/// barang atau transfer, admin konfirmasi lunas). Nilai warisan
+/// 'menunggu' dari tulisan Native lama tetap dibaca sebagai
+/// belum lunas — tulis selalu nilai baru.
 class PatunganParticipant {
+  /// Nilai status belum lunas — tulisan Web (persis).
+  static const statusBelumLunas = 'menunggu bayar';
+
+  /// Nilai warisan tulisan Native lama untuk keadaan yang sama.
+  static const statusBelumLunasLama = 'menunggu';
+
   final String customerId;
   final String name;
   final int slots;
@@ -18,9 +27,14 @@ class PatunganParticipant {
     required this.name,
     required this.slots,
     required this.joinedAt,
-    this.paymentStatus = 'menunggu',
+    this.paymentStatus = statusBelumLunas,
     this.paymentMethod = 'tunai',
   });
+
+  /// Sudah lunas — satu-satunya definisi; selain ini (termasuk
+  /// nilai warisan 'menunggu') berarti belum lunas.
+  bool get sudahLunas => paymentStatus == 'lunas';
+  bool get belumLunas => !sudahLunas;
 
   factory PatunganParticipant.fromMap(Map<String, dynamic> m) {
     final ja = m['joinedAt'];
@@ -37,7 +51,8 @@ class PatunganParticipant {
       name: (m['name'] as String?) ?? 'Warga',
       slots: (m['slots'] as num?)?.toInt() ?? 1,
       joinedAt: parsed,
-      paymentStatus: (m['paymentStatus'] as String?) ?? 'menunggu',
+      paymentStatus:
+          (m['paymentStatus'] as String?) ?? statusBelumLunas,
       paymentMethod: (m['paymentMethod'] as String?) ?? 'tunai',
     );
   }
