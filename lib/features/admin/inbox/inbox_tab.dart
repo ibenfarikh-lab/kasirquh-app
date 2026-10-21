@@ -34,7 +34,7 @@ class InboxTab extends ConsumerWidget {
     final low = ref.watch(lowStockProductsProvider);
     final titipan = (ref.watch(titipRequestsProvider).valueOrNull ??
             const [])
-        .where((t) => t.status == 'baru')
+        .where((t) => t.status == 'baru' || t.status == 'diproses')
         .toList();
 
     final empty = approvals.isEmpty &&
@@ -205,20 +205,21 @@ class InboxTab extends ConsumerWidget {
     openAdminPage(context, page);
   }
 
-  /// Label status titipan (keputusan user: Baru → Dicari → Tersedia →
-  /// Selesai, + Ditolak bila barang tak ketemu).
+  /// Label status titipan — rantai Web (P1-3): Baru → Diproses →
+  /// Tersedia → Selesai / Dibatalkan. Status lama 'dicari'/'ditolak'
+  /// yang terlanjur tertulis dipetakan ke label barunya saat dibaca.
   String _namaStatusTitipan(String status) => switch (status) {
-        'dicari' => Strings.statusTitipanDicari,
+        'diproses' || 'dicari' => Strings.statusTitipanDiproses,
         'tersedia' => Strings.statusTitipanTersedia,
         'selesai' => Strings.statusTitipanSelesai,
-        'ditolak' => Strings.statusTitipanDitolak,
+        'dibatalkan' || 'ditolak' => Strings.statusTitipanDibatalkan,
         _ => Strings.statusTitipanBaru,
       };
 
   /// Dialog ubah status titipan — keputusan user: ADMIN MANUAL.
   Future<void> _ubahStatusTitipan(
       BuildContext context, WidgetRef ref, TitipRequest t) async {
-    const opsi = ['baru', 'dicari', 'tersedia', 'selesai', 'ditolak'];
+    const opsi = ['baru', 'diproses', 'tersedia', 'selesai', 'dibatalkan'];
     final pilih = await showDialog<String>(
       context: context,
       builder: (d) => SimpleDialog(
@@ -275,6 +276,16 @@ class InboxTab extends ConsumerWidget {
     }
     // Tandai semua item inbox sebagai dibaca → badge = 0.
     await ref.read(inboxReadProvider.notifier).markRead(ids);
+    // Persist juga ke store_settings (P1-8, persis Web): gabungan
+    // lokal + server, dibatasi 200 ID — agar status baca mengikuti
+    // admin lintas perangkat & pintu. Gagal simpan tidak menggagalkan.
+    try {
+      final gabung = <String>{
+        ...ref.read(inboxReadEffectiveProvider),
+        ...ids,
+      }.take(200).toList();
+      await repo.saveStoreSettings({'inboxReadIds': gabung});
+    } catch (_) {}
     ref.invalidate(chatThreadsProvider);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

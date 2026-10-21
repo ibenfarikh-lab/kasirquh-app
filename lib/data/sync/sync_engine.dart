@@ -178,6 +178,8 @@ class SyncEngine {
             'barcode': data['barcode'],
             'photoPath': data['photoUrl'],
             'active': (data['isActive'] == false) ? 0 : 1,
+            'budgetEligible': (data['budgetEligible'] == false) ? 0 : 1,
+            'budgetMaxQty': (data['budgetMaxQty'] as num?)?.toInt() ?? 4,
             'updatedAt': DateTime.now().millisecondsSinceEpoch,
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -188,7 +190,8 @@ class SyncEngine {
           {
             'id': doc.doc.id,
             'title': data['title'] ?? '',
-            'subtitle': data['subtitle'],
+            // Skema Web menulis teks promo di 'copy' (P1-10).
+            'subtitle': data['copy'] ?? data['subtitle'],
             'productId': data['productId'],
             'discountType': data['discountType'],
             'discountValue': (data['discountValue'] as num?)?.toInt() ?? 0,

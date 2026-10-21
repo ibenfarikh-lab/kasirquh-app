@@ -18,6 +18,11 @@ class Product {
   final int wholesaleQty;
   final int wholesalePrice;
   final String wholesaleLabel;
+  /// Mode Anggaran (skema Web): produk boleh masuk rekomendasi anggaran
+  /// (bawaan true; admin Web bisa mematikan per produk).
+  final bool budgetEligible;
+  /// Batas qty per produk dalam Mode Anggaran (bawaan Web 4).
+  final int budgetMaxQty;
 
   const Product({
     required this.id,
@@ -34,6 +39,8 @@ class Product {
     this.wholesaleQty = 0,
     this.wholesalePrice = 0,
     this.wholesaleLabel = '',
+    this.budgetEligible = true,
+    this.budgetMaxQty = 4,
   });
 
   /// Ada harga grosir?
@@ -54,6 +61,8 @@ class Product {
         'wholesaleQty': wholesaleQty,
         'wholesalePrice': wholesalePrice,
         'wholesaleLabel': wholesaleLabel,
+        'budgetEligible': budgetEligible ? 1 : 0,
+        'budgetMaxQty': budgetMaxQty,
       };
 
   factory Product.fromMap(Map<String, dynamic> m) => Product(
@@ -71,6 +80,8 @@ class Product {
         wholesaleQty: (m['wholesaleQty'] as num?)?.toInt() ?? 0,
         wholesalePrice: (m['wholesalePrice'] as num?)?.toInt() ?? 0,
         wholesaleLabel: m['wholesaleLabel'] as String? ?? '',
+        budgetEligible: m['budgetEligible'] != 0 && m['budgetEligible'] != false,
+        budgetMaxQty: (m['budgetMaxQty'] as num?)?.toInt() ?? 4,
       );
 
   /// Payload Firestore — NAMA FIELD SELARAS SKEMA
@@ -89,5 +100,7 @@ class Product {
         'wholesaleQty': wholesaleQty,
         'wholesalePrice': wholesalePrice,
         'wholesaleLabel': wholesaleLabel,
+        'budgetEligible': budgetEligible,
+        'budgetMaxQty': budgetMaxQty,
       };
 }

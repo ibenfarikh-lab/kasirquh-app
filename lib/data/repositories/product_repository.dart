@@ -53,6 +53,8 @@ class ProductRepository {
         barcode: m['barcode'] as String?,
         photoPath: m['photoUrl'] as String?,
         active: true,
+        budgetEligible: m['budgetEligible'] != false,
+        budgetMaxQty: (m['budgetMaxQty'] as num?)?.toInt() ?? 4,
       ));
     }
     list.sort((a, b) => a.name.compareTo(b.name));
@@ -110,6 +112,8 @@ class ProductRepository {
         barcode: m['barcode'] as String?,
         photoPath: m['photoUrl'] as String?,
         active: m['isActive'] != false,
+        budgetEligible: m['budgetEligible'] != false,
+        budgetMaxQty: (m['budgetMaxQty'] as num?)?.toInt() ?? 4,
       ));
     }
     list.sort((a, b) => a.name.compareTo(b.name));

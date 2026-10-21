@@ -59,6 +59,11 @@ class StoreInfo {
   final int flashPrice;
   final String? flashRule;
   final DateTime? flashEndsAt;
+  // Thread Chat Toko yang di-pin admin (urutan = prioritas, P1-2).
+  final List<String> pinnedChatIds;
+  // ID item Inbox yang sudah dibaca — persisten lintas perangkat
+  // di store_settings (P1-8, skema Web `inboxReadIds`).
+  final List<String> inboxReadIds;
   // Kabar warung (override; kosong = otomatis).
   final String? kabarStatus;
   final String? kabarMood;
@@ -100,6 +105,8 @@ class StoreInfo {
     this.flashPrice = 0,
     this.flashRule,
     this.flashEndsAt,
+    this.pinnedChatIds = const [],
+    this.inboxReadIds = const [],
     this.kabarStatus,
     this.kabarMood,
     this.carouselSlots = const {},
@@ -177,6 +184,14 @@ class StoreInfo {
         flashPrice: (m['flashPrice'] as num?)?.toInt() ?? 0,
         flashRule: m['flashRule'] as String?,
         flashEndsAt: (m['flashEndsAt'] as Timestamp?)?.toDate(),
+        pinnedChatIds: (m['pinnedChatIds'] as List?)
+                ?.whereType<String>()
+                .toList() ??
+            const [],
+        inboxReadIds: (m['inboxReadIds'] as List?)
+                ?.whereType<String>()
+                .toList() ??
+            const [],
         kabarStatus: m['kabarStatus'] as String?,
         kabarMood: m['kabarMood'] as String?,
         carouselSlots: ((m['carouselSlots'] as Map?) ?? {}).map(
@@ -193,11 +208,19 @@ class StoreInfo {
 }
 
 /// Promo — mirror koleksi `promos`.
-/// discountType: 'percent' | 'amount' | 'flash' (skema).
+/// Skema tulis Web (P1-10): banner sederhana {title, copy, badge,
+/// isActive} — TANPA diskon harga. Field diskon warisan Native
+/// (productId/discountType/discountValue/startsAt/endsAt) dipertahankan
+/// hanya untuk membaca data lama; promo Web tidak memilikinya sehingga
+/// tidak pernah memicu potongan harga.
 class Promo {
   final String id;
   final String title;
   final String? subtitle;
+  /// Teks promo gaya Web (`copy`); fallback ke `subtitle` lama.
+  final String copy;
+  /// Lencana promo gaya Web (`badge`, bawaan Web 'PROMO').
+  final String badge;
   final String? productId;
   final String? discountType;
   final int discountValue;
@@ -210,6 +233,8 @@ class Promo {
     required this.id,
     required this.title,
     this.subtitle,
+    this.copy = '',
+    this.badge = 'PROMO',
     this.productId,
     this.discountType,
     this.discountValue = 0,
@@ -224,10 +249,13 @@ class Promo {
     final end = (m['endsAt'] as Timestamp?)?.toDate();
     if (start != null && now.isBefore(start)) active = false;
     if (end != null && now.isAfter(end)) active = false;
+    final badgeMentah = (m['badge'] as String?)?.trim() ?? '';
     return Promo(
       id: id,
       title: (m['title'] as String?) ?? '',
       subtitle: m['subtitle'] as String?,
+      copy: (m['copy'] as String?) ?? (m['subtitle'] as String?) ?? '',
+      badge: badgeMentah.isEmpty ? 'PROMO' : badgeMentah,
       productId: m['productId'] as String?,
       discountType: m['discountType'] as String?,
       discountValue: (m['discountValue'] as num?)?.toInt() ?? 0,

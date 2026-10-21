@@ -46,6 +46,9 @@ class ChatMessage {
   final String senderId;
   final String senderRole; // 'admin' | 'customer'
   final String text;
+  /// Foto terlampir (data URI PNG ≤300px, skema Web `imageUrl`).
+  /// Kosong = pesan teks biasa.
+  final String imageUrl;
   final DateTime createdAt;
 
   const ChatMessage({
@@ -53,10 +56,12 @@ class ChatMessage {
     required this.senderId,
     required this.senderRole,
     required this.text,
+    this.imageUrl = '',
     required this.createdAt,
   });
 
   bool get fromAdmin => senderRole == 'admin';
+  bool get punyaFoto => imageUrl.isNotEmpty;
 
   factory ChatMessage.fromDoc(String id, Map<String, dynamic> m) {
     final ts = m['createdAt'];
@@ -65,6 +70,7 @@ class ChatMessage {
       senderId: (m['senderId'] as String?) ?? '',
       senderRole: (m['senderRole'] as String?) ?? 'customer',
       text: (m['text'] as String?) ?? '',
+      imageUrl: (m['imageUrl'] as String?) ?? '',
       createdAt: ts is Timestamp
           ? ts.toDate()
           : DateTime.fromMillisecondsSinceEpoch(
@@ -76,6 +82,7 @@ class ChatMessage {
         'senderId': senderId,
         'senderRole': senderRole,
         'text': text,
+        'imageUrl': imageUrl,
         'createdAt': FieldValue.serverTimestamp(),
       };
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/chat.dart';
 import '../../../data/repositories/social_repository.dart';
 import '../../../l10n/strings_id.dart';
@@ -70,6 +71,7 @@ class _IsiThread extends ConsumerStatefulWidget {
 
 class _IsiThreadState extends ConsumerState<_IsiThread> {
   final _controller = TextEditingController();
+  String _fotoUrl = '';
 
   @override
   void initState() {
@@ -88,16 +90,24 @@ class _IsiThreadState extends ConsumerState<_IsiThread> {
     super.dispose();
   }
 
+  /// Pilih foto (kompres 300px PNG data URI — pola Web, P1-2).
+  Future<void> _pilihFoto() async {
+    final url = await pickProductPhoto();
+    if (url != null && mounted) setState(() => _fotoUrl = url);
+  }
+
   Future<void> _kirim() async {
     final teks = _controller.text.trim();
-    if (teks.isEmpty) return;
+    if (teks.isEmpty && _fotoUrl.isEmpty) return;
     try {
       await ref.read(socialRepositoryProvider).sendTokoMessage(
             threadId: widget.thread.id,
             uid: widget.uid,
             text: teks,
+            imageUrl: _fotoUrl,
           );
       _controller.clear();
+      if (mounted) setState(() => _fotoUrl = '');
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -171,10 +181,38 @@ class _IsiThreadState extends ConsumerState<_IsiThread> {
             },
           ),
         ),
+        // Pratinjau foto yang akan dikirim (P1-2).
+        if (_fotoUrl.isNotEmpty)
+          Container(
+            color: context.permukaanKartu,
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image(
+                    image: photoImageProvider(_fotoUrl)!,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text('Foto siap dikirim'),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => setState(() => _fotoUrl = ''),
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Batalkan foto',
+                ),
+              ],
+            ),
+          ),
         ChatInputBar(
           controller: _controller,
           onSend: _kirim,
           hint: Strings.ketikPesan,
+          onPickPhoto: _pilihFoto,
         ),
       ],
     );

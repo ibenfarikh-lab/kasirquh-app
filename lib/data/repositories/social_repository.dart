@@ -172,11 +172,13 @@ class SocialRepository {
     required String threadId,
     required String uid,
     required String text,
+    String imageUrl = '',
   }) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk chat.');
     final bersih = text.trim();
-    if (bersih.isEmpty) return;
+    // Pesan foto boleh tanpa teks (persis Web); keduanya kosong = batal.
+    if (bersih.isEmpty && imageUrl.isEmpty) return;
     final msgRef = db
         .collection('chat_threads')
         .doc(threadId)
@@ -190,10 +192,11 @@ class SocialRepository {
           senderId: uid,
           senderRole: 'customer',
           text: bersih,
+          imageUrl: imageUrl,
           createdAt: DateTime.now(),
         ).toFirestore());
     batch.update(db.collection('chat_threads').doc(threadId), {
-      'lastMessage': bersih,
+      'lastMessage': bersih.isNotEmpty ? bersih : '[Foto]',
       'updatedAt': FieldValue.serverTimestamp(),
       'unreadAdmin': FieldValue.increment(1),
       'unreadCustomer': 0,

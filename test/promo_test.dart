@@ -58,4 +58,41 @@ void main() {
       expect(p.hargaPromo(5000), 5000);
     });
   });
+
+  group('Promo.fromDoc skema Web (P1-10)', () {
+    test('dokumen Web: title/copy/badge/isActive terbaca', () {
+      final p = Promo.fromDoc('w1', {
+        'title': 'Promo Gajian',
+        'copy': 'Diskon sembako akhir bulan',
+        'badge': 'HEMAT',
+        'isActive': true,
+      });
+      expect(p.title, 'Promo Gajian');
+      expect(p.copy, 'Diskon sembako akhir bulan');
+      expect(p.badge, 'HEMAT');
+      expect(p.isActive, isTrue);
+      // Promo Web bukan diskon harga: tidak memicu potongan.
+      expect(p.discountType, isNull);
+      expect(p.hargaPromo(10000), 10000);
+    });
+
+    test('badge kosong -> bawaan PROMO; copy fallback dari subtitle lama', () {
+      final p = Promo.fromDoc('w2', {
+        'title': 'Promo Lama',
+        'subtitle': 'Teks warisan',
+        'isActive': true,
+      });
+      expect(p.badge, 'PROMO');
+      expect(p.copy, 'Teks warisan');
+    });
+
+    test('isActive false terbaca nonaktif', () {
+      final p = Promo.fromDoc('w3', {
+        'title': 'Mati',
+        'copy': '',
+        'isActive': false,
+      });
+      expect(p.isActive, isFalse);
+    });
+  });
 }

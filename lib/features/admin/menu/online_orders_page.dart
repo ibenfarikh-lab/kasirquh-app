@@ -257,6 +257,22 @@ class OnlineOrdersPage extends ConsumerWidget {
                     ],
                   ),
                 ],
+                // Hapus pesanan (P1-7, pola aman Web): belum selesai →
+                // stok & koin dikembalikan dulu dalam transaksi yang
+                // sama; selesai/dibatalkan → hapus dokumen saja.
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: const Text('Hapus pesanan'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.danger,
+                    ),
+                    onPressed: () => _hapus(
+                        context, ref, dialogContext, order),
+                  ),
+                ),
               ],
             ),
           ),
@@ -268,6 +284,53 @@ class OnlineOrdersPage extends ConsumerWidget {
           ],
         ),
     );
+  }
+
+  /// Konfirmasi + eksekusi hapus pesanan (P1-7).
+  Future<void> _hapus(BuildContext context, WidgetRef ref,
+      BuildContext dialogContext, Order order) async {
+    final belumSelesai = order.status != OrderStatus.selesai &&
+        order.status != OrderStatus.dibatalkan;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus pesanan?'),
+        content: Text(
+          '${order.customerName} · ${formatRp(order.total)}\n'
+          '${belumSelesai ? 'Pesanan belum selesai: stok & koin pelanggan dikembalikan dulu, baru pesanan dihapus. ' : ''}'
+          'Pesanan yang dihapus tidak bisa dikembalikan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(Strings.batal),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Hapus',
+                style: TextStyle(color: AppColors.danger)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(adminRepositoryProvider).deleteOrder(order.id);
+      if (dialogContext.mounted) {
+        Navigator.of(dialogContext).pop();
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pesanan dihapus.')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.butuhInternetAdmin)),
+        );
+      }
+    }
   }
 
   /// Selesaikan pesanan → masuk Pembukuan (ikut PWA settleOrder).

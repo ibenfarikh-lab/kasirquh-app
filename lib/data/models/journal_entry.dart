@@ -9,6 +9,11 @@ class JournalEntry {
   final String? customerId; // member yang dilayani (kasir scan kartu)
   final String? customerName;
   final DateTime createdAt;
+  // Field laporan gaya Web (P1-4): jurnal penjualan Web membawa
+  // profit/method/itemCount — Laporan membaca ini, BUKAN menebak.
+  final int profit; // laba kotor entri penjualan (Rp)
+  final String method; // metode bayar ('Tunai', dst.)
+  final num itemCount; // jumlah item terjual pada entri ini
 
   const JournalEntry({
     required this.id,
@@ -19,6 +24,9 @@ class JournalEntry {
     this.customerId,
     this.customerName,
     required this.createdAt,
+    this.profit = 0,
+    this.method = '',
+    this.itemCount = 0,
   });
 
   Map<String, dynamic> toMap() => {

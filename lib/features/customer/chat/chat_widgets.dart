@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/chat.dart';
 import '../../../data/models/rumpi.dart';
 
@@ -53,14 +54,24 @@ class ChatBubble extends StatelessWidget {
                   ),
                 ),
               ),
-            Text(
-              message.text,
-              style: TextStyle(
-                color:
-                    milikSaya ? Colors.white : context.teksUtama,
-                fontSize: 15,
+            // Foto terlampir (skema Web imageUrl, P1-2).
+            if (message.punyaFoto)
+              Padding(
+                padding: EdgeInsets.only(bottom: message.text.isEmpty ? 0 : 6),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: _fotoPesan(message.imageUrl),
+                ),
               ),
-            ),
+            if (message.text.isNotEmpty)
+              Text(
+                message.text,
+                style: TextStyle(
+                  color:
+                      milikSaya ? Colors.white : context.teksUtama,
+                  fontSize: 15,
+                ),
+              ),
             const SizedBox(height: 2),
             Text(
               waktuRelatif(message.createdAt),
@@ -78,16 +89,32 @@ class ChatBubble extends StatelessWidget {
   }
 }
 
+/// Gambar pesan chat dari data URI/URL — kosong rapi bila gagal muat.
+Widget _fotoPesan(String url) {
+  final provider = photoImageProvider(url);
+  if (provider == null) return const SizedBox.shrink();
+  return Image(
+    image: provider,
+    width: 180,
+    height: 180,
+    fit: BoxFit.cover,
+    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+  );
+}
+
 /// Bar input pesan — dipakai Chat Toko & Chat Komunitas.
+/// [onPickPhoto] opsional: tombol foto di kiri kolom teks (Chat Toko).
 class ChatInputBar extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
   final String hint;
+  final VoidCallback? onPickPhoto;
   const ChatInputBar({
     super.key,
     required this.controller,
     required this.onSend,
     required this.hint,
+    this.onPickPhoto,
   });
 
   @override
@@ -98,6 +125,14 @@ class ChatInputBar extends StatelessWidget {
       child: SafeArea(
         child: Row(
           children: [
+            if (onPickPhoto != null) ...[
+              IconButton(
+                onPressed: onPickPhoto,
+                icon: const Icon(Icons.image_outlined),
+                color: AppColors.orange,
+                tooltip: 'Tambah foto',
+              ),
+            ],
             Expanded(
               child: TextField(
                 controller: controller,

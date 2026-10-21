@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/utils/csv_products.dart';
 import '../../core/utils/currency.dart';
 import '../../data/local/app_database.dart';
 import '../../data/models/chat.dart';
@@ -161,8 +162,14 @@ class AdminRepository {
   }
 
   /// Ubah status titipan (keputusan user: ADMIN MANUAL).
-  /// Alur: baru → dicari → tersedia → selesai (+ ditolak).
+  /// Rantai status PERSIS Web (P1-3): baru → diproses → tersedia →
+  /// selesai / dibatalkan. Kata lama Native ('dicari'/'ditolak') tidak
+  /// dikenal daftar sah Web — jangan menulisnya lagi.
   Future<void> setTitipStatus(String id, String status) async {
+    const allowed = ['baru', 'diproses', 'tersedia', 'selesai', 'dibatalkan'];
+    if (!allowed.contains(status)) {
+      throw ArgumentError('Status tidak valid: $status');
+    }
     final db = _db;
     if (db == null) throw StateError('butuh internet');
     await db.collection('titip_requests').doc(id).update({
@@ -527,6 +534,71 @@ class AdminRepository {
   }
 
   /// Simpan produk (baru / ubah). Mengembalikan id.
+  /// Impor produk dari CSV (P1-7, port `importFromCsv` Web):
+  /// upsert berdasarkan barcode dalam WriteBatch per 400 item —
+  /// barcode yang sudah ada diperbarui (merge), selainnya dibuat
+  /// baru. [existing] = daftar produk admin saat ini (untuk peta
+  /// barcode → id). Mengembalikan hitungan (created, updated, total).
+  Future<({int created, int updated, int total})> importProductsCsv(
+    List<CsvProductItem> items,
+    List<Product> existing,
+  ) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet untuk impor.');
+    final byBarcode = <String, String>{};
+    for (final p in existing) {
+      final code = (p.barcode ?? '').trim();
+      if (code.isNotEmpty) byBarcode.putIfAbsent(code, () => p.id);
+    }
+    final ts = FieldValue.serverTimestamp();
+    final ops = <({String? existingId, Map<String, dynamic> data})>[];
+    for (final item in items) {
+      final code = item.barcode.trim();
+      final name = item.name.trim();
+      if (name.isEmpty) continue;
+      ops.add((
+        existingId: code.isNotEmpty ? byBarcode[code] : null,
+        data: {
+          'name': name,
+          'category': item.cat.trim().isEmpty ? 'Lainnya' : item.cat.trim(),
+          'unit': item.unit.trim().isEmpty ? 'pcs' : item.unit.trim(),
+          'price': item.price < 0 ? 0 : item.price.round(),
+          'costPrice': item.cost < 0 ? 0 : item.cost.round(),
+          'stock': item.stock < 0 ? 0.0 : item.stock,
+          'barcode': code,
+          'photoUrl': item.photo.trim(),
+          'isActive': true,
+          'updatedAt': ts,
+        },
+      ));
+    }
+    var created = 0;
+    var updated = 0;
+    const batchSize = 400;
+    for (var i = 0; i < ops.length; i += batchSize) {
+      final batch = db.batch();
+      final slice = ops.skip(i).take(batchSize);
+      for (final op in slice) {
+        if (op.existingId != null) {
+          batch.set(
+            db.collection('products').doc(op.existingId),
+            op.data,
+            SetOptions(merge: true),
+          );
+          updated++;
+        } else {
+          batch.set(db.collection('products').doc(), {
+            'createdAt': ts,
+            ...op.data,
+          });
+          created++;
+        }
+      }
+      await batch.commit();
+    }
+    return (created: created, updated: updated, total: ops.length);
+  }
+
   Future<String> saveProduct({
     String? id,
     required String name,
@@ -863,6 +935,75 @@ class AdminRepository {
     });
   }
 
+  /// Hapus pesanan — pola aman Web (P1-7, port `deleteOrder`):
+  /// SATU transaksi. Pesanan SELESAI/DIBATALKAN sudah final (jurnal,
+  /// stok, koin tidak diubah) → hanya dokumennya dihapus. Pesanan
+  /// BELUM selesai → stok & koin dikembalikan persis seperti
+  /// cancelOrder (ledger 'Koin kembali · #kode' / 'Bonus dibatalkan ·
+  /// #kode' dengan detail 'Pesanan dihapus'), baru dokumen dihapus.
+  Future<void> deleteOrder(String orderId) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet');
+    final ts = FieldValue.serverTimestamp();
+    await db.runTransaction((t) async {
+      final ref = db.collection('orders').doc(orderId);
+      final snap = await t.get(ref);
+      if (!snap.exists) throw StateError('Pesanan tidak ditemukan');
+      final d = snap.data()!;
+      final sudahFinal =
+          d['status'] == 'selesai' || d['status'] == 'dibatalkan';
+      if (!sudahFinal) {
+        final items = (d['items'] as List?) ?? const [];
+        for (final it in items) {
+          if (it is! Map) continue;
+          final pid = it['productId'] as String?;
+          final qty = (it['qty'] as num?) ?? 0;
+          if (pid != null && pid.isNotEmpty && qty != 0) {
+            t.update(db.collection('products').doc(pid), {
+              'stock': FieldValue.increment(qty),
+              'updatedAt': ts,
+            });
+          }
+        }
+        final customerId = d['customerId'] as String?;
+        final coinUsed = ((d['coinUsed'] as num?)?.round() ?? 0);
+        final earnedCoins = ((d['earnedCoins'] as num?)?.round() ?? 0);
+        final coinBack = coinUsed - earnedCoins;
+        if (customerId != null && customerId.isNotEmpty) {
+          if (coinBack != 0) {
+            t.update(db.collection('customers').doc(customerId), {
+              'coins': FieldValue.increment(coinBack),
+            });
+          }
+          final code = (d['code'] as String?) ?? '';
+          if (coinUsed > 0) {
+            t.set(db.collection('coin_ledger').doc(), {
+              'customerId': customerId,
+              'amount': coinUsed,
+              'reason': 'tukar',
+              'label': 'Koin kembali · #$code',
+              'detail': 'Pesanan dihapus',
+              'orderId': ref.id,
+              'createdAt': ts,
+            });
+          }
+          if (earnedCoins > 0) {
+            t.set(db.collection('coin_ledger').doc(), {
+              'customerId': customerId,
+              'amount': -earnedCoins,
+              'reason': 'belanja',
+              'label': 'Bonus dibatalkan · #$code',
+              'detail': 'Pesanan dihapus',
+              'orderId': ref.id,
+              'createdAt': ts,
+            });
+          }
+        }
+      }
+      t.delete(ref);
+    });
+  }
+
   /// Tolak bukti transfer: status penolakan persisten agar kartu
   /// tidak hilang dari pantauan. Mengikuti PWA `rejectTransfer`.
   Future<void> rejectTransfer(String orderId, String reason) async {
@@ -1074,6 +1215,32 @@ class AdminRepository {
     });
   }
 
+  /// Check-in harian untuk pelanggan (P1-1): mengembalikan nominal
+  /// yang berhasil diklaim, 0 bila sudah klaim / program nonaktif /
+  /// belum disetujui / gagal. Web mengklaim otomatis saat Beranda
+  /// aktif — jalur ini dipakai pemicu otomatis di Beranda Native.
+  /// Anti-dobel dijamin [grantCoins] (cek `lastCheckin` dalam
+  /// transaksi yang sama).
+  Future<int> claimCheckinHarian(String uid, int reward) async {
+    final now = DateTime.now();
+    final todayKey =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    try {
+      await grantCoins(
+        uid,
+        reward,
+        reason: 'harian',
+        label: 'Bonus harian',
+        detail: 'Check-in $todayKey',
+      );
+      return reward;
+    } on StateError {
+      return 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   /// Sesuaikan koin pelanggan + catat di coin_ledger (append-only).
   ///
   /// Bila [delta] negatif (= koin ditukar/dipakai pelanggan), penukaran
@@ -1229,6 +1396,9 @@ class AdminRepository {
       amount: signed,
       customerId: m['customerId'] as String?,
       customerName: m['customerName'] as String?,
+      profit: (m['profit'] as num?)?.toInt() ?? 0,
+      method: (m['method'] as String?) ?? '',
+      itemCount: (m['itemCount'] as num?) ?? 0,
       createdAt: ts is Timestamp
           ? ts.toDate()
           : DateTime.fromMillisecondsSinceEpoch(
@@ -1516,14 +1686,35 @@ class AdminRepository {
     }
   }
 
+  /// Pin/batalkan pin thread Chat Toko (P1-2, persis Web): daftar id
+  /// persisten di `store_settings/main.pinnedChatIds`, urutan =
+  /// prioritas (yang baru di-pin di depan). Dibaca segar dari server
+  /// sebelum ditulis agar tidak menimpa perubahan pintu lain.
+  Future<void> togglePinChat(String threadId) async {
+    final db = _db;
+    if (db == null) throw StateError('Butuh internet untuk pin chat.');
+    final ref = db.collection('store_settings').doc('main');
+    final snap = await ref.get();
+    final cur = ((snap.data()?['pinnedChatIds'] as List?) ?? const [])
+        .whereType<String>()
+        .toList();
+    final next = cur.contains(threadId)
+        ? (cur..remove(threadId))
+        : <String>[threadId, ...cur];
+    await ref.set({'pinnedChatIds': next}, SetOptions(merge: true));
+  }
+
   Future<void> sendMessage({
     required String threadId,
     required String customerId,
     required String text,
     required String adminId,
+    String imageUrl = '',
   }) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk chat.');
+    final bersih = text.trim();
+    if (bersih.isEmpty && imageUrl.isEmpty) return;
     final msgRef = db
         .collection('chat_threads')
         .doc(threadId)
@@ -1536,11 +1727,12 @@ class AdminRepository {
           id: msgRef.id,
           senderId: adminId,
           senderRole: 'admin',
-          text: text.trim(),
+          text: bersih,
+          imageUrl: imageUrl,
           createdAt: DateTime.now(),
         ).toFirestore());
     batch.update(db.collection('chat_threads').doc(threadId), {
-      'lastMessage': text.trim(),
+      'lastMessage': bersih.isNotEmpty ? bersih : '[Foto]',
       'updatedAt': FieldValue.serverTimestamp(),
       'unreadCustomer': FieldValue.increment(1),
       'unreadAdmin': 0,
@@ -1555,7 +1747,7 @@ class AdminRepository {
           'id': msgRef.id,
           'threadId': threadId,
           'senderId': adminId,
-          'text': text.trim(),
+          'text': bersih.isNotEmpty ? bersih : '[Foto]',
           'createdAt': DateTime.now().millisecondsSinceEpoch,
           'synced': 1,
         },
@@ -2162,13 +2354,13 @@ final inboxReadProvider =
 });
 
 /// Kumpulkan semua ID item inbox saat ini (untuk badge & tandai dibaca).
-/// Format ID ikut pola PWA: {jenis}-{id}.
+/// Format ID persis Web (P1-8): stock-/order-/titip-/chat-/signup-.
 Set<String> collectInboxIds(Ref ref) {
   final ids = <String>{};
   final approvals =
       ref.read(pendingApprovalsProvider).valueOrNull ?? const [];
   for (final c in approvals) {
-    ids.add('approval-${c.uid}');
+    ids.add('signup-${c.uid}');
   }
   final orders =
       ref.read(adminOrdersProvider).valueOrNull ?? const [];
@@ -2184,14 +2376,25 @@ Set<String> collectInboxIds(Ref ref) {
     ids.add('stock-${p.id}');
   }
   final titipan = ref.read(titipRequestsProvider).valueOrNull ?? const [];
-  for (final t in titipan.where((t) => t.status == 'baru')) {
+  for (final t in titipan.where(
+      (t) => t.status == 'baru' || t.status == 'diproses')) {
     ids.add('titip-${t.id}');
   }
   return ids;
 }
 
+/// Status baca EFEKTIF (P1-8): gabungan salinan lokal perangkat
+/// (SharedPreferences) dan daftar persisten di store_settings —
+/// mengikuti Web yang menyimpan `inboxReadIds` di kedua tempat.
+final inboxReadEffectiveProvider = Provider<Set<String>>((ref) {
+  final lokal = ref.watch(inboxReadProvider);
+  final server =
+      ref.watch(storeInfoProvider).valueOrNull?.inboxReadIds ?? const [];
+  return {...lokal, ...server};
+});
+
 final inboxBadgeProvider = Provider<int>((ref) {
-  final readIds = ref.watch(inboxReadProvider);
+  final readIds = ref.watch(inboxReadEffectiveProvider);
   final allIds = collectInboxIds(ref);
   // Badge = item yang belum dibaca.
   return allIds.where((id) => !readIds.contains(id)).length;

@@ -12,6 +12,7 @@ import '../../../data/models/order.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../menu/ledger_page.dart';
+import '../menu/report_page.dart';
 import '../menu/online_orders_page.dart';
 import '../menu/products_page.dart';
 import '../pos/pos_tab.dart';
@@ -347,7 +348,9 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
         _open(context, const ProductsPage());
         break;
       case 'laporan':
-        _open(context, const LedgerPage());
+        // P1-4: shortcut 'Laporan' membuka halaman Laporan (metrik +
+        // tabel), BUKAN Pembukuan — sebelumnya salah sasaran.
+        _open(context, const ReportPage());
         break;
     }
   }

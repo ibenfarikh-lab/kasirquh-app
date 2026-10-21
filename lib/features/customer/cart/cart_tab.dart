@@ -793,14 +793,30 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
       final belanjaTotal =
           ref.read(cartProvider.notifier).total;
       final koinDipakai = _koinDipakai(ref, belanjaTotal);
-      // Bonus koin dari belanja (otomatis, ikut pengaturan admin).
+      // Aturan koin diteruskan ke repository — nilai akhir dihitung
+      // ulang dari total SERVER di dalam transaksi (P1-11, persis Web).
       final coinSettings = ref.read(coinSettingsProvider).valueOrNull ??
           const CoinSettings();
-      int bonusKoin = 0;
-      if (coinSettings.enabled &&
-          (coinSettings.events['spend'] ?? false)) {
-        bonusKoin = (belanjaTotal ~/ coinSettings.spendRule) *
-            coinSettings.spendReward;
+      final spendAktif = coinSettings.enabled &&
+          (coinSettings.events['spend'] ?? false) &&
+          coinSettings.spendRule > 0;
+      // Harga promo kilat aktif (persis Web `promoUnitPrice`): hanya
+      // produk flash yang belum kedaluwarsa.
+      final store = ref.read(storeInfoProvider).valueOrNull;
+      final promoUnitPrice = <String, int>{};
+      String? flashId;
+      var flashRule = '';
+      if (store != null) {
+        final ends = store.flashEndsAt;
+        final flashAktif = store.flashProductId != null &&
+            store.flashProductId!.isNotEmpty &&
+            store.flashPrice > 0 &&
+            (ends == null || ends.isAfter(DateTime.now()));
+        if (flashAktif) {
+          promoUnitPrice[store.flashProductId!] = store.flashPrice;
+          flashId = store.flashProductId;
+          flashRule = store.flashRule ?? '';
+        }
       }
       final transferRef = _transferRef.text.trim();
       final code =
@@ -817,7 +833,13 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
                 ongkir: _fulfillment == 'delivery' ? _ongkir : 0,
                 coinUsed: koinDipakai,
                 coinRate: coinSettings.coinRate,
-                earnedCoins: bonusKoin,
+                redeemLimit: coinSettings.redeemLimit,
+                spendRule: spendAktif ? coinSettings.spendRule : 0,
+                spendReward:
+                    spendAktif ? coinSettings.spendReward : 0,
+                promoUnitPrice: promoUnitPrice,
+                flashProductId: flashId,
+                flashRule: flashRule,
               );
       ref.read(cartProvider.notifier).clear();
       if (!context.mounted) return;

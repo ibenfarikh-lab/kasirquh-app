@@ -34,6 +34,14 @@ class OrderRepository {
   /// `coinUsed`/`coinValue`/`earnedCoins`, plus `fulfillment` dan
   /// `transferReference`. Mesin settle/cancel admin membaca field ini —
   /// JANGAN menulis field lain (mis. `koinDipakai`) di sini.
+  ///
+  /// Harga & stok SELALU dibaca ulang dari Firestore di dalam transaksi
+  /// (P1-11, persis Web): harga keranjang lokal tidak dipercaya. Harga
+  /// unit server = `customerUnitPrice` Web: dasar = harga promo kilat
+  /// (bila produk ini promo kilat aktif) atau harga produk; bila qty
+  /// mencapai ambang grosir → min(dasar, harga grosir). Koin tukar
+  /// di-clamp ke batas persen dari total server; bonus dihitung ulang
+  /// dari total server.
   Future<String> checkout({
     required String customerId,
     required String customerName,
@@ -43,17 +51,18 @@ class OrderRepository {
     String transferReference = '',
     String? note,
     int ongkir = 0,
-    int coinUsed = 0, // koin yang ditukar (dihitung caller dari pengaturan)
+    int coinUsed = 0, // koin yang diminta caller (di-clamp ke server)
     int coinRate = 1, // nilai Rp per koin
-    int earnedCoins = 0, // bonus koin dari belanja (dihitung caller)
+    int redeemLimit = 50, // batas % penukaran dari total (pengaturan admin)
+    int spendRule = 0, // Rp per bonus belanja (0 = bonus mati)
+    int spendReward = 0, // koin per kelipatan spendRule
+    Map<String, int> promoUnitPrice = const {}, // promo kilat aktif
+    String? flashProductId, // untuk cap qty promo kilat
+    String flashRule = '', // aturan promo kilat (angka pertama = cap)
   }) async {
     final db = _db;
     if (db == null) throw const OfflineCheckout();
-    final total =
-        items.fold<int>(0, (s, e) => s + (e.price * e.qty).round());
-    final fullTotal = total + ongkir;
-    final coinValue = coinUsed * coinRate;
-    final paidTotal = fullTotal - coinValue < 0 ? 0 : fullTotal - coinValue;
+    final rate = coinRate < 1 ? 1 : coinRate;
 
     return db.runTransaction((tx) async {
       // 1. Nomor urut pesanan dari counters/orders (atomik).
@@ -74,45 +83,90 @@ class OrderRepository {
       }
       final saldo =
           ((custSnap.data()?['coins'] as num?)?.toInt() ?? 0);
-      if (coinUsed > saldo) {
-        throw StateError('Koin tidak cukup');
-      }
 
-      // 2. Validasi stok dari server + kurangi dalam transaksi yang sama.
-      //    Gagal validasi → transaksi batal total, tidak ada stok berkurang
-      //    dan tidak ada pesanan dibuat (anti oversell).
+      // 2. Baca ulang produk dari server: validasi stok + hitung harga
+      //    unit server per item (P1-11). Produk hilang → batal (Web:
+      //    'Ada produk yang sudah tidak tersedia').
+      final serverItems = <OrderItem>[];
+      var total = 0;
       final lacking = <String>[];
       for (final item in items) {
         final pRef = db.collection('products').doc(item.productId);
         final pSnap = await tx.get(pRef);
+        if (!pSnap.exists) {
+          throw StateError('Ada produk yang sudah tidak tersedia');
+        }
+        final pd = pSnap.data()!;
+        final namaServer = (pd['name'] as String?) ?? item.name;
         // JANGAN .toInt(): stok desimal (3,75) wajib utuh —
         // versi lama memotong lalu menulis balik hasil potongan
         // ke Firestore (korupsi data).
-        final stock = (pSnap.data()?['stock'] as num?)?.toDouble();
-        if (stock == null || stock < item.qty) {
-          lacking.add(item.name);
-        } else {
-          tx.update(pRef, {
-            'stock': stock - item.qty,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+        final stock = (pd['stock'] as num?)?.toDouble() ?? 0;
+        if (stock < item.qty) {
+          lacking.add(namaServer);
+          continue;
         }
+        // Cap promo kilat (Web): qty produk flash dibatasi angka
+        // pertama pada flashRule (bawaan 5).
+        if (flashProductId != null && item.productId == flashProductId) {
+          final m = RegExp(r'\d+').firstMatch(flashRule);
+          final cap = m != null
+              ? (int.tryParse(m.group(0)!) ?? 5)
+              : 5;
+          if (item.qty > (cap < 1 ? 1 : cap)) {
+            throw StateError(
+                'Promo kilat maksimal ${cap < 1 ? 1 : cap} per pesanan');
+          }
+        }
+        // customerUnitPrice Web.
+        final hargaProduk = ((pd['price'] as num?)?.toInt() ?? 0);
+        var unit = promoUnitPrice[item.productId] ?? hargaProduk;
+        final wq = ((pd['wholesaleQty'] as num?)?.toInt() ?? 0);
+        final wp = ((pd['wholesalePrice'] as num?)?.toInt() ?? 0);
+        if (wq > 0 && item.qty >= wq) {
+          final grosir = wp > 0 ? wp : unit;
+          if (grosir < unit) unit = grosir;
+        }
+        serverItems.add(OrderItem(
+          productId: item.productId,
+          name: namaServer,
+          qty: item.qty,
+          price: unit,
+        ));
+        total += (unit * item.qty).round();
+        tx.update(pRef, {
+          'stock': stock - item.qty,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
       }
       if (lacking.isNotEmpty) throw StockShortage(lacking);
 
+      // 2b. Koin dari total SERVER (Web menghitung di dalam transaksi):
+      //     tukar di-clamp ke batas persen & saldo; bonus dihitung ulang.
+      final fullTotal = total + ongkir;
+      final maxValue = total * redeemLimit ~/ 100;
+      var redeem = coinUsed;
+      final maxRedeem = maxValue ~/ rate;
+      if (redeem > maxRedeem) redeem = maxRedeem;
+      if (redeem > saldo) redeem = saldo;
+      if (redeem < 0) redeem = 0;
+      final coinValue = redeem * rate;
+      final paidTotal = fullTotal - coinValue < 0 ? 0 : fullTotal - coinValue;
+      final earned = spendRule > 0 ? (total ~/ spendRule) * spendReward : 0;
+
       // 3. Saldo koin: satu delta atomik (bonus − tukar), seperti Web.
-      final coinDelta = earnedCoins - coinUsed;
+      final coinDelta = earned - redeem;
       if (coinDelta != 0) {
         tx.update(custRef, {'coins': FieldValue.increment(coinDelta)});
       }
 
-      // 4. Buat dokumen pesanan (skema Web).
+      // 4. Buat dokumen pesanan (skema Web, item & harga dari server).
       final ref = db.collection('orders').doc();
       tx.set(ref, {
         'code': code,
         'customerId': customerId,
         'customerName': customerName,
-        'items': items
+        'items': serverItems
             .map((e) => {
                   'productId': e.productId,
                   'name': e.name,
@@ -129,19 +183,19 @@ class OrderRepository {
         'fulfillment': fulfillment,
         'status': 'menunggu',
         'note': note,
-        'coinUsed': coinUsed,
+        'coinUsed': redeem,
         'coinValue': coinValue,
-        'earnedCoins': earnedCoins,
+        'earnedCoins': earned,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
       // 5. Ledger tukar koin (label/detail mengikuti Web).
-      if (coinUsed > 0) {
+      if (redeem > 0) {
         final ledgerRef = db.collection('coin_ledger').doc();
         tx.set(ledgerRef, {
           'customerId': customerId,
-          'amount': -coinUsed,
+          'amount': -redeem,
           'reason': 'tukar',
           'label': 'Ditukar pada #$code',
           'detail': 'Potongan ${formatRp(coinValue)}',
@@ -151,11 +205,11 @@ class OrderRepository {
       }
 
       // 6. Ledger bonus koin dari belanja (label/detail mengikuti Web).
-      if (earnedCoins > 0) {
+      if (earned > 0) {
         final ledgerRef = db.collection('coin_ledger').doc();
         tx.set(ledgerRef, {
           'customerId': customerId,
-          'amount': earnedCoins,
+          'amount': earned,
           'reason': 'belanja',
           'label': 'Bonus belanja #$code',
           'detail': '${formatRp(total)} belanja',

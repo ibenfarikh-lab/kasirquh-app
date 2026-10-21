@@ -105,6 +105,8 @@ class HomeTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Check-in koin otomatis saat Beranda aktif (P1-1, ala Web).
+        if (uid != null) _AutoCheckin(uid: uid),
         if (productsAsync.hasError)
           _ErrorBanner(
             title: Strings.gagalMuatProduk,
@@ -740,17 +742,40 @@ class HomeTab extends ConsumerWidget {
                                       .read(productsProvider)
                                       .valueOrNull ??
                                   const <Product>[];
+                              // Kelayakan Mode Anggaran gaya Web
+                              // (P1-5): stok > 0, harga > 0, dan
+                              // budgetEligible tidak dimatikan admin.
                               final murah = products
-                                  .where((p) => p.stock > 0)
+                                  .where((p) =>
+                                      p.stock > 0 &&
+                                      p.price > 0 &&
+                                      p.budgetEligible)
                                   .toList()
                                 ..sort((a, b) =>
                                     a.price.compareTo(b.price));
                               var total = 0;
                               var count = 0;
+                              var sisa = nominal;
                               for (final p in murah) {
-                                if (total + p.price > nominal) continue;
-                                ref.read(cartProvider.notifier).add(p);
-                                total += p.price;
+                                if (sisa < p.price) break;
+                                // Qty per produk gaya Web
+                                // (calculateBudget): min(budgetMaxQty,
+                                // stok, sisa dana).
+                                var maxQ = p.budgetMaxQty <= 0
+                                    ? 4.0
+                                    : p.budgetMaxQty.toDouble();
+                                if (p.stock < maxQ) maxQ = p.stock;
+                                final mampu = (sisa ~/ p.price).toDouble();
+                                if (mampu < maxQ) maxQ = mampu;
+                                if (maxQ <= 0) continue;
+                                if (!ref
+                                    .read(cartProvider.notifier)
+                                    .add(p, qty: maxQ)) {
+                                  continue;
+                                }
+                                final subtotal = (p.price * maxQ).round();
+                                total += subtotal;
+                                sisa -= subtotal;
                                 count++;
                                 if (count >= 12) break;
                               }
@@ -3136,4 +3161,53 @@ class _KabarCarouselState extends State<_KabarCarousel> {
       ),
     );
   }
+}
+
+/// Pemicu check-in koin otomatis saat Beranda pelanggan tampil
+/// (P1-1, mengikuti Web yang mengklaim saat Beranda aktif).
+/// Sekali per uid per proses aplikasi; toast HANYA saat berhasil
+/// mengklaim (sudah klaim / event nonaktif / offline = diam).
+class _AutoCheckin extends ConsumerStatefulWidget {
+  const _AutoCheckin({required this.uid});
+
+  final String uid;
+
+  @override
+  ConsumerState<_AutoCheckin> createState() => _AutoCheckinState();
+}
+
+class _AutoCheckinState extends ConsumerState<_AutoCheckin> {
+  static final Set<String> _sudahDicoba = <String>{};
+  bool _jalan = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _coba());
+  }
+
+  Future<void> _coba() async {
+    if (_jalan || _sudahDicoba.contains(widget.uid)) return;
+    _jalan = true;
+    _sudahDicoba.add(widget.uid);
+    final settings =
+        ref.read(coinSettingsProvider).valueOrNull ?? const CoinSettings();
+    if (!settings.enabled || !(settings.events['checkin'] ?? false)) {
+      return;
+    }
+    final reward = settings.rewards['checkin'] ?? 5;
+    final hasil = await ref
+        .read(adminRepositoryProvider)
+        .claimCheckinHarian(widget.uid, reward);
+    if (!mounted) return;
+    if (hasil > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Koin harian +$hasil')),
+      );
+      ref.invalidate(sessionProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

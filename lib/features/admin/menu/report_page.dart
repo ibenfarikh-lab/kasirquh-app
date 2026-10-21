@@ -32,11 +32,47 @@ List<int> omzetPerHari(List<JournalEntry> entries, DateTime today) {
   });
 }
 
-/// Halaman Laporan (Mode Admin): ringkasan 7 hari terakhir + grafik
-/// omzet. Tanpa data contoh — kosong berarti belum ada
-/// transaksi pada periode ini.
+/// Ringkasan laporan gaya Web (P1-4): hanya entri PENJUALAN yang
+/// dihitung — omset = Σ amount, laba = Σ field profit jurnal,
+/// transaksi = jumlah entri, item = Σ itemCount. Fungsi murni.
+({int omset, int laba, int transaksi, num item}) ringkasanLaporan(
+    List<JournalEntry> entries) {
+  var omset = 0;
+  var laba = 0;
+  var transaksi = 0;
+  num item = 0;
+  for (final e in entries) {
+    if (e.kind != 'penjualan') continue;
+    omset += e.amount;
+    laba += e.profit;
+    transaksi += 1;
+    item += e.itemCount;
+  }
+  return (omset: omset, laba: laba, transaksi: transaksi, item: item);
+}
+
+/// Entri penjualan untuk tabel transaksi, terbaru dulu (P1-4).
+List<JournalEntry> penjualanTerbaru(List<JournalEntry> entries) {
+  final sales = entries.where((e) => e.kind == 'penjualan').toList()
+    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  return sales;
+}
+
+/// Halaman Laporan (Mode Admin) — disamakan Web (P1-4): 4 metrik
+/// (Total Omset, Laba dari field profit, Transaksi Sukses, Total Item
+/// Barang) + tabel transaksi penjualan (Waktu, Metode, Qty, Omset,
+/// Laba). Grafik omzet 7 hari dipertahankan sebagai ringkasan visual.
+/// Tanpa data contoh — kosong berarti belum ada transaksi.
 class ReportPage extends ConsumerWidget {
   const ReportPage({super.key});
+
+  String _waktu(DateTime t) {
+    String dua(int n) => n.toString().padLeft(2, '0');
+    return '${dua(t.day)}/${dua(t.month)} ${dua(t.hour)}:${dua(t.minute)}';
+  }
+
+  String _qty(num n) =>
+      n == n.roundToDouble() ? '${n.toInt()}' : formatStok(n.toDouble());
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,31 +83,17 @@ class ReportPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
         data: (entries) {
-          final now = DateTime.now();
-          final today = DateTime(now.year, now.month, now.day);
-          final start = today.subtract(const Duration(days: 6));
-          final end = today.add(const Duration(days: 1));
-          final last7 = entries
-              .where((e) =>
-                  !e.createdAt.isBefore(start) && e.createdAt.isBefore(end))
-              .toList();
-          if (last7.isEmpty) {
+          if (entries.isEmpty) {
             return const EmptyState(
               icon: Icons.bar_chart_outlined,
               title: Strings.laporanKosong,
             );
           }
+          final now = DateTime.now();
           final omzet7 = omzetPerHari(entries, now);
-          var masuk = 0;
-          var keluar = 0;
-          for (final e in last7) {
-            if (e.amount >= 0) {
-              masuk += e.amount;
-            } else {
-              keluar += -e.amount;
-            }
-          }
-          final totalOmzet = omzet7.fold<int>(0, (a, b) => a + b);
+          final r = ringkasanLaporan(entries);
+          final sales = penjualanTerbaru(entries);
+          final adaSales = sales.isNotEmpty;
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -111,30 +133,115 @@ class ReportPage extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: _MetricCard(
-                      label: Strings.omzet,
-                      value: formatRp(totalOmzet),
+                      label: 'TOTAL OMSET',
+                      value: adaSales ? formatRp(r.omset) : 'Belum ada data',
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _MetricCard(
-                      label: Strings.laba,
-                      value: formatRp(masuk - keluar),
+                      label: 'LABA',
+                      value: adaSales ? formatRp(r.laba) : 'Belum ada data',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _MetricCard(
+                      label: 'TRANSAKSI SUKSES',
+                      value: adaSales ? '${r.transaksi}' : 'Belum ada data',
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _MetricCard(
-                      label: Strings.transaksi,
-                      value: '${last7.length}',
+                      label: 'TOTAL ITEM BARANG',
+                      value: adaSales ? _qty(r.item) : 'Belum ada data',
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
+              Text(
+                'Transaksi',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              if (!adaSales)
+                Text(
+                  'Belum ada transaksi',
+                  style: TextStyle(color: context.teksRedup),
+                )
+              else
+                AppCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      _barisTabel(
+                        context,
+                        waktu: 'Waktu',
+                        metode: 'Metode',
+                        qty: 'Qty',
+                        omset: 'Omset',
+                        laba: 'Laba',
+                        tajuk: true,
+                      ),
+                      const Divider(height: 1),
+                      for (final e in sales) ...[
+                        _barisTabel(
+                          context,
+                          waktu: _waktu(e.createdAt),
+                          metode: e.method.isEmpty ? '—' : e.method,
+                          qty: _qty(e.itemCount),
+                          omset: formatRp(e.amount),
+                          laba: formatRp(e.profit),
+                        ),
+                        if (e != sales.last) const Divider(height: 1),
+                      ],
+                    ],
+                  ),
+                ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _barisTabel(
+    BuildContext context, {
+    required String waktu,
+    required String metode,
+    required String qty,
+    required String omset,
+    required String laba,
+    bool tajuk = false,
+  }) {
+    final gaya = TextStyle(
+      fontSize: 12,
+      fontWeight: tajuk ? FontWeight.w700 : FontWeight.w400,
+      color: tajuk ? context.teksRedup : context.teksUtama,
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: Text(waktu, style: gaya)),
+          Expanded(flex: 2, child: Text(metode, style: gaya)),
+          Expanded(child: Text(qty, style: gaya, textAlign: TextAlign.right)),
+          Expanded(
+              flex: 2,
+              child: Text(omset, style: gaya, textAlign: TextAlign.right)),
+          Expanded(
+              flex: 2,
+              child: Text(laba, style: gaya, textAlign: TextAlign.right)),
+        ],
       ),
     );
   }

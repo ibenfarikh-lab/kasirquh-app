@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/chat.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
@@ -19,6 +20,7 @@ class ChatThreadPage extends ConsumerStatefulWidget {
 
 class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
   final _controller = TextEditingController();
+  String _fotoUrl = '';
 
   @override
   void initState() {
@@ -35,9 +37,15 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
     super.dispose();
   }
 
+  /// Pilih foto (kompres 300px PNG data URI — pola Web, P1-2).
+  Future<void> _pilihFoto() async {
+    final url = await pickProductPhoto();
+    if (url != null && mounted) setState(() => _fotoUrl = url);
+  }
+
   Future<void> _send() async {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty && _fotoUrl.isEmpty) return;
     final adminId = ref.read(adminSessionProvider).valueOrNull?.user.uid;
     if (adminId == null) {
       if (mounted) {
@@ -53,8 +61,10 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
             customerId: widget.thread.customerId,
             text: text,
             adminId: adminId,
+            imageUrl: _fotoUrl,
           );
       _controller.clear();
+      if (mounted) setState(() => _fotoUrl = '');
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -118,13 +128,29 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
                                   : AppColors.card),
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: Text(
-                          m.text,
-                          style: TextStyle(
-                            color: mine
-                                ? AppColors.adminBg
-                                : context.teksUtama,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Foto terlampir (skema Web imageUrl, P1-2).
+                            if (m.punyaFoto) ...[
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: _fotoAdmin(m.imageUrl),
+                              ),
+                              if (m.text.isNotEmpty)
+                                const SizedBox(height: 6),
+                            ],
+                            if (m.text.isNotEmpty)
+                              Text(
+                                m.text,
+                                style: TextStyle(
+                                  color: mine
+                                      ? AppColors.adminBg
+                                      : context.teksUtama,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     );
@@ -133,12 +159,45 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
               },
             ),
           ),
+          // Pratinjau foto yang akan dikirim (P1-2).
+          if (_fotoUrl.isNotEmpty)
+            Container(
+              color: context.permukaanKartu,
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image(
+                      image: photoImageProvider(_fotoUrl)!,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text('Foto siap dikirim'),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => setState(() => _fotoUrl = ''),
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Batalkan foto',
+                  ),
+                ],
+              ),
+            ),
           Container(
             color: context.permukaanKartu, // Aturan 1&3: adaptif.
             padding: const EdgeInsets.all(12),
             child: SafeArea(
               child: Row(
                 children: [
+                  IconButton(
+                    icon: const Icon(Icons.image_outlined),
+                    color: AppColors.orange,
+                    onPressed: _pilihFoto,
+                    tooltip: 'Tambah foto',
+                  ),
                   Expanded(
                     child: TextField(
                       controller: _controller,
@@ -160,6 +219,19 @@ class _ChatThreadPageState extends ConsumerState<ChatThreadPage> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Gambar pesan dari data URI/URL — kosong rapi bila gagal muat.
+  Widget _fotoAdmin(String url) {
+    final provider = photoImageProvider(url);
+    if (provider == null) return const SizedBox.shrink();
+    return Image(
+      image: provider,
+      width: 180,
+      height: 180,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
     );
   }
 }

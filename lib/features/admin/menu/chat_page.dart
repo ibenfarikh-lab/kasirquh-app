@@ -54,50 +54,129 @@ class ChatPage extends ConsumerWidget {
 }
 
 /// Tab Chat Toko: daftar percakapan (thread) dengan pelanggan.
-class _ThreadList extends ConsumerWidget {
+/// P1-2 (persis Web): pencarian nama, filter Semua/Belum dibaca, dan
+/// pin persisten — thread ter-pin selalu di atas mengikuti urutan
+/// `pinnedChatIds`; ketuk ikon pin untuk pin/lepas.
+class _ThreadList extends ConsumerStatefulWidget {
   const _ThreadList();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ThreadList> createState() => _ThreadListState();
+}
+
+class _ThreadListState extends ConsumerState<_ThreadList> {
+  String _query = '';
+  bool _hanyaBelumDibaca = false;
+
+  @override
+  Widget build(BuildContext context) {
     final threads = ref.watch(chatThreadsProvider);
-    return threads.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text(
-            Strings.butuhInternetAdmin,
-            style: TextStyle(color: context.teksRedup),
+    final pinned =
+        ref.watch(storeInfoProvider).valueOrNull?.pinnedChatIds ??
+            const <String>[];
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Cari nama pelanggan…',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
           ),
         ),
-        data: (list) {
-          if (list.isEmpty) {
-            return const EmptyState(
-              icon: Icons.chat_bubble_outline,
-              title: Strings.belumAdaPercakapan,
-              hint: Strings.chatKosongHint,
-            );
-          }
-          return ListView.separated(
-            itemCount: list.length,
-            separatorBuilder: (_, __) => const Divider(
-              height: 1,
-              color: AppColors.adminLine,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              ChoiceChip(
+                label: const Text('Semua'),
+                selected: !_hanyaBelumDibaca,
+                onSelected: (_) => setState(() => _hanyaBelumDibaca = false),
+              ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text('Belum dibaca'),
+                selected: _hanyaBelumDibaca,
+                onSelected: (_) => setState(() => _hanyaBelumDibaca = true),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: threads.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(
+              child: Text(
+                Strings.butuhInternetAdmin,
+                style: TextStyle(color: context.teksRedup),
+              ),
             ),
-            itemBuilder: (context, i) {
-              final t = list[i];
-              return _ThreadTile(thread: t);
+            data: (list) {
+              if (list.isEmpty) {
+                return const EmptyState(
+                  icon: Icons.chat_bubble_outline,
+                  title: Strings.belumAdaPercakapan,
+                  hint: Strings.chatKosongHint,
+                );
+              }
+              // Saring: nama + status baca.
+              var tampil = list.where((t) {
+                if (_hanyaBelumDibaca && t.unreadAdmin <= 0) return false;
+                if (_query.isNotEmpty &&
+                    !t.customerName.toLowerCase().contains(_query)) {
+                  return false;
+                }
+                return true;
+              }).toList();
+              // Urutan pin mengikuti pinnedChatIds (prioritas Web).
+              tampil.sort((a, b) {
+                final ia = pinned.indexOf(a.id);
+                final ib = pinned.indexOf(b.id);
+                if (ia >= 0 && ib >= 0) return ia.compareTo(ib);
+                if (ia >= 0) return -1;
+                if (ib >= 0) return 1;
+                return 0; // sisanya: urutan repository (terbaru di atas)
+              });
+              if (tampil.isEmpty) {
+                return const EmptyState(
+                  icon: Icons.search_off,
+                  title: 'Tidak ada hasil',
+                  hint: 'Coba kata kunci atau filter lain.',
+                );
+              }
+              return ListView.separated(
+                itemCount: tampil.length,
+                separatorBuilder: (_, __) => const Divider(
+                  height: 1,
+                  color: AppColors.adminLine,
+                ),
+                itemBuilder: (context, i) {
+                  final t = tampil[i];
+                  return _ThreadTile(
+                    thread: t,
+                    terpin: pinned.contains(t.id),
+                  );
+                },
+              );
             },
-          );
-        },
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _ThreadTile extends StatelessWidget {
+class _ThreadTile extends ConsumerWidget {
   final ChatThread thread;
-  const _ThreadTile({required this.thread});
+  final bool terpin;
+  const _ThreadTile({required this.thread, required this.terpin});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final name = thread.customerName.isEmpty ? '?' : thread.customerName;
     final hasUnread = thread.unreadAdmin > 0;
     return ListTile(
@@ -111,12 +190,23 @@ class _ThreadTile extends StatelessWidget {
           ),
         ),
       ),
-      title: Text(
-        name,
-        style: TextStyle(
-          color: context.teksUtama,
-          fontWeight: hasUnread ? FontWeight.w800 : FontWeight.bold,
-        ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: context.teksUtama,
+                fontWeight: hasUnread ? FontWeight.w800 : FontWeight.bold,
+              ),
+            ),
+          ),
+          if (terpin)
+            const Icon(Icons.push_pin,
+                size: 15, color: AppColors.orange),
+        ],
       ),
       subtitle: Text(
         thread.lastMessage ?? '',
@@ -124,9 +214,35 @@ class _ThreadTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(color: context.teksRedup),
       ),
-      trailing: hasUnread
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(
+              terpin ? Icons.push_pin : Icons.push_pin_outlined,
+              size: 20,
+            ),
+            color: terpin ? AppColors.orange : context.teksRedup,
+            tooltip: terpin ? 'Lepas pin' : 'Pin percakapan',
+            onPressed: () async {
+              try {
+                await ref
+                    .read(adminRepositoryProvider)
+                    .togglePinChat(thread.id);
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text(Strings.butuhInternetAdmin)),
+                  );
+                }
+              }
+            },
+          ),
+          if (hasUnread)
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: const BoxDecoration(
                 color: AppColors.danger,
                 shape: BoxShape.circle,
@@ -139,8 +255,9 @@ class _ThreadTile extends StatelessWidget {
                   fontSize: 12,
                 ),
               ),
-            )
-          : null,
+            ),
+        ],
+      ),
       onTap: () {
         openAdminPage(context, ChatThreadPage(thread: thread));
       },

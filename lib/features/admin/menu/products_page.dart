@@ -12,6 +12,7 @@ import '../../../data/models/product.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../admin_nav.dart';
+import 'csv_import_page.dart';
 
 /// Halaman Data Barang (Mode Admin): daftar produk + tambah/ubah/hapus.
 class ProductsPage extends ConsumerWidget {
@@ -20,7 +21,16 @@ class ProductsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text(Strings.modulProduk)),
+      appBar: AppBar(
+        title: const Text(Strings.modulProduk),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.upload_file),
+            tooltip: 'Impor CSV',
+            onPressed: () => openAdminPage(context, const CsvImportPage()),
+          ),
+        ],
+      ),
       body: const _ProductsBody(),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.orange,

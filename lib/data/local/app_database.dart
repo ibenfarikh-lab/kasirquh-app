@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 /// sinkron ke Firestore via [SyncEngine] saat online.
 class AppDatabase {
   static const _name = 'kasirquh.db';
-  static const _version = 6;
+  static const _version = 7;
   static Database? _db;
 
   static Future<Database> get db async {
@@ -27,6 +27,8 @@ class AppDatabase {
             stock INTEGER NOT NULL DEFAULT 0, lowStockAt INTEGER NOT NULL DEFAULT 5,
             barcode TEXT,
             photoPath TEXT, active INTEGER NOT NULL DEFAULT 1,
+            budgetEligible INTEGER NOT NULL DEFAULT 1,
+            budgetMaxQty INTEGER NOT NULL DEFAULT 4,
             updatedAt INTEGER NOT NULL DEFAULT 0)''');
         await db.execute('''
           CREATE TABLE orders(
@@ -120,6 +122,17 @@ class AppDatabase {
           try {
             await db.execute(
                 'ALTER TABLE store_notes ADD COLUMN migrated INTEGER NOT NULL DEFAULT 0');
+          } catch (_) {}
+        }
+        if (oldVersion < 7) {
+          // Mode Anggaran (P1-5): saklar & batas qty per produk gaya Web.
+          try {
+            await db.execute(
+                'ALTER TABLE products ADD COLUMN budgetEligible INTEGER NOT NULL DEFAULT 1');
+          } catch (_) {}
+          try {
+            await db.execute(
+                'ALTER TABLE products ADD COLUMN budgetMaxQty INTEGER NOT NULL DEFAULT 4');
           } catch (_) {}
         }
       },
