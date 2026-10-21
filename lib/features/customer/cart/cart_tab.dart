@@ -676,8 +676,11 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
     final saldo = session?.coins ?? 0;
     final coinSettings = ref.read(coinSettingsProvider).valueOrNull ??
         const CoinSettings();
-    final maksimal = (belanja * coinSettings.redeemLimit ~/ 100);
-    return saldo < maksimal ? saldo : maksimal;
+    if (!coinSettings.enabled || coinSettings.coinRate <= 0) return 0;
+    // Rumus Web: nilai maks = total × batas%; koin = nilai maks ÷ nilai koin.
+    final maxValue = belanja * coinSettings.redeemLimit ~/ 100;
+    final koin = maxValue ~/ coinSettings.coinRate;
+    return saldo < koin ? saldo : koin;
   }
 
   /// Segmented control ala PWA.
@@ -773,15 +776,16 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
                 price: e.harga,
               ))
           .toList();
-      // Info fulfillment digabung ke catatan (skema order belum ada field khusus).
+      // Catatan mengikuti format Web: 'Diantar · {patokan}' atau
+      // 'Ambil di warung', ditambah info Native (waktu antar + catatan user).
+      // Referensi transfer TIDAK lagi dilipat ke catatan — kini field
+      // `transferReference` sendiri di dokumen order (skema Web).
       final info = <String>[];
-      info.add(_fulfillment == 'delivery' ? 'Diantar' : 'Ambil di warung');
       if (_fulfillment == 'delivery') {
-        info.add('Patokan: ${_address.text.trim()}');
+        info.add('Diantar · ${_address.text.trim()}');
         info.add('Waktu: $_slot');
-      }
-      if (_payment == 'transfer' && _transferRef.text.trim().isNotEmpty) {
-        info.add('Ref: ${_transferRef.text.trim()}');
+      } else {
+        info.add('Ambil di warung');
       }
       final noteUser = _note.text.trim();
       final note =
@@ -798,15 +802,22 @@ class _CheckoutPageState extends ConsumerState<_CheckoutPage> {
         bonusKoin = (belanjaTotal ~/ coinSettings.spendRule) *
             coinSettings.spendReward;
       }
+      final transferRef = _transferRef.text.trim();
       final code =
           await ref.read(orderRepositoryProvider).checkout(
                 customerId: uid,
                 customerName: displayName(session!),
                 items: items,
                 paymentMethod: _payment,
+                fulfillment: _fulfillment,
+                transferReference: transferRef.length > 80
+                    ? transferRef.substring(0, 80)
+                    : transferRef,
                 note: note.isEmpty ? null : note,
-                koinDipakai: koinDipakai,
-                bonusKoin: bonusKoin,
+                ongkir: _fulfillment == 'delivery' ? _ongkir : 0,
+                coinUsed: koinDipakai,
+                coinRate: coinSettings.coinRate,
+                earnedCoins: bonusKoin,
               );
       ref.read(cartProvider.notifier).clear();
       if (!context.mounted) return;

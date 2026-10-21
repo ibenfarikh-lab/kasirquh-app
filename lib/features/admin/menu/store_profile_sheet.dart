@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -45,8 +46,12 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
         'storeName': _nama.text.trim(),
         'address': _alamat.text.trim(),
         'phone': _telepon.text.trim(),
-        'openHour': _jamBuka.text.trim(),
-        'closeHour': _jamTutup.text.trim(),
+        // Field jam mengikuti Web (P0-5); field lama Native dihapus
+        // agar dokumen tidak menyimpan dua sumber kebenaran.
+        'openTime': _jamBuka.text.trim(),
+        'closeTime': _jamTutup.text.trim(),
+        'openHour': FieldValue.delete(),
+        'closeHour': FieldValue.delete(),
         'infoText': _info.text.trim(),
         'runningText': _teksBerjalan.text.trim(),
       });
@@ -73,8 +78,8 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
       _nama.text = store.storeName;
       _alamat.text = store.address ?? '';
       _telepon.text = store.phone ?? '';
-      _jamBuka.text = store.openHour;
-      _jamTutup.text = store.closeHour;
+      _jamBuka.text = store.openTime;
+      _jamTutup.text = store.closeTime;
       _info.text = store.infoText ?? '';
       _teksBerjalan.text = store.runningText ?? '';
       _terisi = true;

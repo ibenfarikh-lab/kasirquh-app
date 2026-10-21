@@ -146,14 +146,16 @@ class _PaySheetState extends ConsumerState<PaySheet> {
 
   int get _total => ref.read(posCartProvider.notifier).total;
 
-  /// Koin maksimal yang bisa dipakai = min(saldo, total × redeemLimit%).
-  /// Ikut aturan yang sama dengan belanja online.
+  /// Koin maksimal yang bisa dipakai — rumus Web (PosPage maxRedeem):
+  /// min(saldo, total × redeemLimit% ÷ nilai koin).
   int _koinMaksimal(int total) {
     final settings =
         ref.read(coinSettingsProvider).valueOrNull ??
             const CoinSettings();
     if (!settings.enabled || _saldoKoin <= 0) return 0;
-    final maksimal = (total * settings.redeemLimit ~/ 100);
+    if (settings.coinRate <= 0) return 0;
+    final maxValue = (total * settings.redeemLimit ~/ 100);
+    final maksimal = maxValue ~/ settings.coinRate;
     return _saldoKoin < maksimal ? _saldoKoin : maksimal;
   }
 
@@ -170,11 +172,14 @@ class _PaySheetState extends ConsumerState<PaySheet> {
   }
 
   /// Koin yang akan didapat dari belanja ini.
+  /// Web mensyaratkan event 'spend' aktif (PosPage earned).
   int _koinDidapat(int total) {
     final settings =
         ref.read(coinSettingsProvider).valueOrNull ??
             const CoinSettings();
     if (!settings.enabled || total <= 0) return 0;
+    if (!(settings.events['spend'] ?? false)) return 0;
+    if (settings.spendRule <= 0) return 0;
     return (total ~/ settings.spendRule) *
         settings.spendReward;
   }
@@ -451,24 +456,28 @@ class _PaySheetState extends ConsumerState<PaySheet> {
                 price: l.product.price,
               ))
           .toList();
-      // 1. Tukar koin dulu (jika dipakai) — potong saldo + beban promosi.
-      if (member != null && koinDipakai > 0) {
-        await repo.adjustCoins(
-            member.uid, -koinDipakai, 'tukar');
+      // Profit & jumlah item — rumus Web (PosPage): Σ (harga − modal) × qty.
+      var profit = 0;
+      num itemCount = 0;
+      for (final l in lines) {
+        profit += ((l.product.price - l.product.cost) * l.qty).round();
+        itemCount += l.qty;
       }
-      // 2. Catat penjualan (total setelah potongan koin).
-      final code = await repo.recordCashSale(
+      final coinSettings = ref.read(coinSettingsProvider).valueOrNull ??
+          const CoinSettings();
+      // SATU batch atomik (P0-4): stok + totalTerjual + jurnal + ledger
+      // + beban promosi, dengan validasi ulang member & saldo di server.
+      final code = await repo.completeCashSale(
         items: items,
-        total: totalBayar,
-        received: received,
-        customerId: member?.uid,
-        customerName: member?.name,
+        rawTotal: total,
+        profit: profit,
+        itemCount: itemCount,
+        redeemCoins: member != null ? koinDipakai : 0,
+        earnedCoins: koinDidapat,
+        coinRate: coinSettings.coinRate,
+        memberUid: member?.uid,
+        memberName: member?.name,
       );
-      // 3. Beri koin perolehan (otomatis, ikut aturan spendRule).
-      if (member != null && koinDidapat > 0) {
-        await repo.adjustCoins(
-            member.uid, koinDidapat, 'belanja');
-      }
       // Salinan untuk struk (keranjang dikosongkan setelahnya).
       _lastLines = lines;
       _lastTotal = totalBayar;

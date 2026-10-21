@@ -64,7 +64,7 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
     try {
       await ref
           .read(adminRepositoryProvider)
-          .adjustCoins(selected.uid, delta, _alasan.text.trim());
+          .adjustCoins(selected.uid, delta, detail: _alasan.text.trim());
       _reset();
       _snack(Strings.koinTersimpan);
     } catch (_) {

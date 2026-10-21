@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/currency.dart';
 import '../../data/models/order.dart';
 import '../../data/remote/firestore_service.dart';
 
@@ -26,19 +27,33 @@ class OrderRepository {
 
   /// Buat pesanan. Mengembalikan kode pesanan (WM-000123…).
   /// Melempar [OfflineCheckout] bila offline, [StockShortage] bila stok kurang.
+  ///
+  /// Skema dokumen `orders` mengikuti Web persis (acuan:
+  /// kasirquh-web `checkoutCustomer`): `total` = neto setelah koin,
+  /// `fullTotal` = total belanja + ongkir, koin dicatat sebagai
+  /// `coinUsed`/`coinValue`/`earnedCoins`, plus `fulfillment` dan
+  /// `transferReference`. Mesin settle/cancel admin membaca field ini —
+  /// JANGAN menulis field lain (mis. `koinDipakai`) di sini.
   Future<String> checkout({
     required String customerId,
     required String customerName,
     required List<OrderItem> items,
     required String paymentMethod, // cod | transfer
+    required String fulfillment, // pickup | delivery
+    String transferReference = '',
     String? note,
-    int koinDipakai = 0,
-    int bonusKoin = 0, // Bonus dari belanja (dihitung caller)
+    int ongkir = 0,
+    int coinUsed = 0, // koin yang ditukar (dihitung caller dari pengaturan)
+    int coinRate = 1, // nilai Rp per koin
+    int earnedCoins = 0, // bonus koin dari belanja (dihitung caller)
   }) async {
     final db = _db;
     if (db == null) throw const OfflineCheckout();
     final total =
         items.fold<int>(0, (s, e) => s + (e.price * e.qty).round());
+    final fullTotal = total + ongkir;
+    final coinValue = coinUsed * coinRate;
+    final paidTotal = fullTotal - coinValue < 0 ? 0 : fullTotal - coinValue;
 
     return db.runTransaction((tx) async {
       // 1. Nomor urut pesanan dari counters/orders (atomik).
@@ -48,6 +63,20 @@ class OrderRepository {
           ((counterSnap.data()?['seq'] as num?)?.toInt() ?? 0) + 1;
       tx.set(counterRef, {'seq': seq}, SetOptions(merge: true));
       final code = 'WM-${seq.toString().padLeft(6, '0')}';
+
+      // 1b. Pelanggan wajib approved + saldo koin terkini
+      //     (validasi ulang di dalam transaksi, seperti Web).
+      final custRef = db.collection('customers').doc(customerId);
+      final custSnap = await tx.get(custRef);
+      if (!custSnap.exists ||
+          custSnap.data()?['approvalStatus'] != 'approved') {
+        throw StateError('Akun belum disetujui warung');
+      }
+      final saldo =
+          ((custSnap.data()?['coins'] as num?)?.toInt() ?? 0);
+      if (coinUsed > saldo) {
+        throw StateError('Koin tidak cukup');
+      }
 
       // 2. Validasi stok dari server + kurangi dalam transaksi yang sama.
       //    Gagal validasi → transaksi batal total, tidak ada stok berkurang
@@ -71,7 +100,13 @@ class OrderRepository {
       }
       if (lacking.isNotEmpty) throw StockShortage(lacking);
 
-      // 3. Buat dokumen pesanan.
+      // 3. Saldo koin: satu delta atomik (bonus − tukar), seperti Web.
+      final coinDelta = earnedCoins - coinUsed;
+      if (coinDelta != 0) {
+        tx.update(custRef, {'coins': FieldValue.increment(coinDelta)});
+      }
+
+      // 4. Buat dokumen pesanan (skema Web).
       final ref = db.collection('orders').doc();
       tx.set(ref, {
         'code': code,
@@ -86,55 +121,44 @@ class OrderRepository {
                   'subtotal': (e.price * e.qty).round(),
                 })
             .toList(),
-        'total': total,
+        'total': paidTotal,
+        'fullTotal': fullTotal,
         'paymentMethod': paymentMethod,
+        'transferReference':
+            paymentMethod == 'transfer' ? transferReference : '',
+        'fulfillment': fulfillment,
         'status': 'menunggu',
         'note': note,
-        'koinDipakai': koinDipakai,
+        'coinUsed': coinUsed,
+        'coinValue': coinValue,
+        'earnedCoins': earnedCoins,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // 4. Tukar koin (jika ada): kurangi saldo + catat ledger.
-      //    Aturan PWA: setiap perubahan saldo WAJIB ada entri ledger.
-      if (koinDipakai > 0) {
-        final custRef = db.collection('customers').doc(customerId);
-        final custSnap = await tx.get(custRef);
-        final saldo =
-            ((custSnap.data()?['coins'] as num?)?.toInt() ?? 0);
-        if (saldo < koinDipakai) {
-          throw StateError('Koin tidak cukup');
-        }
-        // Kurangi saldo atomik.
-        tx.update(custRef, {
-          'coins': FieldValue.increment(-koinDipakai),
-        });
-        // Catat di ledger.
+      // 5. Ledger tukar koin (label/detail mengikuti Web).
+      if (coinUsed > 0) {
         final ledgerRef = db.collection('coin_ledger').doc();
         tx.set(ledgerRef, {
           'customerId': customerId,
-          'amount': -koinDipakai,
+          'amount': -coinUsed,
           'reason': 'tukar',
-          'label': 'Tukar koin belanja',
-          'detail': 'Pesanan $code',
+          'label': 'Ditukar pada #$code',
+          'detail': 'Potongan ${formatRp(coinValue)}',
           'orderId': ref.id,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
 
-      // 5. Bonus koin dari belanja (otomatis, ikut PWA).
-      if (bonusKoin > 0) {
-        final custRef = db.collection('customers').doc(customerId);
-        tx.update(custRef, {
-          'coins': FieldValue.increment(bonusKoin),
-        });
+      // 6. Ledger bonus koin dari belanja (label/detail mengikuti Web).
+      if (earnedCoins > 0) {
         final ledgerRef = db.collection('coin_ledger').doc();
         tx.set(ledgerRef, {
           'customerId': customerId,
-          'amount': bonusKoin,
+          'amount': earnedCoins,
           'reason': 'belanja',
-          'label': 'Bonus belanja',
-          'detail': 'Pesanan $code',
+          'label': 'Bonus belanja #$code',
+          'detail': '${formatRp(total)} belanja',
           'orderId': ref.id,
           'createdAt': FieldValue.serverTimestamp(),
         });

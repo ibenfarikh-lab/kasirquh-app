@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/utils/currency.dart';
 import '../../data/local/app_database.dart';
 import '../../data/models/chat.dart';
 import '../../data/models/customer.dart';
@@ -1079,7 +1080,12 @@ class AdminRepository {
   /// dicatat sebagai BEBAN PROMOSI di jurnal (wajib skema), memakai
   /// coinRate dari store_settings (default Rp1/koin). Satu batch atomik:
   /// ledger + saldo koin + jurnal beban.
-  Future<void> adjustCoins(String uid, int delta, String reason) async {
+  /// Koreksi saldo koin oleh admin (P0-3, selaras Web `adjustCoins`):
+  /// `reason` SELALU berkode `'koreksi_admin'` — alasan bebas admin masuk
+  /// `detail`, BUKAN reason. (Versi lama menulis teks alasan ke reason
+  /// sehingga agregasi ledger per reason dan riwayat pelanggan menyimpang.)
+  Future<void> adjustCoins(String uid, int delta,
+      {String? reason, String? label, String? detail}) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk ubah koin.');
     final ledgerRef = db.collection('coin_ledger').doc();
@@ -1087,11 +1093,11 @@ class AdminRepository {
     batch.set(ledgerRef, {
       'customerId': uid,
       'amount': delta,
-      'reason': reason,
-      // Selaras Web (2026-10-17): label & detail agar riwayat koin
-      // pelanggan tampil konsisten dari kedua pintu.
-      'label': 'Koreksi admin',
-      'detail': reason,
+      'reason': reason ?? 'koreksi_admin',
+      // Selaras Web: label & detail agar riwayat koin pelanggan tampil
+      // konsisten dari kedua pintu.
+      'label': label ?? 'Koreksi admin',
+      'detail': detail ?? '',
       'createdAt': FieldValue.serverTimestamp(),
     });
     batch.update(db.collection('customers').doc(uid), {
@@ -1109,8 +1115,12 @@ class AdminRepository {
         'type': 'pengeluaran',
         'category': 'beban_promosi',
         'amount': beban,
-        'note': 'Penukaran koin · $reason',
-        'refId': ledgerRef.id,
+        // Skema jurnal beban mengikuti Web persis.
+        'note': 'Penukaran koin · ${formatAngka(-delta)} koin',
+        'refId': '',
+        'method': 'Koin Warga',
+        'profit': 0,
+        'itemCount': 0,
         'createdAt': FieldValue.serverTimestamp(),
       });
     }
@@ -1884,30 +1894,139 @@ class AdminRepository {
 
   // ============ KASIR (POS) ============
 
-  /// Catat penjualan tunai: jurnal + kurangi stok.
-  /// Kode struk: KSR-yyyymmdd-HHmmss (referensi nyata).
-  Future<String> recordCashSale({
+  /// Selesaikan penjualan tunai kasir — SATU WriteBatch Firestore,
+  /// port `completeCashSale` Web (P0-3 + P0-4):
+  /// stok + `totalTerjual` per produk, jurnal penjualan lengkap
+  /// (profit/method/itemCount/coinUsed/coinValue/earnedCoins), saldo koin
+  /// satu delta, ledger tukar/bonus berlabel kasir, jurnal beban promosi.
+  /// Member & saldo koin divalidasi ULANG dari server sebelum batch —
+  /// bila member tidak lagi approved, transaksi dibatalkan; bila saldo
+  /// kurang, redeem di-clamp dan total dihitung ulang (persis Web).
+  ///
+  /// Mengembalikan kode struk lokal (KSR-yyyymmdd-HHmmss) untuk tampilan
+  /// struk; jurnal server mengikuti skema Web (refId kosong).
+  /// Melempar [StateError] bila offline / member tidak valid.
+  Future<String> completeCashSale({
     required List<OrderItem> items,
-    required int total,
-    required int received,
-    String? customerId,
-    String? customerName,
+    required int rawTotal, // total bruto sebelum potongan koin
+    required int profit,
+    required num itemCount,
+    int redeemCoins = 0,
+    int earnedCoins = 0,
+    int coinRate = 1,
+    String? memberUid,
+    String? memberName,
   }) async {
-    final now = DateTime.now();
-    final code =
-        'KSR-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
-    await addJournal(
-      kind: 'penjualan',
-      label: 'Penjualan Tunai · Kasir ($code)',
-      amount: total,
-      refId: code,
-      customerId: customerId,
-      customerName: customerName,
-    );
-    for (final item in items) {
-      await adjustStock(item.productId, -item.qty);
+    final db = _db;
+    if (db == null) {
+      throw StateError('Butuh internet untuk transaksi kasir.');
     }
-    return code;
+    if (items.isEmpty) throw StateError('Transaksi masih kosong');
+    final rate = coinRate < 1 ? 1 : coinRate;
+    var redeem = redeemCoins < 0 ? 0 : redeemCoins;
+    final earned = earnedCoins < 0 ? 0 : earnedCoins;
+    var total = rawTotal - redeem * rate;
+    if (total < 0) total = 0;
+
+    // Validasi ulang member & saldo koin saat bayar (satu read, persis Web).
+    if (memberUid != null) {
+      final snap = await db.collection('customers').doc(memberUid).get();
+      final data = snap.data();
+      if (!snap.exists || data?['approvalStatus'] != 'approved') {
+        throw StateError('Member tidak valid — transaksi dibatalkan');
+      }
+      if (redeem > 0) {
+        final saldo = ((data?['coins'] as num?)?.toInt() ?? 0);
+        final saldoOk = saldo < 0 ? 0 : saldo;
+        if (redeem > saldoOk) {
+          redeem = saldoOk;
+          total = rawTotal - redeem * rate;
+          if (total < 0) total = 0;
+        }
+      }
+    }
+
+    final ts = FieldValue.serverTimestamp();
+    final batch = db.batch();
+
+    // Stok + totalTerjual per produk (totalTerjual menggerakkan
+    // "Sedang Laris" Web — P1-6 untuk jalur kasir ditutup di sini).
+    for (final item in items) {
+      final ref = db.collection('products').doc(item.productId);
+      batch.update(ref, {
+        'stock': FieldValue.increment(-item.qty),
+        'totalTerjual': FieldValue.increment(item.qty),
+        'updatedAt': ts,
+      });
+    }
+
+    // Jurnal penjualan — skema Web lengkap.
+    batch.set(db.collection('journal').doc(), {
+      'type': 'pemasukan',
+      'category': 'penjualan',
+      'amount': total,
+      'note': 'Penjualan · Kasir',
+      'refId': '',
+      'method': 'Tunai',
+      'profit': profit,
+      'itemCount': itemCount,
+      'customerId': memberUid ?? '',
+      'customerName': memberName ?? '',
+      'coinUsed': redeem,
+      'coinValue': redeem * rate,
+      'earnedCoins': earned,
+      'createdAt': ts,
+    });
+
+    if (memberUid != null) {
+      final coinDelta = earned - redeem;
+      if (coinDelta != 0) {
+        batch.update(db.collection('customers').doc(memberUid), {
+          'coins': FieldValue.increment(coinDelta),
+        });
+      }
+      if (redeem > 0) {
+        // Ledger tukar — label kasir (P0-3), BUKAN lewat koreksi admin.
+        batch.set(db.collection('coin_ledger').doc(), {
+          'customerId': memberUid,
+          'amount': -redeem,
+          'reason': 'tukar',
+          'label': 'Ditukar di kasir',
+          'detail': 'Potongan ${formatRp(redeem * rate)}',
+          'createdAt': ts,
+        });
+        // Jurnal beban promosi penukaran koin (skema Web).
+        batch.set(db.collection('journal').doc(), {
+          'type': 'pengeluaran',
+          'category': 'beban_promosi',
+          'amount': redeem * rate,
+          'note': 'Penukaran koin · ${formatAngka(redeem)} koin (kasir)',
+          'refId': '',
+          'method': 'Koin Warga',
+          'profit': 0,
+          'itemCount': 0,
+          'customerId': memberUid,
+          'customerName': memberName ?? '',
+          'createdAt': ts,
+        });
+      }
+      if (earned > 0) {
+        // Ledger bonus — detail = nilai belanja bruto (total neto + tukar).
+        batch.set(db.collection('coin_ledger').doc(), {
+          'customerId': memberUid,
+          'amount': earned,
+          'reason': 'belanja',
+          'label': 'Bonus belanja kasir',
+          'detail': '${formatRp(total + redeem * rate)} belanja',
+          'createdAt': ts,
+        });
+      }
+    }
+
+    await batch.commit();
+
+    final now = DateTime.now();
+    return 'KSR-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
   }
 }
 

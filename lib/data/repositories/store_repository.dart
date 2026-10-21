@@ -29,8 +29,8 @@ class StoreInfo {
   final String? phone;
   final String? infoText;
   final String? runningText;
-  final String openHour;
-  final String closeHour;
+  final String openTime;
+  final String closeTime;
   final int? modal; // sisa modal belanja (null = belum diisi)
   final int lowStockDefault;
   final int coinRate;
@@ -74,8 +74,8 @@ class StoreInfo {
     this.phone,
     this.infoText,
     this.runningText,
-    this.openHour = '07:00',
-    this.closeHour = '21:00',
+    this.openTime = '07:00',
+    this.closeTime = '21:00',
     this.modal,
     this.lowStockDefault = 5,
     this.coinRate = 1,
@@ -118,8 +118,8 @@ class StoreInfo {
   bool? get isOpenNow {
     try {
       final now = DateTime.now();
-      final o = openHour.split(':');
-      final c = closeHour.split(':');
+      final o = openTime.split(':');
+      final c = closeTime.split(':');
       final open = DateTime(
           now.year, now.month, now.day, int.parse(o[0]), int.parse(o[1]));
       var close = DateTime(
@@ -137,8 +137,15 @@ class StoreInfo {
         phone: m['phone'] as String?,
         infoText: m['infoText'] as String?,
         runningText: m['runningText'] as String?,
-        openHour: (m['openHour'] as String?) ?? '07:00',
-        closeHour: (m['closeHour'] as String?) ?? '21:00',
+        // Jam operasional mengikuti field Web `openTime`/`closeTime`
+        // (P0-5). Fallback ke field lama Native agar jam yang pernah
+        // diatur dari Native tidak hilang sebelum ditulis ulang.
+        openTime: (m['openTime'] as String?) ??
+            (m['openHour'] as String?) ??
+            '07:00',
+        closeTime: (m['closeTime'] as String?) ??
+            (m['closeHour'] as String?) ??
+            '21:00',
         modal: (m['modal'] as num?)?.toInt(),
         lowStockDefault: (m['lowStockDefault'] as num?)?.toInt() ?? 5,
         coinRate: (m['coinRate'] as num?)?.toInt() ?? 1,

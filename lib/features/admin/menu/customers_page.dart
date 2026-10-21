@@ -322,7 +322,7 @@ class _CoinSheetState extends ConsumerState<_CoinSheet> {
     try {
       await ref
           .read(adminRepositoryProvider)
-          .adjustCoins(widget.customer.uid, delta, reason);
+          .adjustCoins(widget.customer.uid, delta, detail: reason);
       if (context.mounted) {
         _snack(context, Strings.koinTersimpan);
         Navigator.of(context).pop();

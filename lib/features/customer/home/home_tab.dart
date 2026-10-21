@@ -2944,8 +2944,8 @@ class _KabarCarouselState extends State<_KabarCarousel> {
   }
 
   String get _statusDetail => _open
-      ? 'Tutup ${widget.store.closeHour} · Belum ada pesanan disiapkan'
-      : 'Buka lagi pukul ${widget.store.openHour} · '
+      ? 'Tutup ${widget.store.closeTime} · Belum ada pesanan disiapkan'
+      : 'Buka lagi pukul ${widget.store.openTime} · '
           'pesanan bisa disiapkan nanti';
 
   /// Saran suasana berdasarkan jam — logika persis PWA (renderKabar).

@@ -50,6 +50,39 @@ const kMisiList = [
   ),
 ];
 
+/// Tanggal hari ini di zona Asia/Jakarta (Web memakai `todayKeyJakarta()`).
+DateTime _todayJakarta() =>
+    DateTime.now().toUtc().add(const Duration(hours: 7));
+
+/// Kunci pekan — port PERSIS `weekKeyOf()` Web
+/// (kasirquh-web src/features/customer/local.ts). Format `YYYY-Www`.
+/// JANGAN "diperbaiki" ke ISO murni: claimKey dua pintu harus identik.
+String weekKeyOf(DateTime date) {
+  var t = DateTime.utc(date.year, date.month, date.day);
+  final dow = t.weekday - 1; // Senin=0 (setara (getUTCDay()+6)%7 di JS)
+  t = t.add(Duration(days: -dow + 3)); // Kamis pekan ini
+  final first = DateTime.utc(t.year, 1, 4); // 4 Januari tahun Kamis itu
+  final week = ((t.difference(first).inDays + 1) / 7).ceil();
+  return '${t.year}-W${week.toString().padLeft(2, '0')}';
+}
+
+/// claimKey misi — PERSIS Web (MissionsPage.tsx):
+/// belanja → `misi_belanja3_<kodePekan>`; coba produk → `misi_coba_produk_baru`.
+String claimKeyMisi(String misiId, DateTime now) {
+  if (misiId == 'belanja_3x_minggu') {
+    return 'misi_belanja3_${weekKeyOf(now)}';
+  }
+  return 'misi_coba_produk_baru';
+}
+
+/// Detail ledger misi — PERSIS Web (MissionsPage.tsx).
+String detailMisi(String misiId, DateTime now) {
+  if (misiId == 'belanja_3x_minggu') {
+    return 'Misi Belanja 3 kali · ${weekKeyOf(now)}';
+  }
+  return 'Misi Coba produk baru';
+}
+
 /// Progress misi dari daftar pesanan sendiri — fungsi pure (bisa di-test).
 /// Ikut logika PWA (renderMissions):
 /// - 'belanja_3x_minggu' = jumlah pesanan dalam 7 hari terakhir.
@@ -116,14 +149,18 @@ class _MisiKoinPageState extends ConsumerState<MisiKoinPage> {
       final settings = ref.read(coinSettingsProvider).valueOrNull ??
           const CoinSettings();
       final reward = settings.rewards['mission'] ?? misi.hadiahKoin;
+      // claimKey & label/detail PERSIS Web (P0-2): penanda missionClaims
+      // di dokumen pelanggan yang sama harus bertemu antar pintu,
+      // kalau tidak misi bisa diklaim dua kali (Web + Native).
+      final now = _todayJakarta();
 
       await ref.read(adminRepositoryProvider).grantCoins(
             uid,
             reward,
             reason: 'misi',
-            label: 'Hadiah misi: ${misi.judul}',
-            detail: misi.id,
-            claimKey: misi.id,
+            label: 'Hadiah misi',
+            detail: detailMisi(misi.id, now),
+            claimKey: claimKeyMisi(misi.id, now),
           );
 
       if (mounted) {
