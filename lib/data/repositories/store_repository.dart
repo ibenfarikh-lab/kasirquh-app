@@ -75,6 +75,10 @@ class StoreInfo {
   final Map<String, String> carouselSlots;
   // Visibilitas & urutan section Beranda (restock/popular/recipe).
   final Map<String, HomeSectionConfig> homeSections;
+  // Pengaturan bunyi admin dari Web (`adminSoundSettings`):
+  // nada per jenis kejadian + getar — kini DIBACA & diterapkan
+  // Native (sebelumnya hanya ditulis Web, tak pernah dibaca).
+  final AdminSoundSettings soundSettings;
 
   const StoreInfo({
     this.storeName = 'Warunge Mimi',
@@ -115,6 +119,7 @@ class StoreInfo {
     this.kabarMood,
     this.carouselSlots = const {},
     this.homeSections = const {},
+    this.soundSettings = const AdminSoundSettings(),
   });
 
   /// Teks slot carousel promo ala PWA: `{slot}Title/Copy/Badge`.
@@ -212,7 +217,44 @@ class StoreInfo {
                 v is Map<String, dynamic> ? v : null),
           ),
         ),
+        soundSettings: AdminSoundSettings.fromMap(
+          m['adminSoundSettings'] is Map
+              ? Map<String, dynamic>.from(m['adminSoundSettings'] as Map)
+              : null,
+        ),
       );
+}
+
+/// Pengaturan bunyi admin — mirror `store_settings.adminSoundSettings`
+/// (ditulis Web): nada per jenis ('system' | 'mimi' | 'silent')
+/// untuk pesanan/chat/promo + saklar getar.
+class AdminSoundSettings {
+  final String order;
+  final String chat;
+  final String promo;
+  final bool vibrate;
+
+  const AdminSoundSettings({
+    this.order = 'system',
+    this.chat = 'system',
+    this.promo = 'system',
+    this.vibrate = true,
+  });
+
+  factory AdminSoundSettings.fromMap(Map<String, dynamic>? m) {
+    if (m == null) return const AdminSoundSettings();
+    String suara(String k) {
+      final v = (m[k] as String?) ?? 'system';
+      return (v == 'mimi' || v == 'silent') ? v : 'system';
+    }
+
+    return AdminSoundSettings(
+      order: suara('order'),
+      chat: suara('chat'),
+      promo: suara('promo'),
+      vibrate: m['vibrate'] != false,
+    );
+  }
 }
 
 /// Promo — mirror koleksi `promos`.

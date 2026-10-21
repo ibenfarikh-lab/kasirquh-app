@@ -24,8 +24,25 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
   final _jamTutup = TextEditingController();
   final _info = TextEditingController();
   final _teksBerjalan = TextEditingController();
-  bool _terisi = false;
   bool _menyimpan = false;
+
+  // Anti-timpah-kosong (akar masalah running text hilang 2026-10-21):
+  // form diisi ulang dari snapshot settings TERBARU sampai user
+  // benar-benar mengubah sesuatu.
+  bool _diubahUser = false;
+  bool _mengisi = false;
+
+  @override
+  void initState() {
+    super.initState();
+    for (final c in [
+      _nama, _alamat, _telepon, _jamBuka, _jamTutup, _info, _teksBerjalan,
+    ]) {
+      c.addListener(() {
+        if (!_mengisi) _diubahUser = true;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -40,6 +57,16 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
   }
 
   Future<void> _simpan() async {
+    // Tanpa perubahan dari user, JANGAN menulis apa pun — menulis
+    // snapshot form yang belum berisi data asli menimpa settings
+    // jadi kosong (kasus running text hilang, 2026-10-21).
+    if (!_diubahUser) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(Strings.berhasilDisimpan)),
+      );
+      Navigator.of(context).pop();
+      return;
+    }
     setState(() => _menyimpan = true);
     try {
       await ref.read(adminRepositoryProvider).saveStoreSettings({
@@ -74,7 +101,8 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
   Widget build(BuildContext context) {
     final storeAsync = ref.watch(storeInfoProvider);
     final store = storeAsync.valueOrNull;
-    if (store != null && !_terisi) {
+    if (store != null && !_diubahUser) {
+      _mengisi = true;
       _nama.text = store.storeName;
       _alamat.text = store.address ?? '';
       _telepon.text = store.phone ?? '';
@@ -82,7 +110,7 @@ class _StoreProfileSheetState extends ConsumerState<StoreProfileSheet> {
       _jamTutup.text = store.closeTime;
       _info.text = store.infoText ?? '';
       _teksBerjalan.text = store.runningText ?? '';
-      _terisi = true;
+      _mengisi = false;
     }
 
     return Scaffold(

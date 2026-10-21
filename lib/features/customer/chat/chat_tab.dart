@@ -181,7 +181,6 @@ class ChatTab extends ConsumerWidget {
           body: RumpiFeed(
             uid: uid,
             nama: nama,
-            modeSheet: true,
           ),
         ),
       ),

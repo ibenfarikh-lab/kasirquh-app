@@ -106,8 +106,27 @@ class _KendaliFormSectionState extends ConsumerState<_KendaliFormSection> {
   final _kabarMood = TextEditingController();
   String? _promoProductId;
   String? _flashProductId;
-  bool _terisi = false;
   bool _menyimpan = false;
+
+  // Anti-timpah-kosong (akar masalah running text hilang 2026-10-21):
+  // form diisi ulang dari snapshot settings TERBARU sampai user
+  // benar-benar mengubah sesuatu — snapshot awal yang masih kosong/
+  // bawaan tidak boleh mengunci form lalu tertimpa saat disimpan.
+  bool _diubahUser = false;
+  bool _mengisi = false;
+
+  @override
+  void initState() {
+    super.initState();
+    for (final c in [
+      _info, _gwT1, _gwC1, _gwT2, _gwC2, _gwT3, _gwC3,
+      _promoTitle, _flashPrice, _flashRule, _kabarStatus, _kabarMood,
+    ]) {
+      c.addListener(() {
+        if (!_mengisi) _diubahUser = true;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -127,6 +146,7 @@ class _KendaliFormSectionState extends ConsumerState<_KendaliFormSection> {
   }
 
   void _prefill(StoreInfo s) {
+    _mengisi = true;
     _info.text = s.runningText ?? '';
     _gwT1.text = s.gatewayTitle1;
     _gwC1.text = s.gatewayCopy1;
@@ -141,14 +161,14 @@ class _KendaliFormSectionState extends ConsumerState<_KendaliFormSection> {
     _flashRule.text = s.flashRule ?? '';
     _kabarStatus.text = s.kabarStatus ?? '';
     _kabarMood.text = s.kabarMood ?? '';
+    _mengisi = false;
   }
 
   @override
   Widget build(BuildContext context) {
     final store = ref.watch(storeInfoProvider).valueOrNull;
-    if (!_terisi && store != null) {
+    if (!_diubahUser && store != null) {
       _prefill(store);
-      _terisi = true;
     }
     final products =
         ref.watch(adminProductsProvider).valueOrNull ?? const [];
@@ -171,7 +191,10 @@ class _KendaliFormSectionState extends ConsumerState<_KendaliFormSection> {
           label: 'Produk promo',
           value: _promoProductId,
           products: products,
-          onChanged: (v) => setState(() => _promoProductId = v),
+          onChanged: (v) => setState(() {
+            _promoProductId = v;
+            _diubahUser = true;
+          }),
         ),
         const SizedBox(height: 12),
         _field(context, _promoTitle, 'Judul promo'),
@@ -181,7 +204,10 @@ class _KendaliFormSectionState extends ConsumerState<_KendaliFormSection> {
           label: 'Produk promo kilat',
           value: _flashProductId,
           products: products,
-          onChanged: (v) => setState(() => _flashProductId = v),
+          onChanged: (v) => setState(() {
+            _flashProductId = v;
+            _diubahUser = true;
+          }),
         ),
         const SizedBox(height: 12),
         _field(context, _flashPrice, 'Harga kilat',
@@ -204,6 +230,15 @@ class _KendaliFormSectionState extends ConsumerState<_KendaliFormSection> {
 
   Future<void> _simpan(BuildContext context, List products) async {
     final messenger = ScaffoldMessenger.of(context);
+    // Tanpa perubahan dari user, JANGAN menulis apa pun — menulis
+    // snapshot form yang belum tentu berisi data asli adalah akar
+    // tertimpanya settings (running text hilang, 2026-10-21).
+    if (!_diubahUser) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Beranda pelanggan disimpan')),
+      );
+      return;
+    }
     setState(() => _menyimpan = true);
     try {
       String? promoCopy;

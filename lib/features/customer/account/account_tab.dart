@@ -13,8 +13,10 @@ import '../../../core/theme/theme_settings.dart';
 import '../../../core/pengaturan/pengaturan_pelanggan.dart';
 import '../../../core/theme/mode_provider.dart';
 import '../../../core/utils/currency.dart';
+import '../../../core/utils/dering.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/notify.dart';
 import '../../../data/models/order.dart';
 import '../../../data/models/customer.dart';
 import '../../../data/models/customer_note.dart';
@@ -1034,7 +1036,16 @@ class _PengaturanFormState extends ConsumerState<_PengaturanForm> {
   Widget _opsiDering(String val, String title, String subtitle) {
     final aktif = _dering == val;
     return InkWell(
-      onTap: () => setState(() => _dering = val),
+      // Ketuk opsi = pilih + TES bunyi langsung (pola Web "tes
+      // bunyi") agar pilihan benar-benar terdengar sebelum diterapkan.
+      onTap: () {
+        setState(() => _dering = val);
+        Notify.headsUp(
+          'Tes Dering',
+          'Bunyi notifikasi: $title',
+          dering: modeDeringPelanggan(val),
+        );
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),

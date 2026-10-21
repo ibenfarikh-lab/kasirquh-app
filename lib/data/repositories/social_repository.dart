@@ -76,7 +76,10 @@ class SocialRepository {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk posting.');
     final bersih = text.trim();
-    if (bersih.isEmpty) throw StateError('Tulis kabar dulu ya.');
+    // Teks boleh kosong bila ada foto (postingan foto saja, persis Web).
+    if (bersih.isEmpty && (imageUrl == null || imageUrl.isEmpty)) {
+      throw StateError('Tulis kabar dulu ya.');
+    }
     await db.collection('rumpi_posts').add(RumpiPost(
           id: '',
           authorId: uid,

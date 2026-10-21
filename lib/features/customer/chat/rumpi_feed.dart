@@ -12,22 +12,19 @@ import '../../../data/models/rumpi.dart';
 import '../../../data/repositories/social_repository.dart';
 import '../../../l10n/strings_id.dart';
 import '../session.dart';
-import 'compose_post_sheet.dart';
 
-/// Feed kabar Rumpi + tombol tulis. Dipakai Mode Pelanggan dan
-/// (modeAdmin) Tab Rumpi admin — admin bisa posting sebagai admin dan
-/// menghapus postingan (moderasi).
-/// [modeSheet]: true bila di dalam sheet modal ala PWA (composer inline,
-/// tanpa FAB); false = tampilan tab biasa dengan FAB.
+/// Feed kabar Rumpi + composer inline gaya chat. Dipakai Mode
+/// Pelanggan dan (modeAdmin) Tab Rumpi admin — admin bisa posting
+/// sebagai admin dan menghapus postingan (moderasi).
+/// Composer-nya sama seperti chat lain (perintah user 2026-10-21):
+/// kolom input + tombol kirim + tombol foto dengan pratinjau —
+/// BUKAN lagi tombol "Tulis Kabar" / halaman form terpisah.
 class RumpiFeed extends ConsumerStatefulWidget {
   final String uid;
   final String nama;
 
   /// true bila dipakai admin: tulis sebagai admin + tombol hapus tiap post.
   final bool modeAdmin;
-
-  /// true bila di dalam sheet modal (ala PWA).
-  final bool modeSheet;
 
   /// ScrollController dari DraggableScrollableSheet (opsional).
   final ScrollController? scrollController;
@@ -37,7 +34,6 @@ class RumpiFeed extends ConsumerStatefulWidget {
     required this.uid,
     required this.nama,
     this.modeAdmin = false,
-    this.modeSheet = false,
     this.scrollController,
   });
 
@@ -47,6 +43,9 @@ class RumpiFeed extends ConsumerStatefulWidget {
 
 class _RumpiFeedState extends ConsumerState<RumpiFeed> {
   final _composer = TextEditingController();
+
+  /// Foto terlampir di composer (data URI 300px PNG, pola Chat Toko).
+  String? _fotoUrl;
 
   @override
   void dispose() {
@@ -85,8 +84,7 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
           child: ListView.builder(
             reverse: true,
             controller: widget.scrollController,
-            padding: EdgeInsets.fromLTRB(
-                16, 12, 16, widget.modeSheet ? 12 : 90),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             itemCount: urut.length,
             itemBuilder: (context, i) {
               final p = urut[urut.length - 1 - i];
@@ -103,31 +101,48 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
       },
     );
 
-    if (!widget.modeSheet) {
-      return Scaffold(
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _tulis(context, ref),
-          backgroundColor: AppColors.orange,
-          icon: const Icon(Icons.edit, color: Colors.white),
-          label: const Text(
-            Strings.tulisKabar,
-            style:
-                TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-          ),
-        ),
-        body: feed,
-      );
-    }
-
-    // Mode sheet ala PWA: feed + composer inline di bawah.
+    // Composer inline gaya chat (pelanggan & admin sama): feed +
+    // bar input di bawah dengan tombol foto & kirim.
     return Column(
       children: [
         Expanded(child: feed),
         const Divider(height: 1),
+        // Pratinjau foto terlampir (pola Chat Toko P1-2).
+        if (_fotoUrl != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image(
+                    image: photoImageProvider(_fotoUrl!)!,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text('Foto terlampir'),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => setState(() => _fotoUrl = null),
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Batal foto',
+                ),
+              ],
+            ),
+          ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+          padding: const EdgeInsets.fromLTRB(4, 8, 12, 12),
           child: Row(
             children: [
+              IconButton(
+                onPressed: _pilihFoto,
+                icon: const Icon(Icons.image_outlined),
+                color: AppColors.orange,
+                tooltip: 'Tambah foto',
+              ),
               Expanded(
                 child: TextField(
                   controller: _composer,
@@ -160,10 +175,20 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
     );
   }
 
-  /// Kirim postingan langsung (composer inline ala PWA).
+  /// Pilih foto untuk postingan (galeri → 300px PNG data URI —
+  /// helper yang sama dengan Chat Toko & foto produk).
+  Future<void> _pilihFoto() async {
+    final uri = await pickProductPhoto();
+    if (uri != null && mounted) {
+      setState(() => _fotoUrl = uri);
+    }
+  }
+
+  /// Kirim postingan dari composer inline — teks dan/atau foto
+  /// (foto saja boleh, persis Web).
   Future<void> _kirim(BuildContext context, WidgetRef ref) async {
     final teks = _composer.text.trim();
-    if (teks.isEmpty) {
+    if (teks.isEmpty && _fotoUrl == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Tulis kabar atau tambah foto dulu')),
@@ -175,12 +200,14 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
             uid: widget.uid,
             authorName: widget.nama,
             text: teks,
+            imageUrl: _fotoUrl,
             authorRole: widget.modeAdmin ? 'admin' : 'customer',
             authorPhoto: widget.modeAdmin
                 ? ''
                 : (ref.read(sessionProvider).valueOrNull?.photoURL ?? ''),
           );
       _composer.clear();
+      setState(() => _fotoUrl = null);
       ref.invalidate(rumpiPostsProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -195,19 +222,6 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
         );
       }
     }
-  }
-
-  Future<void> _tulis(BuildContext context, WidgetRef ref) async {
-    // Halaman penuh (aturan user: bottom sheet hanya Teman Belanja/AI).
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ComposePostSheet(
-          uid: widget.uid,
-          nama: widget.nama,
-          authorRole: widget.modeAdmin ? 'admin' : 'customer',
-        ),
-      ),
-    );
   }
 
   Future<void> _hapus(

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/utils/dering.dart';
 import '../../core/widgets/notify.dart';
 import '../../data/models/order.dart';
 import '../../data/remote/messaging_service.dart';
 import '../../data/repositories/admin_repository.dart';
+import '../../data/repositories/store_repository.dart';
 import '../../l10n/strings_id.dart';
 
 /// Bootstrap push & heads-up Mode Admin (dipasang di AdminShell).
@@ -99,11 +101,17 @@ class _PesananBaruWatcherState
           orElse: () => orders.first,
         );
         if (!mounted) return;
+        // Bunyi mengikuti adminSoundSettings (ditulis Web, kini
+        // dibaca & diterapkan Native): jenis 'order' + saklar getar.
+        final suara =
+            ref.read(storeInfoProvider).valueOrNull?.soundSettings;
         Notify.headsUp(
           Strings.pesananBaruJudul,
           baru.length == 1
               ? 'Pesanan ${contoh.code} • ${contoh.customerName}'
               : '${baru.length} pesanan baru menunggu',
+          dering: modeDeringAdmin(suara?.order),
+          getar: suara?.vibrate ?? true,
         );
       },
     );

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/pengaturan/pengaturan_pelanggan.dart';
+import '../../core/utils/dering.dart';
 import '../../core/widgets/notify.dart';
 import '../../data/models/order.dart';
 import '../../data/remote/messaging_service.dart';
@@ -135,6 +137,9 @@ class _OrderStatusWatcherState extends ConsumerState<OrderStatusWatcher> {
             Notify.headsUp(
               Strings.statusPesananJudul,
               'Pesanan ${o.code}: ${orderStatusLabel(o.status)}',
+              // Bunyi mengikuti pilihan dering pelanggan.
+              dering:
+                  modeDeringPelanggan(ref.read(deringPelangganProvider)),
             );
           }
         }
@@ -170,6 +175,9 @@ class _TokoUnreadWatcherState extends ConsumerState<TokoUnreadWatcher> {
           Notify.headsUp(
             Strings.chatBaruJudul,
             next.valueOrNull?.lastMessage ?? '',
+            // Bunyi mengikuti pilihan dering pelanggan.
+            dering:
+                modeDeringPelanggan(ref.read(deringPelangganProvider)),
           );
         }
       },
