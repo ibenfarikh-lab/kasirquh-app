@@ -309,6 +309,7 @@ class Strings {
   // Struktur menu mengikuti PWA: KELOLA WARUNG / LACI ALAT / PENGATURAN.
   static const menuKelolaWarung = 'KELOLA WARUNG';
   static const menuLaciAlat = 'LACI ALAT';
+  static const menuKelolaPelanggan = 'KELOLA PELANGGAN';
   static const menuPengaturanJudul = 'PENGATURAN';
   static const menuSemuaAlat = 'Semua alat & pengaturan';
   static const menuProduk = 'Produk';
@@ -468,7 +469,7 @@ class Strings {
   static const pilihPelanggan = 'Pilih pelanggan';
   static const cariNama = 'Cari nama...';
   // Sinkron manual dengan version di pubspec.yaml.
-  static const versiApp = 'KasirQuh v3.6.104+118';
+  static const versiApp = 'KasirQuh v3.6.105+119';
 
   // Admin — Profil Toko
   static const namaToko = 'Nama toko';

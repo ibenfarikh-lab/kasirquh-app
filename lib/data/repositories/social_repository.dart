@@ -70,6 +70,8 @@ class SocialRepository {
     required String text,
     String? imageUrl,
     String authorRole = 'customer',
+    // Foto profil penulis (P2-9) — Web menuliskan authorPhoto.
+    String authorPhoto = '',
   }) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk posting.');
@@ -80,6 +82,7 @@ class SocialRepository {
           authorId: uid,
           authorName: authorName,
           authorRole: authorRole,
+          authorPhoto: authorPhoto,
           text: bersih,
           imageUrl: imageUrl,
           createdAt: DateTime.now(),
@@ -270,6 +273,16 @@ class SocialRepository {
 
   // ============ GAME (Misi Koin) ============
 
+  /// Kunci tanggal hari ini di Asia/Jakarta (P2-3) — kuota game Web
+  /// memakai todayKey Jakarta; perangkat di zona lain tidak boleh
+  /// bergeser hari. Pola sama seperti weekKeyOf misi (UTC+7).
+  static String todayJakartaKey() {
+    final jkt = DateTime.now().toUtc().add(const Duration(hours: 7));
+    return '${jkt.year.toString().padLeft(4, '0')}-'
+        '${jkt.month.toString().padLeft(2, '0')}-'
+        '${jkt.day.toString().padLeft(2, '0')}';
+  }
+
   /// Hasil klaim koin game.
   /// Ikut pola Web (Store.grantGameCoins): transaction atomik,
   /// kuota 500 koin/hari DIPISAH per game (via dateField/todayField).
@@ -289,9 +302,7 @@ class SocialRepository {
       return (granted: 0, capped: false);
     }
     const maxPerDay = 500;
-    final now = DateTime.now();
-    final today =
-        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final today = todayJakartaKey();
     return db.runTransaction((tx) async {
       // Cek program koin & event aktif — selaras Web.
       final settingsSnap =
@@ -337,9 +348,7 @@ class SocialRepository {
       String uid, String dateField, String todayField) async {
     final db = _db;
     if (db == null || uid.isEmpty) return 0;
-    final now = DateTime.now();
-    final today =
-        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final today = todayJakartaKey();
     try {
       final doc = await db.collection('customers').doc(uid).get();
       final data = doc.data();

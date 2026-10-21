@@ -64,6 +64,9 @@ class StoreInfo {
   // ID item Inbox yang sudah dibaca — persisten lintas perangkat
   // di store_settings (P1-8, skema Web `inboxReadIds`).
   final List<String> inboxReadIds;
+  // ID shortcut Dashboard pilihan admin (P2-1, skema Web
+  // `dashboardShortcutIds`, katalog 20, maks 6).
+  final List<String> dashboardShortcutIds;
   // Kabar warung (override; kosong = otomatis).
   final String? kabarStatus;
   final String? kabarMood;
@@ -107,6 +110,7 @@ class StoreInfo {
     this.flashEndsAt,
     this.pinnedChatIds = const [],
     this.inboxReadIds = const [],
+    this.dashboardShortcutIds = const [],
     this.kabarStatus,
     this.kabarMood,
     this.carouselSlots = const {},
@@ -189,6 +193,10 @@ class StoreInfo {
                 .toList() ??
             const [],
         inboxReadIds: (m['inboxReadIds'] as List?)
+                ?.whereType<String>()
+                .toList() ??
+            const [],
+        dashboardShortcutIds: (m['dashboardShortcutIds'] as List?)
                 ?.whereType<String>()
                 .toList() ??
             const [],
@@ -399,7 +407,7 @@ class CoinSettings {
   final int redeemLimit; // % maksimal dari total
   final Map<String, bool> events; // checkin, mission, guess, spend
   final Map<String, int> rewards; // checkin, mission, guess
-  final int spendRule; // Rp per bonus (default PWA: 100)
+  final int spendRule; // Rp per bonus (bawaan Web: 10000)
   final int spendReward; // koin per rule
 
   const CoinSettings({
@@ -408,7 +416,7 @@ class CoinSettings {
     this.redeemLimit = 50,
     this.events = const {},
     this.rewards = const {},
-    this.spendRule = 100,
+    this.spendRule = 10000,
     this.spendReward = 1,
   });
 
@@ -425,7 +433,7 @@ class CoinSettings {
       redeemLimit: (m['coinRedeemLimit'] as num?)?.toInt() ?? 50,
       events: events,
       rewards: rewards,
-      spendRule: (m['coinSpendRule'] as num?)?.toInt() ?? 100,
+      spendRule: (m['coinSpendRule'] as num?)?.toInt() ?? 10000,
       spendReward: (m['coinSpendReward'] as num?)?.toInt() ?? 1,
     );
   }

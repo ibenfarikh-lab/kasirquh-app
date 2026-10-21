@@ -12,6 +12,8 @@ class RumpiPost {
   /// Peran penulis: 'admin' atau 'customer'. Dokumen lama tanpa field ini
   /// diperlakukan sebagai 'customer' (tanpa backfill).
   final String authorRole;
+  // Foto profil penulis saat posting (P2-9, skema Web `authorPhoto`).
+  final String authorPhoto;
   final String text;
   final String? imageUrl;
   final int likeCount;
@@ -23,6 +25,7 @@ class RumpiPost {
     required this.authorId,
     required this.authorName,
     this.authorRole = 'customer',
+    this.authorPhoto = '',
     required this.text,
     this.imageUrl,
     this.likeCount = 0,
@@ -40,6 +43,7 @@ class RumpiPost {
       authorId: (m['authorId'] as String?) ?? '',
       authorName: (m['authorName'] as String?) ?? '',
       authorRole: (m['authorRole'] as String?) ?? 'customer',
+      authorPhoto: (m['authorPhoto'] as String?) ?? '',
       text: (m['text'] as String?) ?? '',
       imageUrl: m['imageUrl'] as String?,
       likeCount: (m['likeCount'] as num?)?.toInt() ?? 0,
@@ -55,6 +59,7 @@ class RumpiPost {
         'authorId': authorId,
         'authorName': authorName,
         'authorRole': authorRole,
+        'authorPhoto': authorPhoto,
         'text': text,
         if (imageUrl != null) 'imageUrl': imageUrl,
         'likeCount': 0,

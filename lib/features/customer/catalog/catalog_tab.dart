@@ -9,6 +9,7 @@ import '../../../core/utils/currency.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/habis_ribbon.dart';
 import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/product.dart';
 import '../../../data/repositories/product_repository.dart';
@@ -408,7 +409,9 @@ class _ProductCard extends ConsumerWidget {
     return AppCard(
       onTap: () => _showDetail(context, ref),
       padding: EdgeInsets.zero,
-      child: Stack(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Stack(
         children: [
           Padding(
             padding: const EdgeInsets.all(10),
@@ -437,24 +440,29 @@ class _ProductCard extends ConsumerWidget {
                           ),
                         );
                       }
+                      final fotoJatuh = Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.orange
+                              .withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.shopping_basket_outlined,
+                          size: 36,
+                          color: AppColors.orange,
+                        ),
+                      );
+                      final foto = Image(
+                        image: provider,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: 90,
+                        errorBuilder: (_, __, ___) => fotoJatuh,
+                      );
                       return ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: Image(
-                          image: provider,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.orange
-                                  .withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.shopping_basket_outlined,
-                              size: 36,
-                              color: AppColors.orange,
-                            ),
-                          ),
-                        ),
+                        // Stok habis: foto greyout ringan (P2-6, Web).
+                        child: out ? fotoHabisGreyout(foto) : foto,
                       );
                     },
                   ),
@@ -498,8 +506,11 @@ class _ProductCard extends ConsumerWidget {
               ],
             ),
           ),
-          // Flag PROMO / HABIS kiri-atas.
-          if (adaDiskon || out)
+          // Penanda HABIS = pita diagonal gaya Web (P2-6); PROMO
+          // tetap pill merah seperti sebelumnya.
+          if (out)
+            const HabisRibbon()
+          else if (adaDiskon)
             Positioned(
               left: 6,
               top: 6,
@@ -507,14 +518,12 @@ class _ProductCard extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 5, vertical: 3),
                 decoration: BoxDecoration(
-                  color: out
-                      ? const Color(0xFF999999)
-                      : const Color(0xFFDF624F),
+                  color: const Color(0xFFDF624F),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  out ? 'HABIS' : 'PROMO',
-                  style: const TextStyle(
+                child: const Text(
+                  'PROMO',
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 8,
                     fontWeight: FontWeight.w900,
@@ -550,6 +559,7 @@ class _ProductCard extends ConsumerWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

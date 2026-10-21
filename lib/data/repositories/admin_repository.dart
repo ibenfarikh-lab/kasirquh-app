@@ -70,6 +70,15 @@ class AdminRepository {
 
   bool get online => _db != null;
 
+  /// Kunci tanggal hari ini di Asia/Jakarta (P2-3) — pola UTC+7 yang
+  /// sama dengan kunci tanggal game; Web memakai todayKey() Jakarta
+  /// untuk anti-dobel check-in & tebak harga.
+  static String jakartaTodayKey() {
+    final jkt = DateTime.now().toUtc().add(const Duration(hours: 7));
+    return '${jkt.year}-${jkt.month.toString().padLeft(2, '0')}-'
+        '${jkt.day.toString().padLeft(2, '0')}';
+  }
+
   /// Ubah nama panggilan pelanggan di `customers/{uid}`.
   /// Dipakai form Pengaturan Pelanggan (laporan user 2026-10-12:
   /// tombol "Terapkan" tidak menyimpan apa-apa).
@@ -231,6 +240,9 @@ class AdminRepository {
     required String customerId,
     required String customerName,
     required int slots,
+    // Metode bayar pilihan peserta (P2-4, skema Web):
+    // 'transfer' | selainnya → 'tunai'.
+    String paymentMethod = 'tunai',
   }) async {
     final db = _db;
     if (db == null) throw StateError('Firestore belum siap');
@@ -262,6 +274,7 @@ class AdminRepository {
         'joinedAt': DateTime.now().toIso8601String(),
         // Keputusan user: ikut patungan → status "menunggu bayar".
         'paymentStatus': 'menunggu',
+        'paymentMethod': paymentMethod == 'transfer' ? 'transfer' : 'tunai',
       });
       t.update(ref, {
         'participants': parts,
@@ -1170,9 +1183,8 @@ class AdminRepository {
     if (db == null) throw StateError('Butuh internet.');
     if (amount <= 0) return;
 
-    final today = DateTime.now();
-    final todayKey =
-        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    // Kunci hari Asia/Jakarta (P2-3) — sama seperti Web todayKey().
+    final todayKey = jakartaTodayKey();
 
     await db.runTransaction((tx) async {
       // Cek klaim ganda (ikut PWA) — di dalam transaksi.
@@ -1222,9 +1234,7 @@ class AdminRepository {
   /// Anti-dobel dijamin [grantCoins] (cek `lastCheckin` dalam
   /// transaksi yang sama).
   Future<int> claimCheckinHarian(String uid, int reward) async {
-    final now = DateTime.now();
-    final todayKey =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final todayKey = jakartaTodayKey();
     try {
       await grantCoins(
         uid,

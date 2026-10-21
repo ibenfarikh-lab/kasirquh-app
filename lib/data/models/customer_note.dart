@@ -36,10 +36,24 @@ class CustomerNote {
 }
 
 /// Label jenis catatan (Bahasa Indonesia, tanpa istilah siluman).
+/// 'umum' = nilai warisan (Web lama menulisnya langsung; Web sekarang
+/// memetakannya ke 'catatan' saat simpan) — dikenali eksplisit (P2-5)
+/// agar catatan lama tampil sebagai Catatan Umum, bukan label kosong.
 String customerNoteTypeLabel(String type) => switch (type) {
       'tagihan' => 'Tagihan',
       'pembayaran' => 'Pembayaran',
+      'umum' => 'Catatan Umum',
       _ => 'Catatan',
+    };
+
+/// Petakan jenis pilihan form (ala Web) ke type dokumen:
+/// belanja/cicilan → tagihan; pembayaran → pembayaran; umum → catatan.
+String customerNoteTypeFromForm(String formValue) => switch (formValue) {
+      'belanja' => 'tagihan',
+      'cicilan' => 'tagihan',
+      'pembayaran' => 'pembayaran',
+      'umum' => 'catatan',
+      _ => formValue,
     };
 
 /// Total tagihan berjalan: tagihan − pembayaran. Fungsi pure.

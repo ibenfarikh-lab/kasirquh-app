@@ -237,6 +237,8 @@ class _JoinPatunganPage extends ConsumerStatefulWidget {
 class _JoinPatunganPageState
     extends ConsumerState<_JoinPatunganPage> {
   int _qty = 1;
+  // Metode bayar (P2-4, ala Web): 'tunai' | 'transfer'.
+  String _payMethod = 'tunai';
 
   Future<void> _konfirmasi(BuildContext context) async {
     final p = widget.patungan;
@@ -246,6 +248,7 @@ class _JoinPatunganPageState
             customerId: widget.customerId,
             customerName: widget.customerName,
             slots: _qty,
+            paymentMethod: _payMethod,
           );
       if (context.mounted) {
         Navigator.of(context).pop();
@@ -319,6 +322,43 @@ class _JoinPatunganPageState
               textAlign: TextAlign.center,
               style: const TextStyle(
                   fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 16),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Metode pembayaran',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('Tunai saat ambil'),
+                    selected: _payMethod == 'tunai',
+                    onSelected: (_) =>
+                        setState(() => _payMethod = 'tunai'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('Transfer'),
+                    selected: _payMethod == 'transfer',
+                    onSelected: (_) =>
+                        setState(() => _payMethod = 'transfer'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Tunai: bayar saat ambil barang di warung. Transfer: ke '
+              'rekening warung, admin konfirmasi.',
+              style:
+                  TextStyle(color: context.teksRedup, fontSize: 12),
             ),
             const SizedBox(height: 16),
             FilledButton(

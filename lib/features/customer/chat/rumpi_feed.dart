@@ -7,9 +7,11 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/rumpi.dart';
 import '../../../data/repositories/social_repository.dart';
 import '../../../l10n/strings_id.dart';
+import '../session.dart';
 import 'compose_post_sheet.dart';
 
 /// Feed kabar Rumpi + tombol tulis. Dipakai Mode Pelanggan dan
@@ -174,6 +176,9 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
             authorName: widget.nama,
             text: teks,
             authorRole: widget.modeAdmin ? 'admin' : 'customer',
+            authorPhoto: widget.modeAdmin
+                ? ''
+                : (ref.read(sessionProvider).valueOrNull?.photoURL ?? ''),
           );
       _composer.clear();
       ref.invalidate(rumpiPostsProvider);
@@ -291,15 +296,22 @@ class _PostCard extends StatelessWidget {
                 CircleAvatar(
                   backgroundColor:
                       AppColors.orange.withValues(alpha: 0.15),
-                  child: Text(
-                    post.authorName.isEmpty
-                        ? '?'
-                        : post.authorName[0].toUpperCase(),
-                    style: const TextStyle(
-                      color: AppColors.orange,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                  // Foto profil penulis (P2-9): ditampilkan bila ada;
+                  // tanpa foto → huruf inisial seperti sebelumnya.
+                  backgroundImage: post.authorPhoto.isNotEmpty
+                      ? photoImageProvider(post.authorPhoto)
+                      : null,
+                  child: post.authorPhoto.isNotEmpty
+                      ? null
+                      : Text(
+                          post.authorName.isEmpty
+                              ? '?'
+                              : post.authorName[0].toUpperCase(),
+                          style: const TextStyle(
+                            color: AppColors.orange,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(

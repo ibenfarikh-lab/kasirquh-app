@@ -107,7 +107,7 @@ class _TebakHargaPageState extends ConsumerState<TebakHargaPage> {
     try {
       final settings = ref.read(coinSettingsProvider).valueOrNull ??
           const CoinSettings();
-      final reward = settings.rewards['guess'] ?? 10;
+      final reward = settings.rewards['guess'] ?? 100;
 
       await ref.read(adminRepositoryProvider).grantCoins(
             uid,

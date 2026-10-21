@@ -212,13 +212,13 @@ class _DompetKoinPageState extends ConsumerState<DompetKoinPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _aturan(context,
-                    'Bonus harian: +${settings.rewards['checkin'] ?? 5} koin (1x sehari)'),
+                    'Bonus harian: +${settings.rewards['checkin'] ?? 25} koin (1x sehari)'),
                 _aturan(context,
                     'Belanja: +${settings.spendReward} koin tiap Rp${fmt.format(settings.spendRule)} (otomatis)'),
                 _aturan(context,
-                    'Misi koin: +${settings.rewards['mission'] ?? 15} koin per misi'),
+                    'Misi koin: +${settings.rewards['mission'] ?? 250} koin per misi'),
                 _aturan(context,
-                    'Tebak harga: +${settings.rewards['guess'] ?? 10} koin (1x sehari)'),
+                    'Tebak harga: +${settings.rewards['guess'] ?? 100} koin (1x sehari)'),
                 _aturan(
                     context,
                     'Tukar: maks ${settings.redeemLimit}% dari total belanja',

@@ -12,6 +12,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/guest_lock_sheet.dart';
+import '../../../core/widgets/habis_ribbon.dart';
 import '../../../core/widgets/product_photo.dart';
 import '../../../data/models/order.dart';
 import '../../../data/models/product.dart';
@@ -2326,6 +2327,11 @@ class _HomeProductCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final promos = ref.watch(promosProvider).valueOrNull ?? const <Promo>[];
     final harga = hargaJualAktif(product, promos);
+    final habis = product.stock <= 0;
+    final foto = ProductPhoto(
+      photoPath: product.photoPath,
+      size: 84,
+    );
     return SizedBox(
       width: 140,
       child: AppCard(
@@ -2337,34 +2343,46 @@ class _HomeProductCard extends ConsumerWidget {
             ),
           ),
         ),
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: ProductPhoto(
-                photoPath: product.photoPath,
-                size: 84,
+        padding: EdgeInsets.zero,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      // Stok habis: foto greyout ringan (P2-6, Web).
+                      child: habis &&
+                              (product.photoPath ?? '').isNotEmpty
+                          ? fotoHabisGreyout(foto)
+                          : foto,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 13),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      formatRp(harga),
+                      style: const TextStyle(
+                        color: AppColors.orange,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              product.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w700, fontSize: 13),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              formatRp(harga),
-              style: const TextStyle(
-                color: AppColors.orange,
-                fontWeight: FontWeight.w800,
-                fontSize: 14,
-              ),
-            ),
-          ],
+              if (habis) const HabisRibbon(kecil: true),
+            ],
+          ),
         ),
       ),
     );
@@ -3195,7 +3213,7 @@ class _AutoCheckinState extends ConsumerState<_AutoCheckin> {
     if (!settings.enabled || !(settings.events['checkin'] ?? false)) {
       return;
     }
-    final reward = settings.rewards['checkin'] ?? 5;
+    final reward = settings.rewards['checkin'] ?? 25;
     final hasil = await ref
         .read(adminRepositoryProvider)
         .claimCheckinHarian(widget.uid, reward);

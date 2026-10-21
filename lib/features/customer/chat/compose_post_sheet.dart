@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/repositories/social_repository.dart';
 import '../../../l10n/strings_id.dart';
+import '../session.dart';
 
 /// Halaman tulis kabar Rumpi: teks + foto opsional dari HP
 /// (di-resize maks 300px, PNG base64 — tanpa Firebase Storage).
@@ -96,6 +97,9 @@ class _ComposePostSheetState extends ConsumerState<ComposePostSheet> {
             text: teks,
             imageUrl: dataUri,
             authorRole: widget.authorRole,
+            authorPhoto: widget.authorRole == 'admin'
+                ? ''
+                : (ref.read(sessionProvider).valueOrNull?.photoURL ?? ''),
           );
       if (mounted) Navigator.of(context).pop();
     } catch (_) {

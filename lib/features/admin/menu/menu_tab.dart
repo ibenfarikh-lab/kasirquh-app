@@ -8,7 +8,6 @@ import '../../../core/theme/mode_provider.dart';
 import '../../../data/remote/auth_service.dart';
 import '../../../l10n/strings_id.dart';
 import '../../gateway/gateway_screen.dart';
-import '../pos/scanner_sheet.dart';
 import 'ai_admin_sheet.dart';
 import 'calculator_sheet.dart';
 import 'chat_page.dart';
@@ -21,15 +20,17 @@ import 'paket_editor_page.dart';
 import 'patungan_page.dart';
 import 'products_page.dart';
 import 'receipt_page.dart';
+import 'report_page.dart';
 import 'settings_sheet.dart';
 import 'stock_shopping_sheet.dart';
 import 'store_notes_sheet.dart';
 import 'store_profile_sheet.dart';
 import 'transfer_orders_page.dart';
 
-/// Tab Menu: "Semua alat & pengaturan" — struktur mengikuti PWA persis:
-/// KELOLA WARUNG / LACI ALAT / PENGATURAN, tiap modul berdeskripsi.
-/// Halaman penuh = ruang kerja; bottom sheet = panel tugas cepat.
+/// Tab Menu: "Semua alat & pengaturan" — pengelompokan mengikuti
+/// Web persis (P2-7): KELOLA WARUNG (11) / KELOLA PELANGGAN (7) /
+/// PENGATURAN (2). Pemindai Barcode tidak lagi di Menu (Web tidak
+/// mencantumkannya; fungsinya tetap di Kasir).
 class MenuTab extends ConsumerWidget {
   const MenuTab({super.key});
 
@@ -57,8 +58,8 @@ class MenuTab extends ConsumerWidget {
         _SectionHeader(title: Strings.menuKelolaWarung),
         _ModuleGrid(modules: _kelolaWarung(context)),
         const SizedBox(height: 8),
-        _SectionHeader(title: Strings.menuLaciAlat),
-        _ModuleGrid(modules: _laciAlat(context)),
+        _SectionHeader(title: Strings.menuKelolaPelanggan),
+        _ModuleGrid(modules: _kelolaPelanggan(context)),
         const SizedBox(height: 8),
         _SectionHeader(title: Strings.menuPengaturanJudul),
         _ModuleGrid(
@@ -68,7 +69,7 @@ class MenuTab extends ConsumerWidget {
     );
   }
 
-  /// KELOLA WARUNG — 7 modul (urutan PWA).
+  /// KELOLA WARUNG — 11 modul, urutan persis Web (MenuPage MANAGE).
   List<_Module> _kelolaWarung(BuildContext context) => [
         _Module(
           Strings.menuProduk,
@@ -83,22 +84,68 @@ class MenuTab extends ConsumerWidget {
           () => _openPage(context, const StoreProfileSheet()),
         ),
         _Module(
-          Strings.modulBerandaPelanggan,
-          Strings.descBerandaPelanggan,
-          Icons.home_outlined,
-          () => _openPage(context, const CustomerHomeSheet()),
-        ),
-        _Module(
-          Strings.modulKoin,
-          Strings.descKoinWarga,
-          Icons.toll_outlined,
-          () => _openPage(context, const CoinsSheet()),
-        ),
-        _Module(
           Strings.modulKasirOnline,
           Strings.descKasirOnline,
           Icons.shopping_bag_outlined,
           () => _openPage(context, const OnlineOrdersPage()),
+        ),
+        _Module(
+          Strings.modulPembukuan,
+          Strings.descPembukuan,
+          Icons.book_outlined,
+          () => _openPage(context, const LedgerPage()),
+        ),
+        _Module(
+          'Laporan',
+          'Omset, laba & transaksi',
+          Icons.bar_chart_outlined,
+          () => _openPage(context, const ReportPage()),
+        ),
+        _Module(
+          Strings.menuKonfirmasiTransfer,
+          Strings.descKonfirmasiTransfer,
+          Icons.receipt_long_outlined,
+          () => _openPage(context, const TransferOrdersPage()),
+        ),
+        _Module(
+          Strings.modulBelanjaStok,
+          Strings.descBelanjaStok,
+          Icons.shopping_cart_outlined,
+          () => _openPage(context, const StockShoppingSheet()),
+        ),
+        _Module(
+          Strings.modulStruk,
+          Strings.descStruk58mm,
+          Icons.print_outlined,
+          () => _openPage(context, const ReceiptPage()),
+        ),
+        _Module(
+          Strings.modulKalkulator,
+          Strings.descKalkulator,
+          Icons.calculate_outlined,
+          () => _openPage(context, const CalculatorSheet()),
+        ),
+        _Module(
+          Strings.modulCatatanToko,
+          Strings.descCatatanToko,
+          Icons.note_alt_outlined,
+          () => _openPage(context, const StoreNotesSheet()),
+        ),
+        _Module(
+          Strings.modulAiAdmin,
+          Strings.descAiAdmin,
+          Icons.psychology_outlined,
+          () => _openPage(context, const AiAdminSheet()),
+        ),
+      ];
+
+  /// KELOLA PELANGGAN — 7 modul, urutan persis Web (MenuPage CUSTOMERS).
+  List<_Module> _kelolaPelanggan(BuildContext context) => [
+        _Module(
+          Strings.modulBerandaPelanggan,
+          Strings.descBerandaPelanggan,
+          Icons.home_outlined,
+          () => _openPage(context, const CustomerHomeSheet()),
         ),
         _Module(
           Strings.modulData,
@@ -112,51 +159,11 @@ class MenuTab extends ConsumerWidget {
           Icons.chat_bubble_outline,
           () => _openPage(context, const ChatPage()),
         ),
-      ];
-
-  /// LACI ALAT — 11 modul (urutan PWA).
-  List<_Module> _laciAlat(BuildContext context) => [
         _Module(
-          Strings.modulKalkulator,
-          Strings.descKalkulator,
-          Icons.calculate_outlined,
-          () => _openPage(context, const CalculatorSheet()),
-        ),
-        _Module(
-          Strings.menuPemindaiBarcode,
-          Strings.descPemindaiBarcode,
-          Icons.qr_code_scanner,
-          () => _openPage(context, const ScannerSheet()),
-        ),
-        _Module(
-          Strings.modulCatatanToko,
-          Strings.descCatatanToko,
-          Icons.note_alt_outlined,
-          () => _openPage(context, const StoreNotesSheet()),
-        ),
-        _Module(
-          Strings.modulBelanjaStok,
-          Strings.descBelanjaStok,
-          Icons.shopping_cart_outlined,
-          () => _openPage(context, const StockShoppingSheet()),
-        ),
-        _Module(
-          Strings.modulAiAdmin,
-          Strings.descAiAdmin,
-          Icons.psychology_outlined,
-          () => _openPage(context, const AiAdminSheet()),
-        ),
-        _Module(
-          Strings.modulPembukuan,
-          Strings.descPembukuan,
-          Icons.book_outlined,
-          () => _openPage(context, const LedgerPage()),
-        ),
-        _Module(
-          Strings.menuKonfirmasiTransfer,
-          Strings.descKonfirmasiTransfer,
-          Icons.receipt_long_outlined,
-          () => _openPage(context, const TransferOrdersPage()),
+          Strings.modulKoin,
+          Strings.descKoinWarga,
+          Icons.toll_outlined,
+          () => _openPage(context, const CoinsSheet()),
         ),
         _Module(
           Strings.menuPaketRutin,
@@ -181,12 +188,6 @@ class MenuTab extends ConsumerWidget {
           Strings.descPatunganWarga,
           Icons.groups_outlined,
           () => _openPage(context, const PatunganPage()),
-        ),
-        _Module(
-          Strings.modulStruk,
-          Strings.descStruk58mm,
-          Icons.print_outlined,
-          () => _openPage(context, const ReceiptPage()),
         ),
       ];
 

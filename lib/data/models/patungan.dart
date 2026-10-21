@@ -9,6 +9,9 @@ class PatunganParticipant {
   final int slots;
   final DateTime joinedAt;
   final String paymentStatus;
+  // Metode bayar pilihan peserta (P2-4, skema Web):
+  // 'tunai' (saat ambil) | 'transfer'.
+  final String paymentMethod;
 
   const PatunganParticipant({
     required this.customerId,
@@ -16,6 +19,7 @@ class PatunganParticipant {
     required this.slots,
     required this.joinedAt,
     this.paymentStatus = 'menunggu',
+    this.paymentMethod = 'tunai',
   });
 
   factory PatunganParticipant.fromMap(Map<String, dynamic> m) {
@@ -34,6 +38,7 @@ class PatunganParticipant {
       slots: (m['slots'] as num?)?.toInt() ?? 1,
       joinedAt: parsed,
       paymentStatus: (m['paymentStatus'] as String?) ?? 'menunggu',
+      paymentMethod: (m['paymentMethod'] as String?) ?? 'tunai',
     );
   }
 
@@ -43,6 +48,7 @@ class PatunganParticipant {
         'slots': slots,
         'joinedAt': joinedAt.toIso8601String(),
         'paymentStatus': paymentStatus,
+        'paymentMethod': paymentMethod,
       };
 }
 

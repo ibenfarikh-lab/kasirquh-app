@@ -187,7 +187,9 @@ class CustomerNotesSheet extends ConsumerWidget {
       BuildContext context, WidgetRef ref) async {
     final noteCtrl = TextEditingController();
     final amountCtrl = TextEditingController();
-    var type = 'tagihan';
+    // Nilai FORM ala Web (P2-5): belanja/pembayaran/cicilan/umum —
+    // dipetakan ke type dokumen saat simpan (customerNoteTypeFromForm).
+    var type = 'belanja';
     var busy = false;
     final ok = await showDialog<bool>(
       context: context,
@@ -212,17 +214,20 @@ class CustomerNotesSheet extends ConsumerWidget {
                   ),
                   items: const [
                     DropdownMenuItem(
-                        value: 'tagihan',
-                        child: Text('Tagihan (belum dibayar)')),
+                        value: 'belanja',
+                        child: Text('Belanja (belum dibayar)')),
                     DropdownMenuItem(
                         value: 'pembayaran',
                         child: Text('Pembayaran')),
                     DropdownMenuItem(
-                        value: 'catatan',
-                        child: Text('Catatan umum')),
+                        value: 'cicilan',
+                        child: Text('Cicilan')),
+                    DropdownMenuItem(
+                        value: 'umum',
+                        child: Text('Catatan Umum')),
                   ],
                   onChanged: (v) =>
-                      setState(() => type = v ?? 'tagihan'),
+                      setState(() => type = v ?? 'belanja'),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -276,7 +281,7 @@ class CustomerNotesSheet extends ConsumerWidget {
                             .read(adminRepositoryProvider)
                             .saveCustomerNote(
                               customerId: customer.uid,
-                              type: type,
+                              type: customerNoteTypeFromForm(type),
                               amount: amount,
                               note: noteCtrl.text,
                             );

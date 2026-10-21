@@ -1166,7 +1166,7 @@ class _BonusHarianCardState extends ConsumerState<_BonusHarianCard> {
     try {
       final settings = ref.read(coinSettingsProvider).valueOrNull ??
           const CoinSettings();
-      final reward = settings.rewards['checkin'] ?? 5;
+      final reward = settings.rewards['checkin'] ?? 25;
 
       await ref.read(adminRepositoryProvider).grantCoins(
             uid,

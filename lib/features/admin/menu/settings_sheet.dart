@@ -247,7 +247,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
               _kartu([
                 ListTile(
                   leading: Image.asset(
-                    'assets/brand/kasirquh-logo.png',
+                    'assets/images/kasirquh-logo.png',
                     width: 40,
                     height: 40,
                     errorBuilder: (_, __, ___) => const Icon(

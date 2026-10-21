@@ -10,12 +10,23 @@ import '../../../core/utils/currency.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/order.dart';
 import '../../../data/repositories/admin_repository.dart';
+import '../../../data/repositories/store_repository.dart';
 import '../../../l10n/strings_id.dart';
+import '../menu/ai_admin_sheet.dart';
+import '../menu/calculator_sheet.dart';
+import '../menu/customer_home_sheet.dart';
+import '../menu/customers_page.dart';
 import '../menu/ledger_page.dart';
 import '../menu/report_page.dart';
 import '../menu/online_orders_page.dart';
 import '../menu/products_page.dart';
+import '../menu/receipt_page.dart';
+import '../menu/settings_sheet.dart';
+import '../menu/stock_shopping_sheet.dart';
+import '../menu/store_profile_sheet.dart';
+import '../menu/transfer_orders_page.dart';
 import '../pos/pos_tab.dart';
+import '../pos/scanner_sheet.dart';
 import '../menu/chat_page.dart';
 import '../inbox/inbox_tab.dart';
 import '../menu/store_notes_sheet.dart';
@@ -33,30 +44,54 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
   /// Mode ubah susunan shortcut.
   bool _isEditing = false;
 
-  /// ID shortcut yang tampil (tersimpan di SharedPreferences).
-  List<String> _shortcutIds = [
-    'kasir',
-    'inbox',
-    'pembukuan',
-    'kasir_online',
-    'chat',
-    'catatan_belanja',
-  ];
+  /// ID shortcut yang tampil. Sumber kebenaran bersama (P2-1):
+  /// store_settings.dashboardShortcutIds; SharedPreferences hanya
+  /// cermin lokal. Bawaan mengikuti Web: kasir/inbox/bookkeeping.
+  List<String> _shortcutIds = ['kasir', 'inbox', 'bookkeeping'];
 
-  /// Definisi semua shortcut yang tersedia.
+  /// Katalog 20 shortcut — persis DASHBOARD_SHORTCUT_CATALOG Web.
   static const _allShortcuts = <String, Map<String, dynamic>>{
-    'kasir': {'icon': Icons.receipt_long_outlined, 'label': 'Buka Kasir'},
+    'kasir': {'icon': Icons.point_of_sale_outlined, 'label': 'Buka Kasir'},
     'inbox': {'icon': Icons.inbox_outlined, 'label': 'Cek Inbox'},
-    'pembukuan': {'icon': Icons.book_outlined, 'label': 'Pembukuan'},
-    'kasir_online': {
-      'icon': Icons.shopping_bag_outlined,
-      'label': 'Kasir Online'
-    },
+    'bookkeeping': {'icon': Icons.book_outlined, 'label': 'Pembukuan'},
+    'products': {'icon': Icons.inventory_2_outlined, 'label': 'Data Produk'},
+    'store-profile': {'icon': Icons.store_outlined, 'label': 'Profil Toko'},
+    'customer-home': {'icon': Icons.home_outlined, 'label': 'Beranda Pelanggan'},
+    'online': {'icon': Icons.receipt_long_outlined, 'label': 'Kasir Online'},
+    'customers': {'icon': Icons.people_outline, 'label': 'Data Pelanggan'},
+    'approvals': {'icon': Icons.how_to_reg_outlined, 'label': 'Persetujuan'},
+    'reports': {'icon': Icons.bar_chart_outlined, 'label': 'Laporan'},
     'chat': {'icon': Icons.chat_bubble_outline, 'label': 'Chat & Rumpi'},
-    'catatan_belanja': {'icon': Icons.note_outlined, 'label': 'Catatan Belanja'},
-    'produk': {'icon': Icons.inventory_2_outlined, 'label': 'Data Produk'},
-    'laporan': {'icon': Icons.bar_chart_outlined, 'label': 'Laporan'},
+    'purchase-notes': {'icon': Icons.note_outlined, 'label': 'Catatan Belanja'},
+    'calculator': {'icon': Icons.calculate_outlined, 'label': 'Kalkulator'},
+    'scanner': {'icon': Icons.qr_code_scanner, 'label': 'Pemindai Barcode'},
+    'store-notes': {'icon': Icons.note_alt_outlined, 'label': 'Catatan Toko'},
+    'stock-shopping': {'icon': Icons.shopping_cart_outlined, 'label': 'Belanja Stok'},
+    'admin-ai': {'icon': Icons.psychology_outlined, 'label': 'AI Admin'},
+    'transfer': {'icon': Icons.account_balance_outlined, 'label': 'Konfirmasi Transfer'},
+    'receipt': {'icon': Icons.print_outlined, 'label': 'Struk 58mm'},
+    'settings': {'icon': Icons.settings_outlined, 'label': 'Pengaturan Global'},
   };
+
+  /// Peta ID lama Native → ID katalog Web (migrasi cermin lokal).
+  static const _petaIdLama = <String, String>{
+    'pembukuan': 'bookkeeping',
+    'kasir_online': 'online',
+    'catatan_belanja': 'purchase-notes',
+    'produk': 'products',
+    'laporan': 'reports',
+  };
+
+  static List<String> _saringIds(Iterable<String> ids) {
+    final hasil = <String>[];
+    for (final mentah in ids) {
+      final id = _petaIdLama[mentah] ?? mentah;
+      if (_allShortcuts.containsKey(id) && !hasil.contains(id)) {
+        hasil.add(id);
+      }
+    }
+    return hasil.take(6).toList();
+  }
 
   @override
   void initState() {
@@ -70,19 +105,26 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getStringList('dashboard_shortcuts');
       if (saved != null && saved.isNotEmpty && mounted) {
-        setState(() {
-          _shortcutIds = saved
-              .where((id) => _allShortcuts.containsKey(id))
-              .toList();
-        });
+        final bersih = _saringIds(saved);
+        if (bersih.isNotEmpty) {
+          setState(() {
+            _shortcutIds = bersih;
+          });
+        }
       }
     } catch (_) {}
   }
 
+  /// Simpan ke cermin lokal + store_settings (sumber bersama, P2-1).
   Future<void> _saveShortcuts() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('dashboard_shortcuts', _shortcutIds);
+    } catch (_) {}
+    try {
+      await ref.read(adminRepositoryProvider).saveStoreSettings(
+        {'dashboardShortcutIds': _shortcutIds},
+      );
     } catch (_) {}
   }
 
@@ -102,6 +144,19 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
 
   @override
   Widget build(BuildContext context) {
+    // Sinkron shortcut dari store_settings (P2-1): daftar server
+    // yang sah menimpa tampilan lokal (di luar mode edit).
+    ref.listen(storeInfoProvider, (prev, next) {
+      final ids = next.valueOrNull?.dashboardShortcutIds;
+      if (ids == null || ids.isEmpty || _isEditing || !mounted) return;
+      final bersih = _saringIds(ids);
+      if (bersih.isEmpty) return;
+      if (bersih.join(',') != _shortcutIds.join(',')) {
+        setState(() {
+          _shortcutIds = bersih;
+        });
+      }
+    });
     final summaryAsync = ref.watch(_todaySummaryProvider);
     final orders = ref.watch(adminOrdersProvider).valueOrNull ?? const [];
     final waiting =
@@ -323,7 +378,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     openAdminPage(context, page);
   }
 
-  /// Buka halaman sesuai ID shortcut.
+  /// Buka halaman sesuai ID shortcut (katalog Web, P2-1).
   void _openShortcut(BuildContext context, String id) {
     switch (id) {
       case 'kasir':
@@ -332,31 +387,70 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
       case 'inbox':
         _open(context, const InboxTab());
         break;
-      case 'pembukuan':
+      case 'bookkeeping':
         _open(context, const LedgerPage());
         break;
-      case 'kasir_online':
-        _open(context, const OnlineOrdersPage());
-        break;
-      case 'chat':
-        _open(context, const ChatPage());
-        break;
-      case 'catatan_belanja':
-        _open(context, const StoreNotesSheet());
-        break;
-      case 'produk':
+      case 'products':
         _open(context, const ProductsPage());
         break;
-      case 'laporan':
+      case 'store-profile':
+        _open(context, const StoreProfileSheet());
+        break;
+      case 'customer-home':
+        _open(context, const CustomerHomeSheet());
+        break;
+      case 'online':
+        _open(context, const OnlineOrdersPage());
+        break;
+      case 'customers':
+      case 'approvals':
+        _open(context, const CustomersPage());
+        break;
+      case 'reports':
         // P1-4: shortcut 'Laporan' membuka halaman Laporan (metrik +
         // tabel), BUKAN Pembukuan — sebelumnya salah sasaran.
         _open(context, const ReportPage());
         break;
+      case 'chat':
+        _open(context, const ChatPage());
+        break;
+      case 'purchase-notes':
+      case 'stock-shopping':
+        _open(context, const StockShoppingSheet());
+        break;
+      case 'calculator':
+        _open(context, const CalculatorSheet());
+        break;
+      case 'scanner':
+        _open(context, const ScannerSheet());
+        break;
+      case 'store-notes':
+        _open(context, const StoreNotesSheet());
+        break;
+      case 'admin-ai':
+        _open(context, const AiAdminSheet());
+        break;
+      case 'transfer':
+        _open(context, const TransferOrdersPage());
+        break;
+      case 'receipt':
+        _open(context, const ReceiptPage());
+        break;
+      case 'settings':
+        _open(context, const SettingsSheet());
+        break;
     }
   }
 
-  /// Dialog pilih shortcut untuk ditambah.
+  /// Dialog pilih shortcut untuk ditambah (maks 6, aturan Web).
   Future<void> _showShortcutPicker(BuildContext context) async {
+    if (_shortcutIds.length >= 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Shortcut sudah penuh (maksimal 6)')),
+      );
+      return;
+    }
     final available = _allShortcuts.keys
         .where((id) => !_shortcutIds.contains(id))
         .toList();
