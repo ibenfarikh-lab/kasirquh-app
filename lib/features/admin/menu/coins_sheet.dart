@@ -303,7 +303,7 @@ class _CoinsSheetState extends ConsumerState<CoinsSheet> {
                             .read(adminRepositoryProvider)
                             .grantBonusToAll(
                               amount: jumlah,
-                              reason: alasan,
+                              alasan: alasan,
                             );
                         if (ctx.mounted) {
                           Navigator.of(ctx).pop();

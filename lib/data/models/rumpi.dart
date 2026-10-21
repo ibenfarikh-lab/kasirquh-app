@@ -109,6 +109,7 @@ String labelAlasanKoin(String reason) => switch (reason) {
       'belanja' => 'Bonus belanja',
       'tukar' => 'Penukaran koin',
       'koreksi_admin' => 'Penyesuaian admin',
+      'bonus_event' => 'Bonus event',
       _ => reason.isEmpty ? 'Lainnya' : reason,
     };
 

@@ -1132,7 +1132,7 @@ class AdminRepository {
   /// (ledger + saldo); tanpa jurnal karena bukan penukaran.
   Future<int> grantBonusToAll({
     required int amount,
-    required String reason,
+    required String alasan,
   }) async {
     final db = _db;
     if (db == null) throw StateError('Butuh internet untuk bagi bonus.');
@@ -1148,11 +1148,12 @@ class AdminRepository {
       batch.set(ledgerRef, {
         'customerId': doc.id,
         'amount': amount,
-        'reason': reason,
-        // Selaras Web (2026-10-17): label & detail agar riwayat koin
-        // pelanggan tampil konsisten dari kedua pintu.
+        // Item bersama Web↔Native: reason SELALU kode tetap 'bonus_event',
+        // alasan bebas admin masuk detail (kesepakatan sinkron dua pintu —
+        // kode disiapkan sekarang, rilis menunggu aba-aba Tim Utama).
+        'reason': 'bonus_event',
         'label': 'Bonus event',
-        'detail': reason,
+        'detail': alasan,
         'createdAt': FieldValue.serverTimestamp(),
       });
       batch.update(db.collection('customers').doc(doc.id), {
