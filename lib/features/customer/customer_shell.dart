@@ -41,6 +41,15 @@ class CustomerShell extends ConsumerWidget {
     // (perintah user 2026-10-21, selaras Web); begitu ada sesi
     // login, gembok hilang.
     final isGuest = session == null || session.isGuest;
+    // GERBANG ISI TAB (perintah user 2026-10-21 21:44): gerbang
+    // ketukan navbar saja tidak cukup — indeks tab bisa tertahan
+    // di Chat/Akun saat sesi berubah jadi tamu (Keluar dari akun →
+    // gateway → Lewati), dan isi tab langsung tampil sebagai
+    // "akun tamu". Bila tamu terdampar di tab terkunci: tampilkan
+    // Beranda dan buka alur login (lihat _GerbangTabTerkunci);
+    // batal login → indeks dipindah ke Beranda.
+    final bool tabTerkunciAktif = isGuest && _lockedTabs.contains(index);
+    final int tampilIndex = tabTerkunciAktif ? 0 : index;
     final unreadChat = uid == null
         ? 0
         : ref.watch(myTokoThreadProvider(uid)).valueOrNull?.unreadCustomer ??
@@ -49,9 +58,9 @@ class CustomerShell extends ConsumerWidget {
     // Tema diatur di MaterialApp berdasar modeAktifProvider —
     // tidak perlu Theme lokal (agar halaman push ikut tema).
     return Scaffold(
-        appBar: index == 0
+        appBar: tampilIndex == 0
             ? _berandaHeader(context, ref, session)
-            : index >= 1 && index <= 4
+            : tampilIndex >= 1 && tampilIndex <= 4
                 // Tab Produk–Akun: header ala PWA di dalam tab.
                 ? null
                 : AppBar(
@@ -71,11 +80,11 @@ class CustomerShell extends ConsumerWidget {
                 ),
                 centerTitle: false,
               ),
-      body: index == 0
+      body: tampilIndex == 0
           ? Stack(
               children: [
                 IndexedStack(
-                  index: index,
+                  index: tampilIndex,
                   children: const [
                     HomeTab(),
                     CatalogTab(),
@@ -84,6 +93,7 @@ class CustomerShell extends ConsumerWidget {
                     AccountTab(),
                   ],
                 ),
+                if (tabTerkunciAktif) const _GerbangTabTerkunci(),
                 // Tak kasat mata: izin notifikasi + pantau pesanan/chat.
                 if (uid != null) ...[
                   PushBootstrap(uid: uid),
@@ -101,7 +111,7 @@ class CustomerShell extends ConsumerWidget {
               child: Stack(
                 children: [
                   IndexedStack(
-                    index: index,
+                    index: tampilIndex,
                     children: const [
                       HomeTab(),
                       CatalogTab(),
@@ -110,6 +120,7 @@ class CustomerShell extends ConsumerWidget {
                       AccountTab(),
                     ],
                   ),
+                  if (tabTerkunciAktif) const _GerbangTabTerkunci(),
                   // Tak kasat mata: izin notifikasi + pantau pesanan/chat.
                   if (uid != null) ...[
                     PushBootstrap(uid: uid),
@@ -121,7 +132,7 @@ class CustomerShell extends ConsumerWidget {
             ),
       // Teman Belanja ala PWA: FAB kotak hitam + ikon sparkle,
       // hanya di tab Beranda.
-      floatingActionButton: index == 0
+      floatingActionButton: tampilIndex == 0
           ? FloatingActionButton(
               tooltip: 'Buka Teman Belanja',
               // Aturan tema: tanpa background gelap di tema terang.
@@ -381,4 +392,39 @@ class CustomerShell extends ConsumerWidget {
     }
     ref.read(customerTabProvider.notifier).state = i;
   }
+}
+
+/// Gerbang sekali-jalan untuk tamu yang terdampar di tab terkunci
+/// (Chat/Akun) TANPA lewat ketukan navbar — kasus user 2026-10-21:
+/// Keluar dari akun → gateway → Lewati → indeks tab masih Akun →
+/// halaman "Akun Tamu" tampil. Widget ini terpasang hanya selama
+/// kondisi itu benar; sekali tampil ia membuka alur login
+/// (requireLogin). Login berhasil → sesi berubah, gerbang lepas,
+/// tab tujuan tampil normal. Batal/gagal → indeks dipindah ke
+/// Beranda agar tidak ada halaman akun untuk tamu.
+class _GerbangTabTerkunci extends ConsumerStatefulWidget {
+  const _GerbangTabTerkunci();
+
+  @override
+  ConsumerState<_GerbangTabTerkunci> createState() =>
+      _GerbangTabTerkunciState();
+}
+
+class _GerbangTabTerkunciState extends ConsumerState<_GerbangTabTerkunci> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await requireLogin(context, ref, () async {});
+      if (!mounted) return;
+      final s = ref.read(sessionProvider).valueOrNull;
+      if (s == null || s.isGuest) {
+        ref.read(customerTabProvider.notifier).state = 0;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

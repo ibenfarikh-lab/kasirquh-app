@@ -16,6 +16,7 @@ import '../../../core/utils/currency.dart';
 import '../../../core/utils/dering.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/guest_lock_sheet.dart';
 import '../../../core/widgets/notify.dart';
 import '../../../data/models/order.dart';
 import '../../../data/models/customer.dart';
@@ -39,12 +40,62 @@ import 'misi_koin_page.dart';
 class AccountTab extends ConsumerWidget {
   const AccountTab({super.key});
 
+  /// Layar terkunci pengganti "halaman Akun Tamu" (dihapuskan atas
+  /// perintah user 2026-10-21): ikon gembok + ajakan masuk; tombol
+  /// membuka alur login/daftar yang sama seperti gerbang tab.
+  Widget _akunTerkunci(BuildContext context, WidgetRef ref) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+      children: [
+        Center(
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppColors.orange.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.lock_outline,
+              size: 32,
+              color: AppColors.orange,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          Strings.guestLockBody,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: AppColors.muted, fontSize: 15),
+        ),
+        const SizedBox(height: 20),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.orange,
+            foregroundColor: Colors.white,
+          ),
+          onPressed: () => requireLogin(context, ref, () async {}),
+          child: const Text('Masuk / Daftar'),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider).valueOrNull;
     final isGuest = session == null || session.isGuest;
+    // TIDAK ADA AKUN TAMU (perintah user 2026-10-21 21:44): tab
+    // Akun untuk tamu BUKAN halaman akun berisi data kosong —
+    // tampilkan layar terkunci dengan tombol masuk. (Di shell,
+    // tamu yang terdampar di tab ini lebih dulu dicegat gerbang
+    // yang membuka alur login; layar ini lapisan pengaman bila
+    // tab dirender dalam keadaan tamu.)
+    if (isGuest) {
+      return _akunTerkunci(context, ref);
+    }
     final uid = isGuest ? null : session.user!.uid;
-    final nama = displayName(session ?? const Session.guest());
+    final nama = displayName(session);
     final inisial =
         nama.isNotEmpty ? nama[0].toUpperCase() : 'M';
 
@@ -77,8 +128,8 @@ class AccountTab extends ConsumerWidget {
                   shape: BoxShape.circle,
                 ),
                 // Foto profil gantikan inisial — selaras Web (2026-10-18).
-                child: session?.photoURL != null &&
-                        session!.photoURL!.isNotEmpty
+                child: session.photoURL != null &&
+                        session.photoURL!.isNotEmpty
                     ? ClipOval(
                         child: Image.memory(
                           base64Decode(
