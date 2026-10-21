@@ -47,9 +47,15 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
   /// Foto terlampir di composer (data URI 300px PNG, pola Chat Toko).
   String? _fotoUrl;
 
+  /// Scroll & penanda jumlah pesan untuk tampilan CHAT admin
+  /// (auto-geser ke pesan terbaru, pola Web & Chat Toko).
+  final _scrollChat = ScrollController();
+  int _jumlahChat = -1;
+
   @override
   void dispose() {
     _composer.dispose();
+    _scrollChat.dispose();
     super.dispose();
   }
 
@@ -57,6 +63,14 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
   Widget build(BuildContext context) {
     final postsAsync = ref.watch(rumpiPostsProvider);
     final likesAsync = ref.watch(myLikesProvider(widget.uid));
+
+    // Mode admin: tampilan CHAT penuh (perintah user 2026-10-21) —
+    // pesan sebagai bubble percakapan dan composer PERSIS bar input
+    // thread Chat Toko admin, menyatu dalam layar chat yang sama
+    // (bukan feed kartu + composer yang berdiri sendiri).
+    if (widget.modeAdmin) {
+      return _adminChat(context, postsAsync, likesAsync);
+    }
 
     final feed = postsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -175,6 +189,131 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
     );
   }
 
+  /// Tampilan Rumpi mode admin sebagai CHAT: daftar bubble
+  /// percakapan (terbaru di bawah, auto-geser) + composer yang sama
+  /// persis dengan thread Chat Toko admin (pola chat_thread_page):
+  /// wadah permukaan kartu, tombol foto, kolom "Ketik pesan...",
+  /// tombol kirim polos oranye — semua menyatu dalam layar chat.
+  Widget _adminChat(
+    BuildContext context,
+    AsyncValue<List<RumpiPost>> postsAsync,
+    AsyncValue<Set<String>> likesAsync,
+  ) {
+    final disukai = likesAsync.valueOrNull ?? const <String>{};
+    return Column(
+      children: [
+        Expanded(
+          child: postsAsync.when(
+            loading: () =>
+                const Center(child: CircularProgressIndicator()),
+            error: (_, __) => const EmptyState(
+              icon: Icons.forum_outlined,
+              title: Strings.rumpiKosong,
+              hint: Strings.butuhInternetUmum,
+            ),
+            data: (posts) {
+              if (posts.isEmpty) {
+                return const EmptyState(
+                  icon: Icons.forum_outlined,
+                  title: 'Belum ada obrolan di Rumpi Warga.',
+                  hint: Strings.rumpiKosongHint,
+                );
+              }
+              final urut = [...posts]
+                ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+              // Pesan bertambah → geser ke paling bawah (pola Web:
+              // scrollTop = scrollHeight tiap jumlah pesan berubah).
+              if (urut.length != _jumlahChat) {
+                _jumlahChat = urut.length;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollChat.hasClients) {
+                    _scrollChat
+                        .jumpTo(_scrollChat.position.maxScrollExtent);
+                  }
+                });
+              }
+              return ListView.builder(
+                controller: _scrollChat,
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                itemCount: urut.length,
+                itemBuilder: (context, i) {
+                  final p = urut[i];
+                  return _BubbleAdmin(
+                    post: p,
+                    disukai: disukai.contains(p.id),
+                    onLike: () => _like(context, ref, p.id),
+                    onHapus: () => _hapus(context, ref, p.id),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        // Pratinjau foto yang akan dikirim (pola thread Chat Toko).
+        if (_fotoUrl != null)
+          Container(
+            color: context.permukaanKartu,
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image(
+                    image: photoImageProvider(_fotoUrl!)!,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text('Foto siap dikirim'),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => setState(() => _fotoUrl = null),
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Batalkan foto',
+                ),
+              ],
+            ),
+          ),
+        // Composer — PERSIS bar input thread Chat Toko admin.
+        Container(
+          color: context.permukaanKartu,
+          padding: const EdgeInsets.all(12),
+          child: SafeArea(
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.image_outlined),
+                  color: AppColors.orange,
+                  onPressed: _pilihFoto,
+                  tooltip: 'Tambah foto',
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _composer,
+                    maxLength: 180,
+                    decoration: const InputDecoration(
+                      hintText: Strings.ketikPesan,
+                      border: OutlineInputBorder(),
+                      counterText: '',
+                    ),
+                    onSubmitted: (_) => _kirim(context, ref),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  color: AppColors.orange,
+                  onPressed: () => _kirim(context, ref),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   /// Pilih foto untuk postingan (galeri → 300px PNG data URI —
   /// helper yang sama dengan Chat Toko & foto produk).
   Future<void> _pilihFoto() async {
@@ -278,6 +417,183 @@ class _RumpiFeedState extends ConsumerState<RumpiFeed> {
         );
       }
     }
+  }
+}
+
+/// Bubble pesan Rumpi untuk tampilan CHAT admin — pola bubble
+/// Chat Toko & Web: pesan admin rata kanan (oranye), pesan warga
+/// rata kiri dengan avatar; nama + badge Admin di kepala bubble;
+/// suka & waktu di kaki bubble; tombol hapus moderasi di bawahnya.
+class _BubbleAdmin extends StatelessWidget {
+  final RumpiPost post;
+  final bool disukai;
+  final VoidCallback onLike;
+  final VoidCallback onHapus;
+
+  const _BubbleAdmin({
+    required this.post,
+    required this.disukai,
+    required this.onLike,
+    required this.onHapus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final own = post.authorRole == 'admin';
+    final warnaTeks = own ? Colors.white : context.teksUtama;
+    final warnaRedup =
+        own ? Colors.white70 : context.teksRedup;
+    final avatar = CircleAvatar(
+      radius: 16,
+      backgroundColor: AppColors.orange.withValues(alpha: 0.15),
+      backgroundImage: post.authorPhoto.isNotEmpty
+          ? photoImageProvider(post.authorPhoto)
+          : null,
+      child: post.authorPhoto.isNotEmpty
+          ? null
+          : Text(
+              post.authorName.isNotEmpty
+                  ? post.authorName[0].toUpperCase()
+                  : '?',
+              style: const TextStyle(
+                color: AppColors.orange,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        mainAxisAlignment:
+            own ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!own) ...[avatar, const SizedBox(width: 8)],
+          Flexible(
+            child: Column(
+              crossAxisAlignment:
+                  own ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color:
+                        own ? AppColors.orange : context.permukaanKartu,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            post.authorName,
+                            style: TextStyle(
+                              color: warnaRedup,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (post.authorRole == 'admin') ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: own
+                                    ? Colors.white.withValues(alpha: 0.25)
+                                    : AppColors.orange,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'Admin',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (post.punyaFoto) ...[
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: _PostImage(dataUri: post.imageUrl!),
+                        ),
+                      ],
+                      if (post.text.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          post.text,
+                          style: TextStyle(color: warnaTeks, fontSize: 14),
+                        ),
+                      ],
+                      const SizedBox(height: 5),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            waktuRelatif(post.createdAt),
+                            style: TextStyle(
+                                color: warnaRedup, fontSize: 11),
+                          ),
+                          const SizedBox(width: 10),
+                          InkWell(
+                            onTap: onLike,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  disukai
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  size: 14,
+                                  color: disukai
+                                      ? AppColors.danger
+                                      : warnaRedup,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '${post.likeCount}',
+                                  style: TextStyle(
+                                      color: warnaRedup, fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Moderasi admin: hapus postingan (semua pesan).
+                InkWell(
+                  onTap: onHapus,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(6, 3, 6, 0),
+                    child: Text(
+                      Strings.hapus,
+                      style: TextStyle(
+                        color: AppColors.danger,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (own) ...[const SizedBox(width: 8), avatar],
+        ],
+      ),
+    );
   }
 }
 

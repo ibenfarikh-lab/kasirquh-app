@@ -37,6 +37,10 @@ class CustomerShell extends ConsumerWidget {
         .select((c) => c.fold(0.0, (s, e) => s + e.qty).round()));
     final session = ref.watch(sessionProvider).valueOrNull;
     final uid = memberUid(session ?? const Session.guest());
+    // Mode tamu: ikon Chat & Akun di navbar memakai badge gembok
+    // (perintah user 2026-10-21, selaras Web); begitu ada sesi
+    // login, gembok hilang.
+    final isGuest = session == null || session.isGuest;
     final unreadChat = uid == null
         ? 0
         : ref.watch(myTokoThreadProvider(uid)).valueOrNull?.unreadCustomer ??
@@ -169,23 +173,53 @@ class CustomerShell extends ConsumerWidget {
               isLabelVisible: unreadChat > 0,
               label: Text('$unreadChat'),
               backgroundColor: AppColors.danger,
-              child: const Icon(Icons.chat_bubble_outline),
+              child: _denganGembok(
+                  const Icon(Icons.chat_bubble_outline), isGuest),
             ),
             activeIcon: Badge(
               isLabelVisible: unreadChat > 0,
               label: Text('$unreadChat'),
               backgroundColor: AppColors.danger,
-              child: const Icon(Icons.chat_bubble),
+              child:
+                  _denganGembok(const Icon(Icons.chat_bubble), isGuest),
             ),
             label: Strings.tabChat,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
+          BottomNavigationBarItem(
+            icon: _denganGembok(const Icon(Icons.person_outline), isGuest),
+            activeIcon: _denganGembok(const Icon(Icons.person), isGuest),
             label: Strings.tabAkun,
           ),
         ],
       ),
+    );
+  }
+
+  /// Ikon navbar dengan badge gembok di pojok kanan-atas (lingkaran
+  /// gelap, gembok oranye — persis Web) bila [tampil] true (tamu).
+  Widget _denganGembok(Widget ikon, bool tampil) {
+    if (!tampil) return ikon;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ikon,
+        Positioned(
+          top: -4,
+          right: -6,
+          child: Container(
+            padding: const EdgeInsets.all(2.5),
+            decoration: const BoxDecoration(
+              color: Color(0xFF33261A),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.lock,
+              size: 9,
+              color: AppColors.orange,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
